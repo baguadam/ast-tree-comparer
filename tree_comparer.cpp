@@ -1,17 +1,13 @@
 #include <iostream>
-#include "node_reader.h"
+#include "tree.h"
 
 int main() {
-    NodeReader reader;
+    Tree* firstStandardAST = new Tree("../asts/first_standard_ast.txt");
+    Tree* secondStandardAST = new Tree("../asts/second_standard_ast.txt");
 
-    Node* firstStandardAST = reader.readASTDump("../asts/first_standard_ast.txt");
-    Node* secondStandardAST = reader.readASTDump("../asts/second_standard_ast.txt");
+    std::cout << firstStandardAST->getRoot()->name << " " << firstStandardAST->getRoot()->value << '\n';
+    std::cout << secondStandardAST->getRoot()->name << " " << secondStandardAST->getRoot()->value << '\n';
 
-    if (!firstStandardAST || !secondStandardAST) {
-        std::cerr << "Error while opening files! \n";
-        return -1;
-    }
-
-    std::cout << firstStandardAST->name << " " << firstStandardAST->value << '\n';
-    std::cout << secondStandardAST->name << " " << secondStandardAST->value << '\n';
+    delete firstStandardAST;
+    delete secondStandardAST;
 }   

@@ -2,10 +2,22 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include "node_reader.h"
+#include "tree.h"
 
-Node* NodeReader::readASTDump(const std::string& fileName) {
-    std::vector<Node*> nodeStack;
+Tree::Tree(const std::string& fileName) {
+    root = buildTree(fileName);
+}
+
+Tree::~Tree() {
+    deleteTree(root);
+}
+
+Node* Tree::getRoot() const {
+    return root;
+}
+
+Node* Tree::buildTree(const std::string& fileName) {
+   std::vector<Node*> nodeStack;
     std::string line;
     std::ifstream file(fileName);
     if (!file) {
@@ -54,3 +66,12 @@ Node* NodeReader::readASTDump(const std::string& fileName) {
     
     return nodeStack.front();
 }
+
+void Tree::deleteTree(Node* node) {
+    if (node) {
+        for (Node* child : node->children) {
+            deleteTree(child);
+        }
+        delete node;
+    }
+} 

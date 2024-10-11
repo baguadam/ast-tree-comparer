@@ -12,9 +12,17 @@ struct Node {
     Node* parent;
 };
 
-class NodeReader {
+class Tree {
 public:
-    Node* readASTDump(const std::string&);
+    Tree(const std::string&);
+    ~Tree();
+    Node* getRoot() const;
+
+private:
+    Node* root;
+
+    Node* buildTree(const std::string&);
+    void deleteTree(Node* node);
 };
 
 #endif
