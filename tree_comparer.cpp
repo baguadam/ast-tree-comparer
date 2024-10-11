@@ -1,39 +1,40 @@
 #include <iostream>
-#include "tree.h"
+#include <queue>
+#include "tree_comparer.h"
 
-void printDifferences(Node* firstAST, Node* secondAST, const std::string& prefix = "") {
-    if (firstAST == nullptr || secondAST == nullptr) {
-        return;
-    }
-    if (firstAST == nullptr) {
-        std::cout << prefix << "Node added in second AST: " << secondAST->name << " " << secondAST->value << '\n';
-        for (Node* child : secondAST->children) {
-            printDifferences(nullptr, child, prefix + " ");
+TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
+    : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(createNodeMap(firstAST)), nodeMapSecondAST(createNodeMap(secondAST)) {} 
+
+void TreeComparer::printDifferences() {
+    for (const auto& pair : nodeMapFirstAST) {
+        if (nodeMapSecondAST.count(pair.first) == 0) {
+            std::cout << "Node " << pair.first << " removed from first AST\n";
+        } else if (pair.second->parent->name != nodeMapSecondAST[pair.first]->parent->name) {
+            std::cout << "Node " << pair.first << " has a different parent in secont AST: " 
+                      << nodeMapSecondAST[pair.first]->parent->name << "\n";
         }
-        return;
     }
-    if (secondAST == nullptr) {
-        std::cout << prefix << "Node removed from first AST " << firstAST->name << " " << firstAST->value << '\n';
-        for (Node* child : firstAST->children) {
-            printDifferences(child, nullptr, prefix + " ");
-        } 
-        return;
-    }
-    if (firstAST->name != secondAST->name || firstAST->value != secondAST->value) {
-        std::cout << prefix << "Node changed from: " << firstAST->name << " " << firstAST->value << " to: "
-                  << secondAST->name << " " << secondAST->value << '\n';
-    }
-    for (size_t i = 0; i < std::max(firstAST->children.size(), secondAST->children.size()); ++i) {
-        Node* firstChild = i < firstAST->children.size() ? firstAST->children[i] : nullptr;
-        Node* secondChild = i < secondAST->children.size() ? secondAST->children[i] : nullptr;
-
-        printDifferences(firstChild, secondChild, prefix + " ");
+    for (const auto& pair : nodeMapSecondAST) {
+        if (nodeMapFirstAST.count(pair.first) == 0) {
+            std::cout << "Node " << pair.first << " added in second AST\n";
+        }
     }
 }
 
-int main() {
-    Tree firstStandardAST("../asts/first_standard_ast.txt");
-    Tree secondStandardAST("../asts/second_standard_ast.txt");
+std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
+    std::unordered_map<std::string, Node*> nodeMap;
+    std::queue<Node*> queue;
 
-    printDifferences(firstStandardAST.getRoot(), secondStandardAST.getRoot());
-}   
+    if (root) {
+        queue.push(root);
+    }
+    while (!queue.empty()) {
+        Node* node = queue.front();
+        queue.pop();
+        nodeMap[node->name] = node;
+        for (Node* child : node->children) {
+            queue.push(child);
+        }
+    }
+    return nodeMap;
+}

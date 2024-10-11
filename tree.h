@@ -1,16 +1,9 @@
-#ifndef _NODE_READER_H_
+#ifndef _TREE_H_
 
-#define _NODE_READER_H_
+#define _TREE_H_
 
 #include <string>
-#include <vector>
-
-struct Node {
-    std::string name;
-    std::string value;
-    std::vector<Node*> children;
-    Node* parent;
-};
+#include "node.h"
 
 class Tree {
 public:
