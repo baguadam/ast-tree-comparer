@@ -37,4 +37,6 @@ int main() {
 
     std::cout << firstStandardAST.getRoot()->name << " " << firstStandardAST.getRoot()->value << '\n';
     std::cout << secondStandardAST.getRoot()->name << " " << secondStandardAST.getRoot()->value << '\n';
+
+    printDifferenecs(firstStandardAST.getRoot(), secondStandardAST.getRoot());
 }   
