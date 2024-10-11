@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include "tree.h"
+#include "./headers/tree.h"
 
 Tree::Tree(const std::string& fileName) {
     root = buildTree(fileName);

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <queue>
-#include "tree_comparer.h"
+#include "./headers/tree_comparer.h"
 
 TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
     : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(createNodeMap(firstAST)), nodeMapSecondAST(createNodeMap(secondAST)) {} 

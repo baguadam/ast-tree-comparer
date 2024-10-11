@@ -1,5 +1,5 @@
-#include "tree_comparer.h"
-#include "tree.h"
+#include "./headers/tree_comparer.h"
+#include "./headers/tree.h"
 
 int main() {
     Tree firstStandardAST("../asts/first_standard_ast.txt");
