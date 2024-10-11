@@ -9,10 +9,16 @@ void TreeComparer::printDifferences() {
     for (const auto& pair : nodeMapFirstAST) {
         if (nodeMapSecondAST.count(pair.first) == 0) {
             std::cout << "Node " << pair.first << " removed from first AST\n";
-        } else if (pair.second->parent->name != nodeMapSecondAST[pair.first]->parent->name) {
-            std::cout << "Node " << pair.first << " has a different parent in secont AST: " 
-                      << nodeMapSecondAST[pair.first]->parent->name << "\n";
-        }
+        } else {
+            if (pair.second->parent && pair.second->parent->name != nodeMapSecondAST[pair.first]->parent->name) {
+                std::cout << "Node " << pair.first << " has a different parent in secont AST: " 
+                        << nodeMapSecondAST[pair.first]->parent->name << "\n";
+            }
+            if (pair.second->value != nodeMapSecondAST[pair.first]->value) {
+                std::cout << "Node " << pair.first << " has different values in the trees. In first AST: "
+                          << pair.second->value << ", in second AST: " << nodeMapSecondAST[pair.first]->value << '\n';
+            }
+        } 
     }
     for (const auto& pair : nodeMapSecondAST) {
         if (nodeMapFirstAST.count(pair.first) == 0) {
