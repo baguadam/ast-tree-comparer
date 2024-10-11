@@ -4,7 +4,7 @@
 #include <sstream>
 #include "node_reader.h"
 
-Node* NodeReader::readASTDump(const std::string& fileName) {
+std::unique_ptr<Node> NodeReader::readASTDump(const std::string& fileName) {
     std::vector<Node*> nodeStack;
     std::ifstream file(fileName);
     std::string line;
@@ -32,7 +32,7 @@ Node* NodeReader::readASTDump(const std::string& fileName) {
             return !std::isspace(ch);
         }).base(), nodeValue.end()); 
 
-        Node* node = new Node;
+        auto node = std::make_unique<Node>();
         node->name = nodeName;
         node->value = nodeValue;
 
@@ -42,11 +42,11 @@ Node* NodeReader::readASTDump(const std::string& fileName) {
 
         node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
         if (node->parent) {
-            node->parent->children.push_back(node);
+            node->parent->children.push_back(std::move(node));
         }
 
-        nodeStack.push_back(node);
+        nodeStack.push_back(node.get());
     }
     
-    return nodeStack.front();
+    return std::unique_ptr<Node>(nodeStack.front());
 }
