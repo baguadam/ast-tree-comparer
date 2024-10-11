@@ -4,10 +4,14 @@
 #include <sstream>
 #include "node_reader.h"
 
-std::unique_ptr<Node> NodeReader::readASTDump(const std::string& fileName) {
+Node* NodeReader::readASTDump(const std::string& fileName) {
     std::vector<Node*> nodeStack;
-    std::ifstream file(fileName);
     std::string line;
+    std::ifstream file(fileName);
+    if (!file) {
+        std::cerr << "Unable to open file: " << fileName << std::endl;
+        return nullptr;
+    }
 
     while (std::getline(file, line)) {
         int depth = 0;
@@ -32,7 +36,7 @@ std::unique_ptr<Node> NodeReader::readASTDump(const std::string& fileName) {
             return !std::isspace(ch);
         }).base(), nodeValue.end()); 
 
-        auto node = std::make_unique<Node>();
+        Node* node = new Node;
         node->name = nodeName;
         node->value = nodeValue;
 
@@ -42,11 +46,11 @@ std::unique_ptr<Node> NodeReader::readASTDump(const std::string& fileName) {
 
         node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
         if (node->parent) {
-            node->parent->children.push_back(std::move(node));
+            node->parent->children.push_back(node);
         }
 
-        nodeStack.push_back(node.get());
+        nodeStack.push_back(node);
     }
     
-    return std::unique_ptr<Node>(nodeStack.front());
+    return nodeStack.front();
 }
