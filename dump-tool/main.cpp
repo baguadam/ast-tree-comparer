@@ -45,10 +45,11 @@ public:
     clang::SourceManager& sm = Context->getSourceManager();
 
     llvm::outs()
+      << "Declaration "
       << decl->getDeclKindName() << ' '
       << getUSR(decl) << ' '
-      << sm.getFilename(loc).str() << ':'
-      << sm.getSpellingLineNumber(loc) << ':'
+      << sm.getFilename(loc).str() << ' '
+      << sm.getSpellingLineNumber(loc) << ' '
       << sm.getSpellingColumnNumber(loc) << ' '
       << (decl->isImplicit() ? "(implicit)" : "") << '\n';
 
@@ -63,9 +64,11 @@ public:
     clang::SourceManager& sm = Context->getSourceManager();
 
     llvm::outs()
+      << "Statement "
       << stmt->getStmtClassName() << ' '
-      << sm.getFilename(loc).str() << ':'
-      << sm.getSpellingLineNumber(loc) << ':'
+      << "N/A" << ' ' // no USR for statements
+      << sm.getFilename(loc).str() << ' '
+      << sm.getSpellingLineNumber(loc) << ' '
       << sm.getSpellingColumnNumber(loc) << '\n';
 
     return true;
