@@ -3,6 +3,9 @@
 
 .vscode/
 
+# ast-dump-tool build
+dump-tool/build
+
 # Compiled Object files
 *.slo
 *.lo
