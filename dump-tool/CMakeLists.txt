@@ -15,9 +15,5 @@ target_link_libraries(ast-dump-tool PRIVATE
   clang-cpp
   LLVM-14)
 
-# Set the output directory for the executable
-set_target_properties(ast-dump-tool PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/dump-tool/build)
-
 # Enable generation of compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
