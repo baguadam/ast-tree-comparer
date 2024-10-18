@@ -6,6 +6,8 @@
 # ast-dump-tool build
 dump-tool/build
 
+asts/
+
 # Compiled Object files
 *.slo
 *.lo
