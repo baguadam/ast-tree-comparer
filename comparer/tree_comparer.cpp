@@ -5,24 +5,28 @@
 TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
     : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(createNodeMap(firstAST)), nodeMapSecondAST(createNodeMap(secondAST)) {} 
 
+/*
+Public method that starts the comparison process by iterating over the two maps of nodes and comparing them,
+prints the necessary information about the differences to the console
+*/
 void TreeComparer::printDifferences() {
+    // iterating through the first AST nodes and comparing them with the second AST nodes,
+    // first checking if the node exists in the second AST, if not, print the details of the node,
+    // otherwise compare the nodes
     for (const auto& pair : nodeMapFirstAST) {
         if (nodeMapSecondAST.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " removed from first AST\n";
+            std::cout << "Node " << pair.first << " only exists in first AST\n";
+            printNodeDetails(pair.second);
         } else {
-            if (pair.second->parent && pair.second->parent->name != nodeMapSecondAST[pair.first]->parent->name) {
-                std::cout << "Node " << pair.first << " has a different parent in secont AST: " 
-                        << nodeMapSecondAST[pair.first]->parent->name << "\n";
-            }
-            if (pair.second->value != nodeMapSecondAST[pair.first]->value) {
-                std::cout << "Node " << pair.first << " has different values in the trees. In first AST: "
-                          << pair.second->value << ", in second AST: " << nodeMapSecondAST[pair.first]->value << '\n';
-            }
+            // if the nodes exist in both trees, compare them
+            compareNodes(pair.second, nodeMapSecondAST[pair.first]);
         } 
     }
+    // similarly for the seoncd AST nodes, checking if the node exists in the first AST, if not, print the details of the node
     for (const auto& pair : nodeMapSecondAST) {
         if (nodeMapFirstAST.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " added in second AST\n";
+            std::cout << "Node " << pair.first << " only exists in second AST\n";
+            printNodeDetails(pair.second);
         }
     }
 }
