@@ -17,6 +17,8 @@ private:
     std::unordered_map<std::string, Node*> nodeMapFirstAST;
     std::unordered_map<std::string, Node*> nodeMapSecondAST;
     std::string generateKey(Node*, bool);
+    void compareNodes(Node*, Node*);
+    void printNodeDetails(Node*);
 
     std::unordered_map<std::string, Node*> createNodeMap(Node*);
 };

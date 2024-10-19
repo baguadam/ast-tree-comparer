@@ -70,3 +70,18 @@ std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
 
     return nodeMap;
 }
+
+void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
+
+}
+
+void TreeComparer::printNodeDetails(Node* node) {
+    std::cout << "Node details:\n";
+    std::cout << "Type: " << node->type << "\n";
+    std::cout << "Kind: " << node->kind << "\n";
+    std::cout << "USR: " << node->usr << "\n";
+    std::cout << "Path: " << node->path << "\n";
+    std::cout << "Line: " << node->lineNumber << "\n";
+    std::cout << "Column: " << node->columnNumber << "\n";
+    std::cout << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
+}
