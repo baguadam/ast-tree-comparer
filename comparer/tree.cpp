@@ -31,11 +31,11 @@ Node* Tree::buildTree(const std::string& fileName) {
             ++depth;
         }
 
-        std::string type, kind, usr, path;
-        int lineNumber, columnNumber;
+        std::string type, kind, usr = "N/A", path = "N/A";
+        int lineNumber = -1, columnNumber = -1;
         std::istringstream iss(line);
 
-        // reading the node informations
+        // reading the node informations based on the current type
         iss >> type >> kind >> usr >> path >> lineNumber >> columnNumber;
 
         Node* node = new Node;

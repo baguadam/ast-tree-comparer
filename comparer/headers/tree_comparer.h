@@ -16,6 +16,7 @@ private:
     Node* secondASTTree;
     std::unordered_map<std::string, Node*> nodeMapFirstAST;
     std::unordered_map<std::string, Node*> nodeMapSecondAST;
+    std::string generateKey(Node*, bool);
 
     std::unordered_map<std::string, Node*> createNodeMap(Node*);
 };

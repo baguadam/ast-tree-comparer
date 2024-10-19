@@ -27,6 +27,22 @@ void TreeComparer::printDifferences() {
     }
 }
 
+/*
+Generates a unique key for a node based on its type and information
+*/
+std::string TreeComparer::generateKey(Node* node, bool isDeclaration) {
+    if (isDeclaration) {
+        // unique identifier for declarations, here we can use the usr
+        return node->usr; 
+    } else {
+        // for statements we use the kind, path, line and column
+        return node->kind + "_" + node->path + "_" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber); 
+    }
+}
+
+/*
+Creates a map of nodes based on their keys, it's essential to compare the trees and print the differences
+*/
 std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
     std::unordered_map<std::string, Node*> nodeMap;
     std::queue<Node*> queue;
@@ -37,10 +53,20 @@ std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
     while (!queue.empty()) {
         Node* node = queue.front();
         queue.pop();
-        nodeMap[node->name] = node;
+
+        if (!node) continue; // in case of missing information
+
+        // generating the node key and ensuring if it's valid
+        std::string nodeKey = generateKey(node, node->type == "Declaration");
+        if (!nodeKey.empty()) {
+            nodeMap[nodeKey] = node;
+        }
+
+        // processing child nodes
         for (Node* child : node->children) {
             queue.push(child);
         }
     }
+
     return nodeMap;
 }
