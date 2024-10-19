@@ -68,10 +68,12 @@ std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
 
         // processing child nodes
         for (Node* child : node->children) {
-            queue.push(child);
+            if (child) {
+                queue.push(child);
+            }
         }
     }
-
+    
     return nodeMap;
 }
 
@@ -83,10 +85,9 @@ void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
     if (firstNode->path != secondNode->path || 
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
-        std::cout << "Declaration node " << firstNode->usr << " has different source locations in the trees.\n";
+        std::cout << "Node " << firstNode->usr << " has different source locations in the trees.\n";
         std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
         std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
-
         std::cout << "**********************************************************\n";
     }
 }

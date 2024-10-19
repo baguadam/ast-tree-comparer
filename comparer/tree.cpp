@@ -35,24 +35,24 @@ Node* Tree::buildTree(const std::string& fileName) {
         int lineNumber = -1, columnNumber = -1;
         std::istringstream iss(line);
 
-        // Read the node information based on the current type
+        // read the node information based on the current type
         if (!(iss >> type >> kind)) {
             std::cerr << "Error parsing type and kind from line: " << line << std::endl;
-            continue; // Skip invalid line
+            continue; // skip invalid line
         }
 
-        // Try to read optional fields; default to "N/A" or -1 if not available
+        // try to read optional fields; default to "N/A" or -1 if not available
         if (!(iss >> usr)) {
-            usr = "N/A"; // Fallback if usr is missing
+            usr = "N/A"; // fallback if usr is missing
         }
         if (!(iss >> path)) {
-            path = "N/A"; // Fallback if path is missing
+            path = "N/A"; // fallback if path is missing
         }
         if (!(iss >> lineNumber)) {
-            lineNumber = -1; // Fallback if line number is missing
+            lineNumber = -1; // fallback if line number is missing
         }
         if (!(iss >> columnNumber)) {
-            columnNumber = -1; // Fallback if column number is missing
+            columnNumber = -1; // fallback if column number is missing
         }
 
         Node* node = new Node;
@@ -67,7 +67,7 @@ Node* Tree::buildTree(const std::string& fileName) {
             nodeStack.pop_back();
         }
 
-        // Set the parent of the current node
+        // set the parent of the current node
         node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
         if (node->parent) {
             node->parent->children.push_back(node);
