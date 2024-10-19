@@ -3,10 +3,12 @@
 
 .vscode/
 
+asts/
+
 # ast-dump-tool build
 dump-tool/build
 
-asts/
+comparer/comparer
 
 # Compiled Object files
 *.slo
@@ -37,3 +39,7 @@ asts/
 *.exe
 *.out
 *.app
+
+comparer/*.exe
+comparer/*.out
+comparer/*.app

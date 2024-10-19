@@ -97,18 +97,20 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
         std::cout << "Node:\n";
         printNodeDetails(firstNode);
         std::cout << "Has different USRs - first AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
+
+        std::cout << "**********************************************************\n";
     }
 
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
         std::cout << "Declaration node " << secondNode->usr << " has different kinds in the trees. In first AST: "
                   << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
+
+        std::cout << "**********************************************************\n";
     }
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
-
-    std::cout << "**********************************************************\n";
 }
 
 /*
