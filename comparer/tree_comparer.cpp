@@ -105,7 +105,7 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
 
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " has different kinds in the trees. In first AST: "
+        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
                   << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
 
         std::cout << "**********************************************************\n";
@@ -121,14 +121,14 @@ Comparison logic of two statements
 void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " has different kinds in the trees. In first AST: "
+        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
                   << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
+        
+        std::cout << "**********************************************************\n";
     }
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
-
-    std::cout << "**********************************************************\n";
 }
 
 /*
@@ -138,7 +138,7 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        std::cout << "Node " << firstNode->usr << " has a different parent in second AST: "
+        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has a different parent in second AST: "
                   << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";
         printNodeDetails(firstNode->parent);
@@ -150,7 +150,7 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     // checking if their types are different, in case of different types we don't want to compare any values,
     // just print the details of the differring nodes. However, in case of similar types, we can compare the nodes
     if (firstNode->type != secondNode->type) {
-        std::cout << "Node " << firstNode->usr << " has different types in the trees. In first AST: "
+        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has different types in the trees. In first AST: "
                   << firstNode->type << ", in second AST: " << secondNode->type << '\n';
 
         std::cout << "**********************************************************\n";
