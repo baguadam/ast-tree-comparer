@@ -31,31 +31,26 @@ Node* Tree::buildTree(const std::string& fileName) {
             ++depth;
         }
 
-        std::string nodeName;
-        std::string nodeValue;
+        std::string type, kind, usr, path;
+        int lineNumber, columnNumber;
         std::istringstream iss(line);
 
-        // reading the first word into nodeName
-        iss >> nodeName;
-
-        // rest of the line into nodeValue
-        std::getline(iss, nodeValue);
-        // removing whitespaces
-        nodeValue.erase(nodeValue.begin(), std::find_if(nodeValue.begin(), nodeValue.end(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }));
-        nodeValue.erase(std::find_if(nodeValue.rbegin(), nodeValue.rend(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }).base(), nodeValue.end()); 
+        // reading the node informations
+        iss >> type >> kind >> usr >> path >> lineNumber >> columnNumber;
 
         Node* node = new Node;
-        node->name = nodeName;
-        node->value = nodeValue;
+        node->type = type;
+        node->kind = kind;
+        node->usr = usr;
+        node->path = path;
+        node->lineNumber = lineNumber;
+        node->columnNumber = columnNumber;
 
         while (nodeStack.size() > depth) {
             nodeStack.pop_back();
         }
 
+        // set the parent of the current node
         node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
         if (node->parent) {
             node->parent->children.push_back(node);
@@ -64,7 +59,7 @@ Node* Tree::buildTree(const std::string& fileName) {
         nodeStack.push_back(node);
     }
     
-    return nodeStack.front();
+    return nodeStack.empty() ? nullptr : nodeStack.front();  
 }
 
 void Tree::deleteTree(Node* node) {
