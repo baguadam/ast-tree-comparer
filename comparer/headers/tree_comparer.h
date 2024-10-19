@@ -17,10 +17,13 @@ private:
     std::unordered_map<std::string, Node*> nodeMapFirstAST;
     std::unordered_map<std::string, Node*> nodeMapSecondAST;
     std::string generateKey(Node*, bool);
+    std::unordered_map<std::string, Node*> createNodeMap(Node*);
+
+    void compareSourceLocations(Node*, Node*);
+    void compareStatements(Node*, Node*);
+    void compareDeclarations(Node*, Node*);
     void compareNodes(Node*, Node*);
     void printNodeDetails(Node*);
-
-    std::unordered_map<std::string, Node*> createNodeMap(Node*);
 };
 
 

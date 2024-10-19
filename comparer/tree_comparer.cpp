@@ -71,10 +71,93 @@ std::unordered_map<std::string, Node*> TreeComparer::createNodeMap(Node* root) {
     return nodeMap;
 }
 
-void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
-
+/*
+Comparison logic of two source locations
+*/
+void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
+    // if the source is different, print the details of the locations for each node
+    if (firstNode->path != secondNode->path || firstNode->lineNumber != secondNode->lineNumber || firstNode->columnNumber != secondNode->columnNumber) {
+        std::cout << "Declaration node " << firstNode->usr << " has different source locations in the trees.\n";
+        std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
+        std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
+    }
 }
 
+/*
+Comparison logic of two declarations
+*/
+void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
+    // in case of declaration types it is worth comparing the USRs
+    // if the usr is different, print the details of the nodes and their USRs
+    if (firstNode->usr != secondNode->usr) {
+        std::cout << "Node:\n";
+        printNodeDetails(firstNode);
+        std::cout << "Has different USRs - first AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
+    }
+
+    // if the kinds are different, print the details of the nodes and their kinds
+    if (firstNode->kind != secondNode->kind) {
+        std::cout << "Declaration node " << secondNode->usr << " has different kinds in the trees. In first AST: "
+                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
+    }
+
+    // comparing the source locations of the nodes
+    compareSourceLocations(firstNode, secondNode);
+
+    std::cout << "**********************************************************\n";
+}
+
+/*
+Comparison logic of two statements
+*/
+void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
+    // if the kinds are different, print the details of the nodes and their kinds
+    if (firstNode->kind != secondNode->kind) {
+        std::cout << "Declaration node " << secondNode->usr << " has different kinds in the trees. In first AST: "
+                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
+    }
+
+    // comparing the source locations of the nodes
+    compareSourceLocations(firstNode, secondNode);
+
+    std::cout << "**********************************************************\n";
+}
+
+/*
+Main comparison method for comparing two nodes taking into account many aspects and printing the differences
+*/
+void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
+    // checking for parents, if the first node has parent, but not the same as the second one,
+    // print the details of the nodes and their parents
+    if (firstNode->parent && firstNode->parent->usr != secondNode->parent->usr) {
+        std::cout << "Node " << firstNode->usr << " has a different parent in second AST: "
+                  << secondNode->parent->usr << "\n";
+        std::cout << "First AST parent details:\n";
+        printNodeDetails(firstNode->parent);
+        std::cout << "Second AST parent details:\n";
+        printNodeDetails(secondNode->parent);
+
+        std::cout << "**********************************************************\n";
+    }
+    // checking if their types are different, in case of different types we don't want to compare any values,
+    // just print the details of the differring nodes. However, in case of similar types, we can compare the nodes
+    if (firstNode->type != secondNode->type) {
+        std::cout << "Node " << firstNode->usr << " has different types in the trees. In first AST: "
+                  << firstNode->type << ", in second AST: " << secondNode->type << '\n';
+
+        std::cout << "**********************************************************\n";
+    } else if (firstNode->type == "Declaration") {
+        // if both nodes are DECLARATIONS, comparing them accordingly
+        compareDeclarations(firstNode, secondNode);
+    } else if (firstNode->type == "Statement") {
+        // if both nodes are STATEMENTS, comparing them accordingly
+        compareStatements(firstNode, secondNode);
+    }
+}
+
+/*
+Prints the details of a given node to the standard output
+*/
 void TreeComparer::printNodeDetails(Node* node) {
     std::cout << "Node details:\n";
     std::cout << "Type: " << node->type << "\n";
