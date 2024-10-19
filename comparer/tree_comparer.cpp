@@ -80,7 +80,9 @@ Comparison logic of two source locations
 */
 void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
     // if the source is different, print the details of the locations for each node
-    if (firstNode->path != secondNode->path || firstNode->lineNumber != secondNode->lineNumber || firstNode->columnNumber != secondNode->columnNumber) {
+    if (firstNode->path != secondNode->path || 
+        firstNode->lineNumber != secondNode->lineNumber || 
+        firstNode->columnNumber != secondNode->columnNumber) {
         std::cout << "Declaration node " << firstNode->usr << " has different source locations in the trees.\n";
         std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
         std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
@@ -135,7 +137,7 @@ Main comparison method for comparing two nodes taking into account many aspects 
 void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
-    if (firstNode->parent && firstNode->parent->usr != secondNode->parent->usr) {
+    if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
         std::cout << "Node " << firstNode->usr << " has a different parent in second AST: "
                   << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";

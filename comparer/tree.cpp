@@ -17,7 +17,7 @@ Node* Tree::getRoot() const {
 }
 
 Node* Tree::buildTree(const std::string& fileName) {
-   std::vector<Node*> nodeStack;
+    std::vector<Node*> nodeStack;
     std::string line;
     std::ifstream file(fileName);
     if (!file) {
@@ -35,8 +35,25 @@ Node* Tree::buildTree(const std::string& fileName) {
         int lineNumber = -1, columnNumber = -1;
         std::istringstream iss(line);
 
-        // reading the node informations based on the current type
-        iss >> type >> kind >> usr >> path >> lineNumber >> columnNumber;
+        // Read the node information based on the current type
+        if (!(iss >> type >> kind)) {
+            std::cerr << "Error parsing type and kind from line: " << line << std::endl;
+            continue; // Skip invalid line
+        }
+
+        // Try to read optional fields; default to "N/A" or -1 if not available
+        if (!(iss >> usr)) {
+            usr = "N/A"; // Fallback if usr is missing
+        }
+        if (!(iss >> path)) {
+            path = "N/A"; // Fallback if path is missing
+        }
+        if (!(iss >> lineNumber)) {
+            lineNumber = -1; // Fallback if line number is missing
+        }
+        if (!(iss >> columnNumber)) {
+            columnNumber = -1; // Fallback if column number is missing
+        }
 
         Node* node = new Node;
         node->type = type;
@@ -50,7 +67,7 @@ Node* Tree::buildTree(const std::string& fileName) {
             nodeStack.pop_back();
         }
 
-        // set the parent of the current node
+        // Set the parent of the current node
         node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
         if (node->parent) {
             node->parent->children.push_back(node);
@@ -58,9 +75,10 @@ Node* Tree::buildTree(const std::string& fileName) {
 
         nodeStack.push_back(node);
     }
-    
-    return nodeStack.empty() ? nullptr : nodeStack.front();  
+
+    return nodeStack.empty() ? nullptr : nodeStack.front();
 }
+
 
 void Tree::deleteTree(Node* node) {
     if (node) {
@@ -69,4 +87,4 @@ void Tree::deleteTree(Node* node) {
         }
         delete node;
     }
-} 
+}
