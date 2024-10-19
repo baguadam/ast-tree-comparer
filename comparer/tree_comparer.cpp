@@ -86,6 +86,8 @@ void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
         std::cout << "Declaration node " << firstNode->usr << " has different source locations in the trees.\n";
         std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
         std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
+
+        std::cout << "**********************************************************\n";
     }
 }
 
