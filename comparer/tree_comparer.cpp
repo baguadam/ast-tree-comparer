@@ -15,8 +15,9 @@ void TreeComparer::printDifferences() {
     // otherwise compare the nodes
     for (const auto& pair : nodeMapFirstAST) {
         if (nodeMapSecondAST.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " only exists in first AST\n";
-            printNodeDetails(pair.second);
+            std::cout << "Node " << pair.first << " only exists in first AST, see node details below\n";
+            printNodeDetails(pair.second);       
+            std::cout << "**********************************************************\n";
         } else {
             // if the nodes exist in both trees, compare them
             compareNodes(pair.second, nodeMapSecondAST[pair.first]);
@@ -25,8 +26,9 @@ void TreeComparer::printDifferences() {
     // similarly for the seoncd AST nodes, checking if the node exists in the first AST, if not, print the details of the node
     for (const auto& pair : nodeMapSecondAST) {
         if (nodeMapFirstAST.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " only exists in second AST\n";
-            printNodeDetails(pair.second);
+            std::cout << "Node " << pair.first << " only exists in second AST, see node details below\n";
+            printNodeDetails(pair.second);           
+            std::cout << "**********************************************************\n";
         }
     }
 }
@@ -99,9 +101,9 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
     // in case of declaration types it is worth comparing the USRs
     // if the usr is different, print the details of the nodes and their USRs
     if (firstNode->usr != secondNode->usr) {
-        std::cout << "Node:\n";
+        std::cout << "USR related difference detected at the following node:\n";
         printNodeDetails(firstNode);
-        std::cout << "Has different USRs - first AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
+        std::cout << "First AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
 
         std::cout << "**********************************************************\n";
     }
@@ -170,12 +172,9 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
 Prints the details of a given node to the standard output
 */
 void TreeComparer::printNodeDetails(Node* node) {
-    std::cout << "Node details:\n";
-    std::cout << "Type: " << node->type << "\n";
-    std::cout << "Kind: " << node->kind << "\n";
-    std::cout << "USR: " << node->usr << "\n";
-    std::cout << "Path: " << node->path << "\n";
-    std::cout << "Line: " << node->lineNumber << "\n";
-    std::cout << "Column: " << node->columnNumber << "\n";
+    std::cout << "* Type: " << node->type << "\n";
+    std::cout << "* Kind: " << node->kind << "\n";
+    std::cout << "* USR: " << node->usr << "\n";
+    std::cout << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
     std::cout << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
 }
