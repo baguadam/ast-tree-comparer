@@ -1,5 +1,6 @@
 #include <iostream>
 #include <queue>
+#include <stack>
 #include "./headers/tree_comparer.h"
 
 TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
@@ -195,15 +196,25 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_set<std::st
         return;
     }
 
-    // generating the key for the node and marking it as processed
-    std::string nodeKey = generateKey(node, node->type == "Declaration");
-    if (!nodeKey.empty()) {
-        processedNodes.insert(nodeKey);
-    }
+    std::stack<Node*> stack;
+    stack.push(node);
 
-    // recursively marking the children as processed
-    for (Node* child : node->children) {
-        markSubTreeAsProcessed(child, processedNodes);
+    while (!stack.empty()) {
+        Node* current = stack.top();
+        stack.pop();
+
+        // generating the key for the node and marking it as processed
+        std::string nodeKey = generateKey(current, current->type == "Declaration");
+        if (!nodeKey.empty()) {
+            processedNodes.insert(nodeKey);
+        }
+
+        // pushing the children onto the stack
+        for (Node* child : current->children) {
+            if (child) {
+                stack.push(child);
+            }
+        }
     }
 }
 
