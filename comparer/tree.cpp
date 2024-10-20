@@ -4,18 +4,34 @@
 #include <sstream>
 #include "./headers/tree.h"
 
+/*
+Description:
+    Constructs a tree from the given file.
+*/
 Tree::Tree(const std::string& fileName) {
     root = buildTree(fileName);
 }
 
+/*
+Description:
+    Deletes the tree.
+*/
 Tree::~Tree() {
     deleteTree(root);
 }
 
+/*
+Description:
+    Returns the root node of the tree.
+*/
 Node* Tree::getRoot() const {
     return root;
 }
 
+/*
+Description:
+    Builds a tree from the given file, created the node, provides some checks and returns the root node.
+*/
 Node* Tree::buildTree(const std::string& fileName) {
     std::vector<Node*> nodeStack;
     std::string line;
@@ -79,7 +95,10 @@ Node* Tree::buildTree(const std::string& fileName) {
     return nodeStack.empty() ? nullptr : nodeStack.front();
 }
 
-
+/*
+Description:
+    Recursively deletes the tree starting from the given node.
+*/
 void Tree::deleteTree(Node* node) {
     if (node) {
         for (Node* child : node->children) {

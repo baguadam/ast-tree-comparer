@@ -4,6 +4,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include "node.h"
 
 class TreeComparer {
@@ -25,6 +26,8 @@ private:
     void compareNodes(Node*, Node*);
     void printNodeDetails(Node*, std::string);
     void printSubTree(Node*, int);
+    void printSeparators();
+    void markSubTreeAsProcessed(Node*, std::unordered_set<std::string>&);
 };
 
 
