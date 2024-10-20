@@ -35,11 +35,13 @@ comparer/comparer
 *.a
 *.lib
 
-# Executables
-*.exe
-*.out
-*.app
+# Exclude the build directory
+comparer/build/
 
-comparer/*.exe
-comparer/*.out
-comparer/*.app
+# Exclude executables and libraries in any subdirectory
+**/*.exe
+**/*.out
+**/*.app
+**/*.dll
+**/*.so
+**/*.dylib

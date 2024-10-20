@@ -43,12 +43,17 @@ public:
 
     clang::SourceLocation loc = decl->getBeginLoc();
     clang::SourceManager& sm = Context->getSourceManager();
+    // handling empty file path
+    std::string filePath = sm.getFilename(loc).str();
+    if (filePath.empty()) {
+      filePath = "N/A";
+    }
 
     llvm::outs()
       << "Declaration "
       << decl->getDeclKindName() << ' '
       << getUSR(decl) << ' '
-      << sm.getFilename(loc).str() << ' '
+      << filePath << ' '
       << sm.getSpellingLineNumber(loc) << ' '
       << sm.getSpellingColumnNumber(loc) << ' '
       << (decl->isImplicit() ? "(implicit)" : "") << '\n';
@@ -62,12 +67,17 @@ public:
 
     clang::SourceLocation loc = stmt->getBeginLoc();
     clang::SourceManager& sm = Context->getSourceManager();
+    // handling empty file path
+    std::string filePath = sm.getFilename(loc).str();
+    if (filePath.empty()) {
+      filePath = "N/A";
+    }
 
     llvm::outs()
       << "Statement "
       << stmt->getStmtClassName() << ' '
       << "N/A" << ' ' // no USR for statements
-      << sm.getFilename(loc).str() << ' '
+      << filePath << ' '
       << sm.getSpellingLineNumber(loc) << ' '
       << sm.getSpellingColumnNumber(loc) << '\n';
 
