@@ -23,7 +23,8 @@ private:
     void compareStatements(Node*, Node*);
     void compareDeclarations(Node*, Node*);
     void compareNodes(Node*, Node*);
-    void printNodeDetails(Node*);
+    void printNodeDetails(Node*, std::string);
+    void printSubTree(Node*, int);
 };
 
 

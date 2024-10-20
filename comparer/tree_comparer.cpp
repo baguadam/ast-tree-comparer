@@ -16,18 +16,18 @@ void TreeComparer::printDifferences() {
     for (const auto& pair : nodeMapFirstAST) {
         if (nodeMapSecondAST.count(pair.first) == 0) {
             std::cout << "Node " << pair.first << " only exists in first AST, see node details below\n";
-            printNodeDetails(pair.second);       
+            printSubTree(pair.second);       
             std::cout << "**********************************************************\n";
         } else {
-            // if the nodes exist in both trees, compare them
+            // If the nodes exist in both trees, compare them
             compareNodes(pair.second, nodeMapSecondAST[pair.first]);
         } 
     }
-    // similarly for the seoncd AST nodes, checking if the node exists in the first AST, if not, print the details of the node
+    // similarly for the second AST nodes, check if the node exists in the first AST
     for (const auto& pair : nodeMapSecondAST) {
         if (nodeMapFirstAST.count(pair.first) == 0) {
             std::cout << "Node " << pair.first << " only exists in second AST, see node details below\n";
-            printNodeDetails(pair.second);           
+            printSubTree(pair.second);           
             std::cout << "**********************************************************\n";
         }
     }
@@ -39,7 +39,7 @@ Generates a unique key for a node based on its type and information
 std::string TreeComparer::generateKey(Node* node, bool isDeclaration) {
     if (isDeclaration) {
         // unique identifier for declarations, here we can use the usr
-        return node->usr; 
+        return node->kind + "_"  + node->usr; 
     } else {
         // for statements we use the kind, path, line and column
         return node->kind + "_" + node->path + "_" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber); 
@@ -169,12 +169,30 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
 }
 
 /*
+prints the subtree of a given node, recursively calling the function for its children
+*/
+void TreeComparer::printSubTree(Node* node, int depth = 0) {
+    if (!node) {
+        return;
+    }
+
+    // indent for better readability
+    std::string indent(depth * 2, ' ');
+
+    printNodeDetails(node, indent);
+    for (Node* child : node->children) {
+        printSubTree(child, depth + 1);
+    }
+}
+
+/*
 Prints the details of a given node to the standard output
 */
-void TreeComparer::printNodeDetails(Node* node) {
-    std::cout << "* Type: " << node->type << "\n";
-    std::cout << "* Kind: " << node->kind << "\n";
-    std::cout << "* USR: " << node->usr << "\n";
-    std::cout << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
+void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
+    std::cout << indent << "* Type: " << node->type << "\n";
+    std::cout << indent << "* Kind: " << node->kind << "\n";
+    std::cout << indent << "* USR: " << node->usr << "\n";
+    std::cout << indent << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
+    std::cout << indent << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
+    std::cout << indent << "**********************************************************\n";
 }
