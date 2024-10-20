@@ -16,7 +16,7 @@ void TreeComparer::printDifferences() {
     for (const auto& pair : nodeMapFirstAST) {
         if (nodeMapSecondAST.count(pair.first) == 0) {
             std::cout << "Node " << pair.first << " only exists in first AST, see node details below\n";
-            printSubTree(pair.second);       
+            printSubTree(pair.second, 0);       
             std::cout << "**********************************************************\n";
         } else {
             // If the nodes exist in both trees, compare them
@@ -27,7 +27,7 @@ void TreeComparer::printDifferences() {
     for (const auto& pair : nodeMapSecondAST) {
         if (nodeMapFirstAST.count(pair.first) == 0) {
             std::cout << "Node " << pair.first << " only exists in second AST, see node details below\n";
-            printSubTree(pair.second);           
+            printSubTree(pair.second, 0);           
             std::cout << "**********************************************************\n";
         }
     }
@@ -102,7 +102,7 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
     // if the usr is different, print the details of the nodes and their USRs
     if (firstNode->usr != secondNode->usr) {
         std::cout << "USR related difference detected at the following node:\n";
-        printNodeDetails(firstNode);
+        printNodeDetails(firstNode, " ");
         std::cout << "First AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
 
         std::cout << "**********************************************************\n";
@@ -146,9 +146,9 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
         std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has a different parent in second AST: "
                   << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";
-        printNodeDetails(firstNode->parent);
+        printNodeDetails(firstNode->parent, " ");
         std::cout << "Second AST parent details:\n";
-        printNodeDetails(secondNode->parent);
+        printNodeDetails(secondNode->parent, " ");
 
         std::cout << "**********************************************************\n";
     }
