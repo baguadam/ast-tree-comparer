@@ -8,33 +8,55 @@ TreeComparer::TreeComparer(Node* firstAST, Node* secondAST)
 
 /*
 Description:
-    Public method that starts the comparison process by iterating over the two maps of nodes and comparing them,
+    Public method that starts the comparison process by using BFS approach for comparing the nodes, ensuring that parents are processed before children,
     prints the necessary information about the differences to the console. First, it iterates over the first AST nodes,
     checks if the node exists in the second AST, if not, prints the details of the node. Then, it iterates over the second AST nodes,
     checks if the node exists in the first AST, if not, prints the details of the node. If the node exists in both trees, it compares them.
 */
 void TreeComparer::printDifferences() {
     std::unordered_set<std::string> processedNodes;
-    // iterating through the first AST nodes and comparing them with the second AST nodes
-    for (const auto& pair : nodeMapFirstAST) {
-        // if the node exists in the first AST, but not in the second AST, and it hasn't been processed yet
-        if (nodeMapSecondAST.count(pair.first) == 0 && processedNodes.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " only exists in first AST, see node details below\n";
-            printSubTree(pair.second, 0);       
-            markSubTreeAsProcessed(pair.second, processedNodes); // no need to process (print separately) the children
+    std::queue<Node*> queue;
+
+    // start with the root nodes of both ASTs
+    if (firstASTTree) queue.push(firstASTTree);
+    if (secondASTTree) queue.push(secondASTTree);
+
+    while (!queue.empty()) {
+        Node* current = queue.front();
+        queue.pop();
+
+        std::string nodeKey = generateKey(current, current->type == "Declaration");
+
+        if (processedNodes.count(nodeKey) > 0) continue;  // skip if already processed
+
+        if (nodeMapFirstAST.count(nodeKey) > 0 && nodeMapSecondAST.count(nodeKey) == 0) {
+            // node exists in the first AST but not in the second
+            std::cout << "Node " << nodeKey << " only exists in first AST, skipping its children\n";
+            printSubTree(current, 0);
+            markSubTreeAsProcessed(current, processedNodes);  // mark entire subtree as processed
             printSeparators();
-        } else if (nodeMapSecondAST.count(pair.first) > 0) {
-            // If the nodes exist in both trees, no matter if they have been processed or not, compare them (in case of children)
-            compareNodes(pair.second, nodeMapSecondAST[pair.first]);
-        } 
-    }
-    // similarly for the second AST nodes, check if the node exists in the first AST
-    for (const auto& pair : nodeMapSecondAST) {
-        if (nodeMapFirstAST.count(pair.first) == 0 && processedNodes.count(pair.first) == 0) {
-            std::cout << "Node " << pair.first << " only exists in second AST, see node details below\n";
-            printSubTree(pair.second, 0);
-            markSubTreeAsProcessed(pair.second, processedNodes); // no need to process (print separately) the children      
+        } else if (nodeMapSecondAST.count(nodeKey) > 0 && nodeMapFirstAST.count(nodeKey) == 0) {
+            // node exists in the second AST but not in the first
+            std::cout << "Node " << nodeKey << " only exists in second AST, skipping its children\n";
+            printSubTree(current, 0);
+            markSubTreeAsProcessed(current, processedNodes);  // mark entire subtree as processed
             printSeparators();
+        } else if (nodeMapFirstAST.count(nodeKey) > 0 && nodeMapSecondAST.count(nodeKey) > 0) {
+            // node exists in both ASTs, compare them
+            try {
+                Node* firstNode = nodeMapFirstAST.at(nodeKey);
+                Node* secondNode = nodeMapSecondAST.at(nodeKey);
+                compareNodes(firstNode, secondNode);  // compare the nodes
+            } catch (const std::out_of_range& e) {
+                std::cerr << "Error: Node key " << nodeKey << " not found in one of the AST maps.\n";
+            }
+        }
+
+        // add children to the queue for further processing
+        for (Node* child : current->children) {
+            if (child) {
+                queue.push(child);
+            }
         }
     }
 }
