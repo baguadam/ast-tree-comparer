@@ -106,10 +106,12 @@ std::string TreeComparer::getKey(Node* node, bool isDeclaration) const {
     // for function it's important to make the key unique by adding the source location in the code
     if (node->kind == "Function") {
         nodeKey += "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
-    } else {
+    } else if (!isDeclaration) { 
         // for statements we use the kind, path, line and column
-        return node->kind + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "|" + node->parent->usr; 
+        nodeKey += "|" + node->kind + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "|" + node->parent->usr; 
     }
+
+    return nodeKey;
 }
 
 /*
