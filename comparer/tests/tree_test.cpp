@@ -6,7 +6,6 @@ void testBuildTree() {
     Tree tree("../tests/test_ast.txt");
     Node* root = tree.getRoot();
 
-    // Verify the root node
     assert(root != nullptr);
     assert(root->type == "Declaration");
     assert(root->kind == "TranslationUnit");
@@ -15,10 +14,8 @@ void testBuildTree() {
     assert(root->lineNumber == 0);
     assert(root->columnNumber == 0);
 
-    // Verify the root's children
     assert(root->children.size() == 16);
 
-    // Verify the first child node
     Node* child1 = root->children[0];
     assert(child1->type == "Declaration");
     assert(child1->kind == "Typedef");
@@ -27,7 +24,6 @@ void testBuildTree() {
     assert(child1->lineNumber == 214);
     assert(child1->columnNumber == 1);
 
-    // Verify the second child node
     Node* child2 = root->children[1];
     assert(child2->type == "Declaration");
     assert(child2->kind == "Typedef");
@@ -36,7 +32,6 @@ void testBuildTree() {
     assert(child2->lineNumber == 251);
     assert(child2->columnNumber == 1);
 
-    // Verify the third child node
     Node* child3 = root->children[2];
     assert(child3->type == "Declaration");
     assert(child3->kind == "Typedef");
@@ -45,7 +40,6 @@ void testBuildTree() {
     assert(child3->lineNumber == 268);
     assert(child3->columnNumber == 1);
 
-    // Verify the fourth child node
     Node* child4 = root->children[3];
     assert(child4->type == "Declaration");
     assert(child4->kind == "Typedef");
@@ -54,7 +48,6 @@ void testBuildTree() {
     assert(child4->lineNumber == 285);
     assert(child4->columnNumber == 1);
 
-    // Verify the fifth child node
     Node* child5 = root->children[4];
     assert(child5->type == "Declaration");
     assert(child5->kind == "Typedef");
@@ -63,7 +56,6 @@ void testBuildTree() {
     assert(child5->lineNumber == 46);
     assert(child5->columnNumber == 1);
 
-    // Verify the sixth child node
     Node* child6 = root->children[5];
     assert(child6->type == "Declaration");
     assert(child6->kind == "Typedef");
@@ -72,7 +64,6 @@ void testBuildTree() {
     assert(child6->lineNumber == 14);
     assert(child6->columnNumber == 1);
 
-    // Verify the seventh child node
     Node* child7 = root->children[6];
     assert(child7->type == "Declaration");
     assert(child7->kind == "Typedef");
@@ -81,7 +72,6 @@ void testBuildTree() {
     assert(child7->lineNumber == 32);
     assert(child7->columnNumber == 1);
 
-    // Verify the eighth child node
     Node* child8 = root->children[7];
     assert(child8->type == "Declaration");
     assert(child8->kind == "Typedef");
@@ -90,7 +80,6 @@ void testBuildTree() {
     assert(child8->lineNumber == 20);
     assert(child8->columnNumber == 1);
 
-    // Verify the ninth child node
     Node* child9 = root->children[8];
     assert(child9->type == "Declaration");
     assert(child9->kind == "CXXRecord");
@@ -99,10 +88,8 @@ void testBuildTree() {
     assert(child9->lineNumber == 13);
     assert(child9->columnNumber == 9);
 
-    // Verify the ninth child's children
     assert(child9->children.size() == 3);
 
-    // Verify the first child of the ninth child node
     Node* child9_1 = child9->children[0];
     assert(child9_1->type == "Declaration");
     assert(child9_1->kind == "Field");
@@ -111,7 +98,6 @@ void testBuildTree() {
     assert(child9_1->lineNumber == 15);
     assert(child9_1->columnNumber == 3);
 
-    // Verify the second child of the ninth child node
     Node* child9_2 = child9->children[1];
     assert(child9_2->type == "Declaration");
     assert(child9_2->kind == "CXXRecord");
@@ -120,10 +106,8 @@ void testBuildTree() {
     assert(child9_2->lineNumber == 16);
     assert(child9_2->columnNumber == 3);
 
-    // Verify the children of the second child of the ninth child node
     assert(child9_2->children.size() == 2);
 
-    // Verify the first child of the second child of the ninth child node
     Node* child9_2_1 = child9_2->children[0];
     assert(child9_2_1->type == "Declaration");
     assert(child9_2_1->kind == "Field");
@@ -132,7 +116,6 @@ void testBuildTree() {
     assert(child9_2_1->lineNumber == 110);
     assert(child9_2_1->columnNumber == 23);
 
-    // Verify the second child of the second child of the ninth child node
     Node* child9_2_2 = child9_2->children[1];
     assert(child9_2_2->type == "Declaration");
     assert(child9_2_2->kind == "Field");
@@ -141,7 +124,6 @@ void testBuildTree() {
     assert(child9_2_2->lineNumber == 19);
     assert(child9_2_2->columnNumber == 5);
 
-    // Verify the child of the second child of the second child of the ninth child node
     assert(child9_2_2->children.size() == 1);
     Node* child9_2_2_1 = child9_2_2->children[0];
     assert(child9_2_2_1->type == "Statement");
@@ -151,7 +133,6 @@ void testBuildTree() {
     assert(child9_2_2_1->lineNumber == 19);
     assert(child9_2_2_1->columnNumber == 17);
 
-    // Verify the third child of the ninth child node
     Node* child9_3 = child9->children[2];
     assert(child9_3->type == "Declaration");
     assert(child9_3->kind == "Field");
@@ -160,7 +141,6 @@ void testBuildTree() {
     assert(child9_3->lineNumber == 16);
     assert(child9_3->columnNumber == 3);
 
-    // Verify the tenth child node
     Node* child10 = root->children[9];
     assert(child10->type == "Declaration");
     assert(child10->kind == "Typedef");
@@ -169,7 +149,6 @@ void testBuildTree() {
     assert(child10->lineNumber == 13);
     assert(child10->columnNumber == 1);
 
-    // Verify the eleventh child node
     Node* child11 = root->children[10];
     assert(child11->type == "Declaration");
     assert(child11->kind == "Typedef");
@@ -178,7 +157,6 @@ void testBuildTree() {
     assert(child11->lineNumber == 6);
     assert(child11->columnNumber == 1);
 
-    // Verify the twelfth child node
     Node* child12 = root->children[11];
     assert(child12->type == "Declaration");
     assert(child12->kind == "CXXRecord");
@@ -187,7 +165,6 @@ void testBuildTree() {
     assert(child12->lineNumber == 4);
     assert(child12->columnNumber == 1);
 
-    // Verify the thirteenth child node
     Node* child13 = root->children[12];
     assert(child13->type == "Declaration");
     assert(child13->kind == "Typedef");
@@ -196,7 +173,6 @@ void testBuildTree() {
     assert(child13->lineNumber == 5);
     assert(child13->columnNumber == 1);
 
-    // Verify the fourteenth child node
     Node* child14 = root->children[13];
     assert(child14->type == "Declaration");
     assert(child14->kind == "CXXRecord");
@@ -205,7 +181,6 @@ void testBuildTree() {
     assert(child14->lineNumber == 4);
     assert(child14->columnNumber == 1);
 
-    // Verify the fifteenth child node
     Node* child15 = root->children[14];
     assert(child15->type == "Declaration");
     assert(child15->kind == "Typedef");
@@ -214,7 +189,6 @@ void testBuildTree() {
     assert(child15->lineNumber == 7);
     assert(child15->columnNumber == 1);
 
-    // Verify the sixteenth child node
     Node* child16 = root->children[15];
     assert(child16->type == "Declaration");
     assert(child16->kind == "CXXRecord");
