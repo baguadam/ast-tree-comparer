@@ -205,11 +205,42 @@ Description:
     Comparison logic of two function declarations, the function declarations get compared if they exist in both ASTs
 */
 void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
-    if (firstNode->children.size() != secondNode->children.size()) {
-        std::cout << "Function " << firstNode->usr << " has different number of children in the trees.\n";
-        std::cout << "First AST children: " << firstNode->children.size() << ", Second AST children: " << secondNode->children.size() << '\n';
+    size_t firstChildrenSize = firstNode->children.size();
+    size_t secondChildrenSize = secondNode->children.size();
 
+    // if the number of children is different, print the information
+    if (firstChildrenSize != secondChildrenSize) {
+        std::cout << "Function " << firstNode->usr << " has a different number of children in the trees.\n";
+        std::cout << "First AST children: " << firstChildrenSize << ", Second AST children: " << secondChildrenSize << '\n';
         printSeparators();
+
+        // find the differing children
+        size_t minSize = std::min(firstChildrenSize, secondChildrenSize);
+        for (size_t i = 0; i < minSize; ++i) {
+            compareNodes(firstNode->children[i], secondNode->children[i]);
+        }
+
+        // if first AST has more children
+        if (firstChildrenSize > secondChildrenSize) {
+            std::cout << "Extra children in the first AST:\n";
+            for (size_t i = secondChildrenSize; i < firstChildrenSize; ++i) {
+                printSubTree(firstNode->children[i], 1);
+                markSubTreeAsProcessed(firstNode->children[i], nodeMapFirstAST); 
+            }
+        }
+        // if second AST has more children
+        else if (secondChildrenSize > firstChildrenSize) {
+            std::cout << "Extra children in the second AST:\n";
+            for (size_t i = firstChildrenSize; i < secondChildrenSize; ++i) {
+                printSubTree(secondNode->children[i], 1); 
+                markSubTreeAsProcessed(secondNode->children[i], nodeMapSecondAST);
+            }
+        }
+    } else {
+        // if the number of children is the same, compare them one by one
+        for (size_t i = 0; i < firstChildrenSize; ++i) {
+            compareNodes(firstNode->children[i], secondNode->children[i]);
+        }
     }
 }
 
@@ -230,21 +261,12 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
 
         printSeparators();
     }
-    // checking if their types are different, in case of different types we don't want to compare any values,
-    // just print the details of the differring nodes. However, in case of similar types, we can compare the nodes
-    if (firstNode->type != secondNode->type) {
-        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has different types in the trees. In first AST: "
-                  << firstNode->type << ", in second AST: " << secondNode->type << '\n';
 
-        printSeparators();
-    } else {
-        if (firstNode->type == "Declaration") {
-            // if both nodes are DECLARATIONS, comparing them accordingly
-            compareDeclarations(firstNode, secondNode);
-        } else if (firstNode->type == "Statement") {
-            // if both nodes are STATEMENTS, comparing them accordingly
-            compareStatements(firstNode, secondNode);
-        }
+    // at this point if they exist in both ASTs, their type must be the same, therefore we can decide how to compare them
+    if (firstNode->type == "Declaration") {
+        compareDeclarations(firstNode, secondNode);
+    } else if (firstNode->type == "Statement") {
+        compareStatements(firstNode, secondNode);
     }
 }
 
