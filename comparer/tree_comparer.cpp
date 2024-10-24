@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stack>
+#include <vector>
 #include "./headers/tree_comparer.h"
 
 TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
@@ -13,7 +14,7 @@ Description:
 void TreeComparer::printDifferences() {
     std::queue<Node*> queue;
 
-    // wtart with the root nodes of both ASTs
+    // start with the root nodes of both ASTs
     if (firstASTTree) queue.push(firstASTTree);
     if (secondASTTree) queue.push(secondASTTree);
 
@@ -36,6 +37,9 @@ void TreeComparer::printDifferences() {
             std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
         }
     }
+
+    // Print the analysis results
+    printAnalysisResults();
 }
 
 /*
@@ -48,10 +52,9 @@ void TreeComparer::processNodeInFirstAST(Node* current, const std::string& nodeK
 
     if (nodeMapSecondAST.count(nodeKey) == 0) {
         // Node exists ONLY in the first AST
-        std::cout << "Node " << nodeKey << " only exists in first AST, skipping its children\n";
-        printSubTree(current, 0);
+        addAnalysisResult("Node " + nodeKey + " only exists in first AST, skipping its children");
+        addSubTreeToResult(current, 0);
         markSubTreeAsProcessed(current, nodeMapFirstAST);  // mark entire subtree as processed
-        printSeparators();
     } else {
         // Node exists in both ASTs, compare them
         try {
@@ -78,10 +81,9 @@ void TreeComparer::processNodeInSecondAST(Node* current, const std::string& node
 
     if (nodeMapFirstAST.count(nodeKey) == 0) {
         // Node exists ONLY in the second AST
-        std::cout << "Node " << nodeKey << " only exists in second AST, skipping its children\n";
-        printSubTree(current, 0);
+        addAnalysisResult("Node " + nodeKey + " only exists in second AST, skipping its children");
+        addSubTreeToResult(current, 0);
         markSubTreeAsProcessed(current, nodeMapSecondAST);  // mark entire subtree as processed
-        printSeparators();
     }
 }
 
@@ -101,14 +103,17 @@ void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
 Description:
     Generates a unique key for a node based on its type and information
 */
-std::string TreeComparer::generateKey(Node* node, bool isDeclaration) {
+std::string TreeComparer::generateKey(Node* node, bool isDeclaration) const {
+    std::string key;
     if (isDeclaration) {
-        // unique identifier for declarations, here we can use the usr
-        return node->kind + "_"  + node->usr; 
+        key = node->kind + "_" + node->usr + "_" + node->path;
     } else {
-        // for statements we use the kind, path, line and column
-        return node->kind + "_" + node->path + "_" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber); 
+        key = node->kind + "_" + node->path + "_" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+        if (node->parent) {
+            key += "_parent:" + node->parent->usr; // parent context for statements
+        }
     }
+    return key;
 }
 
 /*
@@ -158,11 +163,9 @@ void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
     if (firstNode->path != secondNode->path || 
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
-        std::cout << "Node " << firstNode->usr << " has different source locations in the trees.\n";
-        std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
-        std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
-        
-        printSeparators();
+        addAnalysisResult("Node " + firstNode->usr + " has different source locations in the trees.");
+        addAnalysisResult("First AST location: " + firstNode->path + ":" + std::to_string(firstNode->lineNumber) + ":" + std::to_string(firstNode->columnNumber));
+        addAnalysisResult("Second AST location: " + secondNode->path + ":" + std::to_string(secondNode->lineNumber) + ":" + std::to_string(secondNode->columnNumber));
     }
 }
 
@@ -174,23 +177,96 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
     // in case of declaration types it is worth comparing the USRs
     // if the usr is different, print the details of the nodes and their USRs
     if (firstNode->usr != secondNode->usr) {
-        std::cout << "USR related difference detected at the following node:\n";
-        printNodeDetails(firstNode, " ");
-        std::cout << "First AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
-
-        printSeparators();
+        addAnalysisResult("USR related difference detected at the following node:");
+        addAnalysisResult(getNodeDetails(firstNode, " "));
+        addAnalysisResult("First AST USR: " + firstNode->usr + ", Second AST USR: " + secondNode->usr);
     }
 
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
-                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
-
-        printSeparators();
+        addAnalysisResult("Declaration node " + secondNode->usr + " | type " + secondNode->type + " has different kinds in the trees. In first AST: "
+                  + firstNode->kind + ", in second AST: " + secondNode->kind);
     }
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
+
+    // handle specific types of declarations
+    if (firstNode->kind == "Function") {
+        compareFunctions(firstNode, secondNode);
+    } else if (firstNode->kind == "ClassTemplate" || firstNode->kind == "ClassTemplateSpecialization") {
+        compareClassTemplates(firstNode, secondNode);
+    }
+}
+
+/*
+Description:
+    Comparison logic of two functions
+*/
+void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
+    // Ttrack changes in depth
+    if (firstNode->children.size() != secondNode->children.size()) {
+        addAnalysisResult("FUNCTION DECLARATION Node " + firstNode->usr + " has different number of children in the trees.");
+    }
+
+    // compare function signatures, parameters, etc.
+    if (firstNode->usr != secondNode->usr) {
+        addAnalysisResult("Function " + firstNode->usr + " has different USRs in the trees.");
+        addAnalysisResult("First AST USR: " + firstNode->usr + ", Second AST USR: " + secondNode->usr);
+    }
+
+    // compare function parameters
+    for (size_t i = 0; i < std::min(firstNode->children.size(), secondNode->children.size()); ++i) {
+        compareNodes(firstNode->children[i], secondNode->children[i]);
+    }
+
+    // compare parameter types and names
+    for (size_t i = 0; i < std::min(firstNode->children.size(), secondNode->children.size()); ++i) {
+        Node* firstParam = firstNode->children[i];
+        Node* secondParam = secondNode->children[i];
+
+        if (firstParam->kind != secondParam->kind) {
+            addAnalysisResult("Parameter " + firstParam->usr + " has different kinds in the trees.");
+        }
+        if (firstParam->usr != secondParam->usr) {
+            addAnalysisResult("Parameter " + firstParam->usr + " has different USRs in the trees.");
+        }
+    }
+}
+
+/*
+Description:
+    Comparison logic of two class templates
+*/
+void TreeComparer::compareClassTemplates(Node* firstNode, Node* secondNode) {
+    // track changes in depth
+    if (firstNode->children.size() != secondNode->children.size()) {
+        addAnalysisResult("CLASS TEMPLATE Node " + firstNode->usr + " has different number of children in the trees.");
+    }
+
+    // compare class template parameters, specializations, etc.
+    if (firstNode->usr != secondNode->usr) {
+        addAnalysisResult("ClassTemplate " + firstNode->usr + " has different USRs in the trees.");
+        addAnalysisResult("First AST USR: " + firstNode->usr + ", Second AST USR: " + secondNode->usr);
+    }
+
+    // compare class template parameters
+    for (size_t i = 0; i < std::min(firstNode->children.size(), secondNode->children.size()); ++i) {
+        compareNodes(firstNode->children[i], secondNode->children[i]);
+    }
+
+    // compare parameter types and names
+    for (size_t i = 0; i < std::min(firstNode->children.size(), secondNode->children.size()); ++i) {
+        Node* firstParam = firstNode->children[i];
+        Node* secondParam = secondNode->children[i];
+
+        if (firstParam->kind != secondParam->kind) {
+            addAnalysisResult("Parameter " + firstParam->usr + " has different kinds in the trees.");
+        }
+        if (firstParam->usr != secondParam->usr) {
+            addAnalysisResult("Parameter " + firstParam->usr + " has different USRs in the trees.");
+        }
+    }
 }
 
 /*
@@ -200,10 +276,8 @@ Descpiption:
 void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
-                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
-        
-        printSeparators();
+        addAnalysisResult("Declaration node " + secondNode->usr + " | type " + secondNode->type + " has different kinds in the trees. In first AST: "
+                  + firstNode->kind + ", in second AST: " + secondNode->kind);
     }
 
     // comparing the source locations of the nodes
@@ -218,22 +292,18 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has a different parent in second AST: "
-                  << secondNode->parent->usr << "\n";
-        std::cout << "First AST parent details:\n";
-        printNodeDetails(firstNode->parent, " ");
-        std::cout << "Second AST parent details:\n";
-        printNodeDetails(secondNode->parent, " ");
-
-        printSeparators();
+        addAnalysisResult("Node " + firstNode->usr + " | type " + firstNode->type + " has a different parent in second AST: "
+                  + secondNode->parent->usr);
+        addAnalysisResult("First AST parent details:");
+        addAnalysisResult(getNodeDetails(firstNode->parent, " "));
+        addAnalysisResult("Second AST parent details:");
+        addAnalysisResult(getNodeDetails(secondNode->parent, " "));
     }
     // checking if their types are different, in case of different types we don't want to compare any values,
     // just print the details of the differring nodes. However, in case of similar types, we can compare the nodes
     if (firstNode->type != secondNode->type) {
-        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has different types in the trees. In first AST: "
-                  << firstNode->type << ", in second AST: " << secondNode->type << '\n';
-
-        printSeparators();
+        addAnalysisResult("Node " + firstNode->usr + " | type " + firstNode->type + " has different types in the trees. In first AST: "
+                  + firstNode->type + ", in second AST: " + secondNode->type);
     } else {
         if (firstNode->type == "Declaration") {
             // if both nodes are DECLARATIONS, comparing them accordingly
@@ -242,6 +312,18 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
             // if both nodes are STATEMENTS, comparing them accordingly
             compareStatements(firstNode, secondNode);
         }
+    }
+
+    // compare children nodes
+    for (size_t i = 0; i < firstNode->children.size() && i < secondNode->children.size(); ++i) {
+        compareNodes(firstNode->children[i], secondNode->children[i]);
+    }
+
+    // compare depth changes in case of each node types
+    if (firstNode->children.size() != secondNode->children.size()) {
+    addAnalysisResult("Node " + firstNode->usr + " depth changed: from " + 
+                      std::to_string(firstNode->children.size()) + " to " + 
+                      std::to_string(secondNode->children.size()));
     }
 }
 
@@ -281,7 +363,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
 Description:
     Prints the subtree of a given node, recursively calling the function for its children
 */
-void TreeComparer::printSubTree(Node* node, int depth = 0) {
+void TreeComparer::addSubTreeToResult(Node* node, int depth = 0) {
     if (!node) {
         return;
     }
@@ -289,9 +371,9 @@ void TreeComparer::printSubTree(Node* node, int depth = 0) {
     // indent for better readability
     std::string indent(depth * 2, ' ');
 
-    printNodeDetails(node, indent);
+    addAnalysisResult(getNodeDetails(node, indent));
     for (Node* child : node->children) {
-        printSubTree(child, depth + 1);
+        addSubTreeToResult(child, depth + 1);
     }
 }
 
@@ -299,20 +381,29 @@ void TreeComparer::printSubTree(Node* node, int depth = 0) {
 Description:
     Prints the details of a given node to the standard output
 */
-void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
-    std::cout << indent << "* Type: " << node->type << "\n";
-    std::cout << indent << "* Kind: " << node->kind << "\n";
-    std::cout << indent << "* USR: " << node->usr << "\n";
-    std::cout << indent << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
-    
-    printSeparators();
+std::string TreeComparer::getNodeDetails(Node* node, std::string indent = " ") const {
+    return indent + "* Type: " + node->type + "\n" +
+           indent + "* Kind: " + node->kind + "\n" +
+           indent + "* USR: " + node->usr + "\n" +
+           indent + "* Location: " + node->path + " " + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "\n" +
+           indent + "Parent USR: " + (node->parent ? node->parent->usr : "None");
 }
 
 /*
 Description:
-    Prints a separator for better readability
+    Prints the analysis results
 */
-void TreeComparer::printSeparators() {
-    std::cout << "**********************************************************\n";
+void TreeComparer::printAnalysisResults() const {
+    for (const auto& result : analysisResults) {
+        std::cout << result << '\n';
+    }
+}
+
+/*
+Description:
+    Adds an analysis result to the list
+*/
+void TreeComparer::addAnalysisResult(const std::string& result) {
+    analysisResults.push_back(result);
+    analysisResults.push_back("---------------------------------------------------------------------");
 }
