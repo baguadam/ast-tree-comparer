@@ -24,6 +24,8 @@ private:
     void compareSourceLocations(Node*, Node*);
     void compareStatements(Node*, Node*);
     void compareDeclarations(Node*, Node*);
+    void compareFunctions(Node*, Node*);
+    void compareClasses(Node*, Node*);
     void compareNodes(Node*, Node*);
     void processNodeInFirstAST(Node*, const std::string&);
     void processNodeInSecondAST(Node*, const std::string&);

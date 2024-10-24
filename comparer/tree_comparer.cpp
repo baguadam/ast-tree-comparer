@@ -174,22 +174,9 @@ Description:
     Comparison logic of two declarations
 */
 void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
-    // in case of declaration types it is worth comparing the USRs
-    // if the usr is different, print the details of the nodes and their USRs
-    if (firstNode->usr != secondNode->usr) {
-        std::cout << "USR related difference detected at the following node:\n";
-        printNodeDetails(firstNode, " ");
-        std::cout << "First AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
-
-        printSeparators();
-    }
-
-    // if the kinds are different, print the details of the nodes and their kinds
-    if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
-                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
-
-        printSeparators();
+    if (firstNode->kind == "Function") {
+        // if both nodes are FUNCTIONS, comparing them accordingly
+        compareFunctions(firstNode, secondNode);
     }
 
     // comparing the source locations of the nodes
@@ -211,6 +198,19 @@ void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
+}
+
+/*
+Description:
+    Comparison logic of two function declarations, the function declarations get compared if they exist in both ASTs
+*/
+void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
+    if (firstNode->children.size() != secondNode->children.size()) {
+        std::cout << "Function " << firstNode->usr << " has different number of children in the trees.\n";
+        std::cout << "First AST children: " << firstNode->children.size() << ", Second AST children: " << secondNode->children.size() << '\n';
+
+        printSeparators();
+    }
 }
 
 /*
