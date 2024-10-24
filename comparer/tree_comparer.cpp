@@ -318,13 +318,6 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     for (size_t i = 0; i < firstNode->children.size() && i < secondNode->children.size(); ++i) {
         compareNodes(firstNode->children[i], secondNode->children[i]);
     }
-
-    // compare depth changes in case of each node types
-    if (firstNode->children.size() != secondNode->children.size()) {
-    addAnalysisResult("Node " + firstNode->usr + " depth changed: from " + 
-                      std::to_string(firstNode->children.size()) + " to " + 
-                      std::to_string(secondNode->children.size()));
-    }
 }
 
 /*
