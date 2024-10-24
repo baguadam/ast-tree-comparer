@@ -25,7 +25,7 @@ void TreeComparer::printDifferences() {
         enqueueChildren(current, queue);
 
         // generate the key for the node
-        std::string nodeKey = generateKey(current, current->type == "Declaration");
+        std::string nodeKey = getKey(current, current->type == "Declaration");
 
         if (nodeMapFirstAST.count(nodeKey) > 0) {
             processNodeInFirstAST(current, nodeKey);
@@ -101,7 +101,7 @@ void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
 Description:
     Generates a unique key for a node based on its type and information
 */
-std::string TreeComparer::generateKey(Node* node, bool isDeclaration) {
+std::string TreeComparer::getKey(Node* node, bool isDeclaration) const {
     if (isDeclaration) {
         // unique identifier for declarations, here we can use the usr
         return node->kind + "_"  + node->usr; 
@@ -133,7 +133,7 @@ std::unordered_map<std::string, std::pair<Node*, bool>> TreeComparer::createNode
         if (!node) continue; // in case of missing information
 
         // generating the node key and ensuring if it's valid
-        std::string nodeKey = generateKey(node, node->type == "Declaration");
+        std::string nodeKey = getKey(node, node->type == "Declaration");
         if (!nodeKey.empty()) {
             nodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
         }
@@ -263,7 +263,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
         stack.pop();
 
         // generating the key for the node and marking it as processed
-        std::string nodeKey = generateKey(current, current->type == "Declaration");
+        std::string nodeKey = getKey(current, current->type == "Declaration");
         if (!nodeKey.empty()) {
             nodes.at(nodeKey).second = true;
         }
@@ -281,7 +281,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
 Description:
     Prints the subtree of a given node, recursively calling the function for its children
 */
-void TreeComparer::printSubTree(Node* node, int depth = 0) {
+void TreeComparer::printSubTree(Node* node, int depth = 0) const {
     if (!node) {
         return;
     }
@@ -299,7 +299,7 @@ void TreeComparer::printSubTree(Node* node, int depth = 0) {
 Description:
     Prints the details of a given node to the standard output
 */
-void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
+void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") const {
     std::cout << indent << "* Type: " << node->type << "\n";
     std::cout << indent << "* Kind: " << node->kind << "\n";
     std::cout << indent << "* USR: " << node->usr << "\n";
@@ -313,6 +313,6 @@ void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
 Description:
     Prints a separator for better readability
 */
-void TreeComparer::printSeparators() {
+void TreeComparer::printSeparators() const {
     std::cout << "**********************************************************\n";
 }
