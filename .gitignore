@@ -4,6 +4,7 @@
 .vscode/
 
 asts/
+libs/
 
 # ast-dump-tool build
 dump-tool/build
