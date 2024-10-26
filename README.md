@@ -12,11 +12,15 @@ mkdrir libs
 cd libs
 git clone https://github.com/SRombauts/SQLiteCpp.git
 ```
-3. Build SQLiteCpp:
+### How to build the project
+1. Create a **build** directory inside the **comparer** directory (navigating from **libs**):
 ```sh
-cd SQLiteCpp
+cd ..
 mkdir build
 cd build
+```
+2. Build the project
+```sh
 cmake ..
-cmake --build . --config Release
+make
 ```
