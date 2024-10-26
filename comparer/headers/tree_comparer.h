@@ -18,21 +18,23 @@ private:
     Node* secondASTTree;
     std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapFirstAST;
     std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapSecondAST;
-    std::string generateKey(Node*, bool);
+    std::string getKey(Node*, bool) const;
     std::unordered_map<std::string, std::pair<Node*, bool>> createNodeMap(Node*);
 
     void compareSourceLocations(Node*, Node*);
     void compareStatements(Node*, Node*);
     void compareDeclarations(Node*, Node*);
+    void compareFunctions(Node*, Node*);
+    void compareClasses(Node*, Node*);
     void compareNodes(Node*, Node*);
     void processNodeInFirstAST(Node*, const std::string&);
     void processNodeInSecondAST(Node*, const std::string&);
     void enqueueChildren(Node*, std::queue<Node*>&);
     void markSubTreeAsProcessed(Node*, std::unordered_map<std::string, std::pair<Node*, bool>>&);
 
-    void printNodeDetails(Node*, const std::string);
-    void printSubTree(Node*, int);
-    void printSeparators();
+    void printNodeDetails(Node*, const std::string) const;
+    void printSubTree(Node*, int) const;
+    void printSeparators() const;
 };
 
 

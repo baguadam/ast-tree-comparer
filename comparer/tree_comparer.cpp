@@ -25,7 +25,7 @@ void TreeComparer::printDifferences() {
         enqueueChildren(current, queue);
 
         // generate the key for the node
-        std::string nodeKey = generateKey(current, current->type == "Declaration");
+        std::string nodeKey = getKey(current, current->type == "Declaration");
 
         if (nodeMapFirstAST.count(nodeKey) > 0) {
             processNodeInFirstAST(current, nodeKey);
@@ -101,14 +101,17 @@ void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
 Description:
     Generates a unique key for a node based on its type and information
 */
-std::string TreeComparer::generateKey(Node* node, bool isDeclaration) {
-    if (isDeclaration) {
-        // unique identifier for declarations, here we can use the usr
-        return node->kind + "_"  + node->usr; 
-    } else {
+std::string TreeComparer::getKey(Node* node, bool isDeclaration) const {
+    std::string nodeKey = node->kind + "|" + node->usr;
+    // for function it's important to make the key unique by adding the source location in the code
+    if (node->kind == "Function") {
+        nodeKey += "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+    } else if (!isDeclaration) { 
         // for statements we use the kind, path, line and column
-        return node->kind + "_" + node->path + "_" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber); 
+        nodeKey += "|" + node->kind + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "|" + node->parent->usr; 
     }
+
+    return nodeKey;
 }
 
 /*
@@ -133,7 +136,7 @@ std::unordered_map<std::string, std::pair<Node*, bool>> TreeComparer::createNode
         if (!node) continue; // in case of missing information
 
         // generating the node key and ensuring if it's valid
-        std::string nodeKey = generateKey(node, node->type == "Declaration");
+        std::string nodeKey = getKey(node, node->type == "Declaration");
         if (!nodeKey.empty()) {
             nodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
         }
@@ -171,22 +174,9 @@ Description:
     Comparison logic of two declarations
 */
 void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
-    // in case of declaration types it is worth comparing the USRs
-    // if the usr is different, print the details of the nodes and their USRs
-    if (firstNode->usr != secondNode->usr) {
-        std::cout << "USR related difference detected at the following node:\n";
-        printNodeDetails(firstNode, " ");
-        std::cout << "First AST USR: " << firstNode->usr << ", Second AST USR: " << secondNode->usr << '\n';
-
-        printSeparators();
-    }
-
-    // if the kinds are different, print the details of the nodes and their kinds
-    if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
-                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
-
-        printSeparators();
+    if (firstNode->kind == "Function") {
+        // if both nodes are FUNCTIONS, comparing them accordingly
+        compareFunctions(firstNode, secondNode);
     }
 
     // comparing the source locations of the nodes
@@ -212,6 +202,50 @@ void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
 
 /*
 Description:
+    Comparison logic of two function declarations, the function declarations get compared if they exist in both ASTs
+*/
+void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
+    size_t firstChildrenSize = firstNode->children.size();
+    size_t secondChildrenSize = secondNode->children.size();
+
+    // if the number of children is different, print the information
+    if (firstChildrenSize != secondChildrenSize) {
+        std::cout << "Function " << firstNode->usr << " has a different number of children in the trees.\n";
+        std::cout << "First AST children: " << firstChildrenSize << ", Second AST children: " << secondChildrenSize << '\n';
+        printSeparators();
+
+        // find the differing children
+        size_t minSize = std::min(firstChildrenSize, secondChildrenSize);
+        for (size_t i = 0; i < minSize; ++i) {
+            compareNodes(firstNode->children[i], secondNode->children[i]);
+        }
+
+        // if first AST has more children
+        if (firstChildrenSize > secondChildrenSize) {
+            std::cout << "Extra children in the first AST:\n";
+            for (size_t i = secondChildrenSize; i < firstChildrenSize; ++i) {
+                printSubTree(firstNode->children[i], 1);
+                markSubTreeAsProcessed(firstNode->children[i], nodeMapFirstAST); 
+            }
+        }
+        // if second AST has more children
+        else if (secondChildrenSize > firstChildrenSize) {
+            std::cout << "Extra children in the second AST:\n";
+            for (size_t i = firstChildrenSize; i < secondChildrenSize; ++i) {
+                printSubTree(secondNode->children[i], 1); 
+                markSubTreeAsProcessed(secondNode->children[i], nodeMapSecondAST);
+            }
+        }
+    } else {
+        // if the number of children is the same, compare them one by one
+        for (size_t i = 0; i < firstChildrenSize; ++i) {
+            compareNodes(firstNode->children[i], secondNode->children[i]);
+        }
+    }
+}
+
+/*
+Description:
     Main comparison method for comparing two nodes taking into account many aspects and printing the differences
 */
 void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
@@ -227,21 +261,12 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
 
         printSeparators();
     }
-    // checking if their types are different, in case of different types we don't want to compare any values,
-    // just print the details of the differring nodes. However, in case of similar types, we can compare the nodes
-    if (firstNode->type != secondNode->type) {
-        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has different types in the trees. In first AST: "
-                  << firstNode->type << ", in second AST: " << secondNode->type << '\n';
 
-        printSeparators();
-    } else {
-        if (firstNode->type == "Declaration") {
-            // if both nodes are DECLARATIONS, comparing them accordingly
-            compareDeclarations(firstNode, secondNode);
-        } else if (firstNode->type == "Statement") {
-            // if both nodes are STATEMENTS, comparing them accordingly
-            compareStatements(firstNode, secondNode);
-        }
+    // at this point if they exist in both ASTs, their type must be the same, therefore we can decide how to compare them
+    if (firstNode->type == "Declaration") {
+        compareDeclarations(firstNode, secondNode);
+    } else if (firstNode->type == "Statement") {
+        compareStatements(firstNode, secondNode);
     }
 }
 
@@ -263,7 +288,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
         stack.pop();
 
         // generating the key for the node and marking it as processed
-        std::string nodeKey = generateKey(current, current->type == "Declaration");
+        std::string nodeKey = getKey(current, current->type == "Declaration");
         if (!nodeKey.empty()) {
             nodes.at(nodeKey).second = true;
         }
@@ -281,7 +306,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
 Description:
     Prints the subtree of a given node, recursively calling the function for its children
 */
-void TreeComparer::printSubTree(Node* node, int depth = 0) {
+void TreeComparer::printSubTree(Node* node, int depth = 0) const {
     if (!node) {
         return;
     }
@@ -299,7 +324,7 @@ void TreeComparer::printSubTree(Node* node, int depth = 0) {
 Description:
     Prints the details of a given node to the standard output
 */
-void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
+void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") const {
     std::cout << indent << "* Type: " << node->type << "\n";
     std::cout << indent << "* Kind: " << node->kind << "\n";
     std::cout << indent << "* USR: " << node->usr << "\n";
@@ -313,6 +338,6 @@ void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") {
 Description:
     Prints a separator for better readability
 */
-void TreeComparer::printSeparators() {
+void TreeComparer::printSeparators() const {
     std::cout << "**********************************************************\n";
 }
