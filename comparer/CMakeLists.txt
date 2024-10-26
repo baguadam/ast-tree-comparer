@@ -9,7 +9,7 @@ include_directories(${CLANG_INCLUDE_DIRS})
 include_directories(/usr/lib/llvm-14/include)
 
 # SQLiteCpp as a subdirectory, so its CMakeLists.txt gets invoked
-add_subdirectory(../libs/SQLiteCpp)
+add_subdirectory(../libs/SQLiteCpp ${CMAKE_BINARY_DIR}/SQLiteCpp)
 
 # specifying the headers
 include_directories(headers)
