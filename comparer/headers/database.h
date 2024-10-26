@@ -3,6 +3,7 @@
 #define _DATABASE_H_
 
 #include <string>
+#include <SQLiteCpp/SQLiteCpp.h>
 
 class Database {
 public:
