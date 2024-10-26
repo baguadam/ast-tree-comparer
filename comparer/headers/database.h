@@ -15,6 +15,8 @@ private:
    SQLite::Database db;
    SQLite::Statement queryInsertNode;
    SQLite::Statement queryInsertEdge;   
+
+   void createTables();
 };
 
 #endif
