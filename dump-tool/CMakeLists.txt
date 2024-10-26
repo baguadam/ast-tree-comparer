@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(ast-dump-tool)
+project(dump-tool)
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)

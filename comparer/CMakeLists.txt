@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(ast-tree-comparer)
+project(comparer-tool)
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
