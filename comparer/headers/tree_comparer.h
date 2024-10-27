@@ -10,16 +10,14 @@
 
 class TreeComparer {
 public:
-    TreeComparer(Node*, Node*);
+    TreeComparer(Node*, Node*, std::unordered_map<std::string, std::pair<Node*, bool>>&, std::unordered_map<std::string, std::pair<Node*, bool>>&);
     void printDifferences();
 
 private:
     Node* firstASTTree;
     Node* secondASTTree;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapFirstAST;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapSecondAST;
-    std::string getKey(Node*, bool) const;
-    std::unordered_map<std::string, std::pair<Node*, bool>> createNodeMap(Node*);
+    std::unordered_map<std::string, std::pair<Node*, bool>>& nodeMapFirstAST;
+    std::unordered_map<std::string, std::pair<Node*, bool>>& nodeMapSecondAST;
 
     void compareSourceLocations(Node*, Node*);
     void compareStatements(Node*, Node*);

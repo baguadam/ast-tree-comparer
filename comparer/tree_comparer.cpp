@@ -1,9 +1,12 @@
 #include <iostream>
 #include <stack>
 #include "./headers/tree_comparer.h"
+#include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Node* firstAST, Node* secondAST) 
-    : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(createNodeMap(firstAST)), nodeMapSecondAST(createNodeMap(secondAST)) {} 
+TreeComparer::TreeComparer(Node* firstAST, Node* secondAST, 
+                           std::unordered_map<std::string, std::pair<Node*, bool>>& firstASTMap, 
+                           std::unordered_map<std::string, std::pair<Node*, bool>>& secondASTMap) 
+    : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(firstASTMap), nodeMapSecondAST(secondASTMap) {} 
 
 /*
 Description:
@@ -13,7 +16,7 @@ Description:
 void TreeComparer::printDifferences() {
     std::queue<Node*> queue;
 
-    // wtart with the root nodes of both ASTs
+    // start with the root nodes of both ASTs
     if (firstASTTree) queue.push(firstASTTree);
     if (secondASTTree) queue.push(secondASTTree);
 
@@ -30,7 +33,7 @@ void TreeComparer::printDifferences() {
 }
 
 void TreeComparer::processNode(Node* current) {
-    std::string nodeKey = getKey(current, current->type == "Declaration");
+    std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
     if (isNodeInFirstAST(nodeKey) && isNodeInSecondAST(nodeKey)) {
         // node exists in both ASTs, compare them
@@ -80,73 +83,6 @@ Description:
 */
 void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
     processNodeInSingleAST(current, nodeKey, nodeMapSecondAST, "=SECOND=");
-}
-
-/*
-Description:
-    Enqueues the children of a given node to the queue
-*/
-void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
-    for (Node* child : current->children) {
-        if (child) {
-            queue.push(child);
-        }
-    }
-}
-
-/*
-Description:
-    Generates a unique key for a node based on its type and information
-*/
-std::string TreeComparer::getKey(Node* node, bool isDeclaration) const {
-    std::string nodeKey = node->kind + "|" + node->usr;
-    // for function it's important to make the key unique by adding the source location in the code
-    if (node->kind == "Function") {
-        nodeKey += "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
-    } else if (!isDeclaration) { 
-        // for statements we use the kind, path, line and column
-        nodeKey += "|" + node->kind + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "|" + node->parent->usr; 
-    }
-
-    return nodeKey;
-}
-
-/*
-Description:
-    Creates a map of nodes based on their keys, it's essential to compare the trees and print the differences, also the nodes are stored in a pair
-    with the values of the nodes and a flag indicating if the node has been processed or not
-*/
-std::unordered_map<std::string, std::pair<Node*, bool>> TreeComparer::createNodeMap(Node* root) {
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMap;
-    std::queue<Node*> queue;
-
-    if (!root) {
-        std::cerr << "Root node is missing, cannot create the node map.\n";
-        return nodeMap;
-    }
-
-    queue.push(root);
-    while (!queue.empty()) {
-        Node* node = queue.front();
-        queue.pop();
-
-        if (!node) continue; // in case of missing information
-
-        // generating the node key and ensuring if it's valid
-        std::string nodeKey = getKey(node, node->type == "Declaration");
-        if (!nodeKey.empty()) {
-            nodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
-        }
-
-        // processing child nodes
-        for (Node* child : node->children) {
-            if (child) {
-                queue.push(child);
-            }
-        }
-    }
-    
-    return nodeMap;
 }
 
 /*
@@ -285,7 +221,7 @@ void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::st
         stack.pop();
 
         // generating the key for the node and marking it as processed
-        std::string nodeKey = getKey(current, current->type == "Declaration");
+        std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
         if (!nodeKey.empty()) {
             nodes.at(nodeKey).second = true;
         }
@@ -314,6 +250,18 @@ void TreeComparer::printSubTree(Node* node, int depth = 0) const {
     printNodeDetails(node, indent);
     for (Node* child : node->children) {
         printSubTree(child, depth + 1);
+    }
+}
+
+/*
+Description:
+    Enqueues the children of a given node to the queue
+*/
+void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
+    for (Node* child : current->children) {
+        if (child) {
+            queue.push(child);
+        }
     }
 }
 
