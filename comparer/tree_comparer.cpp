@@ -154,6 +154,31 @@ std::unordered_map<std::string, std::pair<Node*, bool>> TreeComparer::createNode
 
 /*
 Description:
+    Helper method to check if a given node is in the AST based on the map of nodes
+*/
+bool TreeComparer::isInAST(Node* node, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodes) const {
+    std::string nodeKey = getKey(node, node->type == "Declaration");
+    return nodes.count(nodeKey) > 0;
+}
+
+/*
+Description:
+    Checks if a given node is in the first AST
+*/
+bool TreeComparer::isInFirstAST(Node* node) const {
+    return isInAST(node, nodeMapFirstAST);
+}
+
+/*
+Description:
+    Checks if a given node is in the second AST
+*/
+bool TreeComparer::isInSecondAST(Node* node) const {
+    return isInAST(node, nodeMapSecondAST);
+}
+
+/*
+Description:
     Comparison logic of two source locations
 */
 void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
