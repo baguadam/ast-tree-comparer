@@ -38,6 +38,8 @@ void TreeComparer::processNode(Node* current) {
     std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
     if (firstASTTree.isNodeInAST(nodeKey) && secondASTTree.isNodeInAST(nodeKey)) {
+        if (firstASTTree.isNodeProcessed(nodeKey) && secondASTTree.isNodeProcessed(nodeKey)) return;  // skip if already processed
+
         // node exists in both ASTs, compare them
         const Node* firstASTNode = firstASTTree.getNodeFromNodeMap(nodeKey);
         const Node* secondASTNode = secondASTTree.getNodeFromNodeMap(nodeKey);
@@ -120,16 +122,6 @@ void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* second
         printNodeDetails(secondNode->parent, " ");
 
         printSeparators();
-    }
-
-    // compare children of the nodes
-    size_t firstChildrenSize = firstNode->children.size();
-    size_t secondChildrenSize = secondNode->children.size();
-    size_t minSize = std::min(firstChildrenSize, secondChildrenSize);
-
-    for (size_t i = 0; i < minSize; ++i) {
-        processNode(firstNode->children[i]);
-        processNode(secondNode->children[i]);
     }
 
     // comparing the source locations of the nodes
