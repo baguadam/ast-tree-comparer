@@ -17,7 +17,7 @@ public:
     void markNodeAsProcessed(const std::string& nodeKey);
     bool isNodeProcessed(const std::string& nodeKey) const;
     bool isNodeInAST(const std::string& nodeKey) const;
-    const std::pair<Node*, bool>& getPair(const std::string& nodeKey) const;
+    const Node* getNodeFromNodeMap(const std::string& nodeKey) const;
     void markPairAsProcessed(const std::string& nodeKey);
     void markSubTreeAsProcessed(Node* node);
 

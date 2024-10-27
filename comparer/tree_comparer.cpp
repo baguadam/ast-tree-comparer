@@ -34,9 +34,9 @@ void TreeComparer::processNode(Node* current) {
 
     if (firstASTTree.isNodeInAST(nodeKey) && secondASTTree.isNodeInAST(nodeKey)) {
         // node exists in both ASTs, compare them
-        const std::pair<Node*, bool>& secondNodePair = firstASTTree.getPair(nodeKey);
-        const std::pair<Node*, bool>& firstNodePair = firstASTTree.getPair(nodeKey);
-        compareNodes(firstNodePair.first, secondNodePair.first);  // compare the nodes
+        const Node* firstASTNode = firstASTTree.getNodeFromNodeMap(nodeKey);
+        const Node* secondASTNode = secondASTTree.getNodeFromNodeMap(nodeKey);
+        compareNodes(firstASTNode, secondASTNode);  // compare the nodes
 
         // mark nodes as processed
         firstASTTree.markNodeAsProcessed(nodeKey);

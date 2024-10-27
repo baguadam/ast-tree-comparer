@@ -44,8 +44,8 @@ const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getNodeMap(
 Description:
     Returns the pair of the node based on the key.
 */
-const std::pair<Node*, bool>& Tree::getPair(const std::string& nodeKey) const {
-    return nodeMap.at(nodeKey);
+const Node* Tree::getNodeFromNodeMap(const std::string& nodeKey) const {
+    return nodeMap.at(nodeKey).first;
 }
 
 /*
