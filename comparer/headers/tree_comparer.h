@@ -19,10 +19,8 @@ private:
     Tree& secondASTTree;
 
     void compareSourceLocations(const Node*, const Node*);
-    void compareStatements(const Node*, const Node*);
-    void compareDeclarations(const Node*, const Node*);
-    void compareFunctions(const Node*, const Node*);
-    void compareNodes(const Node*, const Node*);
+    void compareDeclarationsAndStatements(const Node*, const Node*);
+    void compareSimilarNodes(const Node*, const Node*);
     void processNode(Node*);
     void processNodeInSingleAST(Node*, const std::string&, Tree&, const char*);
     void processNodeInFirstAST(Node*, const std::string&);

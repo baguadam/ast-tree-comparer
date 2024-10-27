@@ -29,6 +29,11 @@ void TreeComparer::printDifferences() {
     }
 }
 
+/*
+Descpirion:
+    Processes a node by comparing it with the corresponding node in the other AST, if the node exists in both ASTs, 
+    compares them, otherwise processes the node that exists only in one of the ASTs.
+*/
 void TreeComparer::processNode(Node* current) {
     std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
@@ -36,7 +41,7 @@ void TreeComparer::processNode(Node* current) {
         // node exists in both ASTs, compare them
         const Node* firstASTNode = firstASTTree.getNodeFromNodeMap(nodeKey);
         const Node* secondASTNode = secondASTTree.getNodeFromNodeMap(nodeKey);
-        compareNodes(firstASTNode, secondASTNode);  // compare the nodes
+        compareSimilarNodes(firstASTNode, secondASTNode);
 
         // mark nodes as processed
         firstASTTree.markNodeAsProcessed(nodeKey);
@@ -101,84 +106,9 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
 
 /*
 Description:
-    Comparison logic of two declarations
+    Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
-void TreeComparer::compareDeclarations(const Node* firstNode, const Node* secondNode) {
-    if (firstNode->kind == "Function") {
-        // if both nodes are FUNCTIONS, comparing them accordingly
-        compareFunctions(firstNode, secondNode);
-    }
-
-    // comparing the source locations of the nodes
-    compareSourceLocations(firstNode, secondNode);
-}
-
-/*
-Descpiption:
-    Comparison logic of two statements
-*/
-void TreeComparer::compareStatements(const Node* firstNode, const Node* secondNode) {
-    // if the kinds are different, print the details of the nodes and their kinds
-    if (firstNode->kind != secondNode->kind) {
-        std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
-                  << firstNode->kind << ", in second AST: " << secondNode->kind << '\n';
-        
-        printSeparators();
-    }
-
-    // comparing the source locations of the nodes
-    compareSourceLocations(firstNode, secondNode);
-}
-
-/*
-Description:
-    Comparison logic of two function declarations, the function declarations get compared if they exist in both ASTs
-*/
-void TreeComparer::compareFunctions(const Node* firstNode, const Node* secondNode) {
-    size_t firstChildrenSize = firstNode->children.size();
-    size_t secondChildrenSize = secondNode->children.size();
-
-    // if the number of children is different, print the information
-    if (firstChildrenSize != secondChildrenSize) {
-        std::cout << "Function " << firstNode->usr << " has a different number of children in the trees.\n";
-        std::cout << "First AST children: " << firstChildrenSize << ", Second AST children: " << secondChildrenSize << '\n';
-        printSeparators();
-
-        // find the differing children
-        size_t minSize = std::min(firstChildrenSize, secondChildrenSize);
-        for (size_t i = 0; i < minSize; ++i) {
-            compareNodes(firstNode->children[i], secondNode->children[i]);
-        }
-
-        // if first AST has more children
-        if (firstChildrenSize > secondChildrenSize) {
-            std::cout << "Extra children in the first AST:\n";
-            for (size_t i = secondChildrenSize; i < firstChildrenSize; ++i) {
-                printSubTree(firstNode->children[i], 1);
-                firstASTTree.markSubTreeAsProcessed(firstNode->children[i]);
-            }
-        }
-        // if second AST has more children
-        else if (secondChildrenSize > firstChildrenSize) {
-            std::cout << "Extra children in the second AST:\n";
-            for (size_t i = firstChildrenSize; i < secondChildrenSize; ++i) {
-                printSubTree(secondNode->children[i], 1); 
-                secondASTTree.markSubTreeAsProcessed(secondNode->children[i]);
-            }
-        }
-    } else {
-        // if the number of children is the same, compare them one by one
-        for (size_t i = 0; i < firstChildrenSize; ++i) {
-            compareNodes(firstNode->children[i], secondNode->children[i]);
-        }
-    }
-}
-
-/*
-Description:
-    Main comparison method for comparing two nodes taking into account many aspects and printing the differences
-*/
-void TreeComparer::compareNodes(const Node* firstNode, const Node* secondNode) {
+void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
@@ -192,14 +122,19 @@ void TreeComparer::compareNodes(const Node* firstNode, const Node* secondNode) {
         printSeparators();
     }
 
-    // at this point if they exist in both ASTs, their type must be the same, therefore we can decide how to compare them
-    if (firstNode->type == "Declaration") {
-        compareDeclarations(firstNode, secondNode);
-    } else if (firstNode->type == "Statement") {
-        compareStatements(firstNode, secondNode);
-    }
-}
+    // compare children of the nodes
+    size_t firstChildrenSize = firstNode->children.size();
+    size_t secondChildrenSize = secondNode->children.size();
+    size_t minSize = std::min(firstChildrenSize, secondChildrenSize);
 
+    for (size_t i = 0; i < minSize; ++i) {
+        processNode(firstNode->children[i]);
+        processNode(secondNode->children[i]);
+    }
+
+    // comparing the source locations of the nodes
+    compareSourceLocations(firstNode, secondNode);
+}
 
 /*
 Description:
