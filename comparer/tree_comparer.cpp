@@ -27,9 +27,9 @@ void TreeComparer::printDifferences() {
         // generate the key for the node
         std::string nodeKey = getKey(current, current->type == "Declaration");
 
-        if (nodeMapFirstAST.count(nodeKey) > 0) {
+        if (isNodeInFirstAST(nodeKey)) {
             processNodeInFirstAST(current, nodeKey);
-        } else if (nodeMapSecondAST.count(nodeKey) > 0) {
+        } else if (isNodeInSecondAST(nodeKey)) {
             processNodeInSecondAST(current, nodeKey);
         } else {
             // node does not exist in either AST, should not happen
