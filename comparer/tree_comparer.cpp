@@ -84,7 +84,7 @@ Description:
     Processes the node that only exists in the second AST, prints the details of the node
 */
 void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
-    processNodeInSingleAST(current, nodeKey, firstASTTree, "=SECOND=");
+    processNodeInSingleAST(current, nodeKey, secondASTTree, "=SECOND=");
 }
 
 /*
