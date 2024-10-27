@@ -3,8 +3,7 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) 
-    : firstASTTree(firstTree), secondASTTree(secondTree), {} 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) : firstASTTree(firstTree), secondASTTree(secondTree) {} 
 
 /*
 Description:

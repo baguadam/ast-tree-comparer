@@ -79,16 +79,6 @@ void Tree::markSubTreeAsProcessed(Node* node) {
 
 /*
 Description:
-    Marks the node as processed in the tree.
-*/
-void Tree::markNodeAsProcessed(const std::string& nodeKey) {
-    if (nodeMap.find(nodeKey) != nodeMap.end()) {
-        nodeMap[nodeKey].second = true;
-    }
-}
-
-/*
-Description:
     Marks the pair as processed in the tree.
 */
 void Tree::markNodeAsProcessed(const std::string& nodeKey) {
