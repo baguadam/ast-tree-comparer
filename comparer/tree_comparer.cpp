@@ -44,9 +44,9 @@ Description:
     if not, prints the details of the node. If the node exists in both ASTs, compares them.
 */
 void TreeComparer::processNodeInFirstAST(Node* current, const std::string& nodeKey) {
-    if (nodeMapFirstAST.at(nodeKey).second) return;  // skip if already processed
+    if (isNodeProcessedInFirstAST(nodeKey)) return;  // skip if already processed
 
-    if (nodeMapSecondAST.count(nodeKey) == 0) {
+    if (!isNodeInSecondAST(nodeKey)) {
         // Node exists ONLY in the first AST
         std::cout << "Node " << nodeKey << " only exists in first AST, skipping its children\n";
         printSubTree(current, 0);
@@ -76,7 +76,7 @@ Description:
 void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
     if (nodeMapSecondAST.at(nodeKey).second) return;  // skip if already processed
 
-    if (nodeMapFirstAST.count(nodeKey) == 0) {
+    if (!isNodeInFirstAST(nodeKey)) {
         // Node exists ONLY in the second AST
         std::cout << "Node " << nodeKey << " only exists in second AST, skipping its children\n";
         printSubTree(current, 0);
@@ -150,31 +150,6 @@ std::unordered_map<std::string, std::pair<Node*, bool>> TreeComparer::createNode
     }
     
     return nodeMap;
-}
-
-/*
-Description:
-    Helper method to check if a given node is in the AST based on the map of nodes
-*/
-bool TreeComparer::isInAST(Node* node, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodes) const {
-    std::string nodeKey = getKey(node, node->type == "Declaration");
-    return nodes.count(nodeKey) > 0;
-}
-
-/*
-Description:
-    Checks if a given node is in the first AST
-*/
-bool TreeComparer::isInFirstAST(Node* node) const {
-    return isInAST(node, nodeMapFirstAST);
-}
-
-/*
-Description:
-    Checks if a given node is in the second AST
-*/
-bool TreeComparer::isInSecondAST(Node* node) const {
-    return isInAST(node, nodeMapSecondAST);
 }
 
 /*
@@ -365,4 +340,36 @@ Description:
 */
 void TreeComparer::printSeparators() const {
     std::cout << "**********************************************************\n";
+}
+
+/*
+Description:
+    Helper method to check if a given node is in the AST based on the map of nodes
+*/
+bool TreeComparer::isNodeInAST(const std::string& nodeKey, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodes) const {
+    return nodes.count(nodeKey) > 0;
+}
+
+/*
+Description:
+    Checks if a given node is in the first AST
+*/
+bool TreeComparer::isNodeInFirstAST(const std::string& nodeKey) const {
+    return isNodeInAST(nodeKey, nodeMapFirstAST);
+}
+
+/*
+Description:
+    Checks if a given node is in the second AST
+*/
+bool TreeComparer::isNodeInSecondAST(const std::string& nodeKey) const {
+    return isNodeInAST(nodeKey, nodeMapSecondAST);
+}
+
+/*
+Description:
+    Checks if a given node has been processed in the first AST
+*/
+bool TreeComparer::isNodeProcessedInFirstAST(const std::string& nodeKey) const {
+    return nodeMapFirstAST.at(nodeKey).second;
 }

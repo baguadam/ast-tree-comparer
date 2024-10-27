@@ -32,9 +32,10 @@ private:
     void enqueueChildren(Node*, std::queue<Node*>&);
     void markSubTreeAsProcessed(Node*, std::unordered_map<std::string, std::pair<Node*, bool>>&);
 
-    bool isInAST(Node*, const std::unordered_map<std::string, std::pair<Node*, bool>>&) const;
-    bool isInFirstAST(Node*) const;
-    bool isInSecondAST(Node*) const;
+    bool isNodeInAST(const std::string&, const std::unordered_map<std::string, std::pair<Node*, bool>>&) const;
+    bool isNodeInFirstAST(const std::string&) const;
+    bool isNodeInSecondAST(const std::string&) const;
+    bool isNodeProcessedInFirstAST(const std::string&) const;
 
     void printNodeDetails(Node*, const std::string) const;
     void printSubTree(Node*, int) const;
