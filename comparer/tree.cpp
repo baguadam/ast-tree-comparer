@@ -82,9 +82,7 @@ Description:
     Marks the pair as processed in the tree.
 */
 void Tree::markNodeAsProcessed(const std::string& nodeKey) {
-    if (nodeMap.find(nodeKey) != nodeMap.end()) {
-        nodeMap[nodeKey].second = true;
-    }
+    nodeMap.at(nodeKey).second = true;
 }
 
 /*
@@ -92,8 +90,7 @@ Description:
     Checks if the node is processed in the tree.
 */
 bool Tree::isNodeProcessed(const std::string& nodeKey) const {
-    auto it = nodeMap.find(nodeKey);
-    return it != nodeMap.end() && it->second.second;
+    return nodeMap.at(nodeKey).second;
 }
 
 /*
@@ -101,7 +98,7 @@ Description:
     Checks if the node is in the tree.  
 */
 bool Tree::isNodeInAST(const std::string& nodeKey) const {
-    return nodeMap.find(nodeKey) != nodeMap.end();
+    return nodeMap.count(nodeKey) > 0;
 }
 
 /*
