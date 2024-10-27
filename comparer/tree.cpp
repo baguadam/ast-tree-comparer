@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <queue>
+#include <stack>
 #include "./headers/tree.h"
 #include "./headers/utils.h"
 
@@ -35,8 +36,82 @@ Node* Tree::getRoot() const {
 Description:
     Returns the node map of the tree.
 */
-std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getNodeMap() {
+const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getNodeMap() const {
     return nodeMap;
+}
+
+/*
+Description:
+    Returns the pair of the node based on the key.
+*/
+const std::pair<Node*, bool>& Tree::getPair(const std::string& nodeKey) const {
+    return nodeMap.at(nodeKey);
+}
+
+/*
+Description:
+    Marks the subtree as processed in the tree.
+*/
+void Tree::markSubTreeAsProcessed(Node* node) {
+    if (!node) {
+        return;
+    }
+
+    std::stack<Node*> stack;
+    stack.push(node);
+
+    while (!stack.empty()) {
+        Node* current = stack.top();
+        stack.pop();
+
+        std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
+        if (!nodeKey.empty()) {
+            markNodeAsProcessed(nodeKey);
+        }
+
+        for (Node* child : current->children) {
+            if (child) {
+                stack.push(child);
+            }
+        }
+    }
+}
+
+/*
+Description:
+    Marks the node as processed in the tree.
+*/
+void Tree::markNodeAsProcessed(const std::string& nodeKey) {
+    if (nodeMap.find(nodeKey) != nodeMap.end()) {
+        nodeMap[nodeKey].second = true;
+    }
+}
+
+/*
+Description:
+    Marks the pair as processed in the tree.
+*/
+void Tree::markNodeAsProcessed(const std::string& nodeKey) {
+    if (nodeMap.find(nodeKey) != nodeMap.end()) {
+        nodeMap[nodeKey].second = true;
+    }
+}
+
+/*
+Description:
+    Checks if the node is processed in the tree.
+*/
+bool Tree::isNodeProcessed(const std::string& nodeKey) const {
+    auto it = nodeMap.find(nodeKey);
+    return it != nodeMap.end() && it->second.second;
+}
+
+/*
+Description:
+    Checks if the node is in the tree.  
+*/
+bool Tree::isNodeInAST(const std::string& nodeKey) const {
+    return nodeMap.find(nodeKey) != nodeMap.end();
 }
 
 /*

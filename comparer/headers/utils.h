@@ -6,7 +6,7 @@
 
 class Utils {
 public:
-    static std::string getKey(Node* node, bool isDeclaration);
+    static std::string getKey(const Node* node, bool isDeclaration);
 };
 
 #endif 

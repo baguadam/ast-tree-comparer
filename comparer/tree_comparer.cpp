@@ -3,10 +3,8 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Node* firstAST, Node* secondAST, 
-                           std::unordered_map<std::string, std::pair<Node*, bool>>& firstASTMap, 
-                           std::unordered_map<std::string, std::pair<Node*, bool>>& secondASTMap) 
-    : firstASTTree(firstAST), secondASTTree(secondAST), nodeMapFirstAST(firstASTMap), nodeMapSecondAST(secondASTMap) {} 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) 
+    : firstASTTree(firstTree), secondASTTree(secondTree), {} 
 
 /*
 Description:
@@ -17,8 +15,8 @@ void TreeComparer::printDifferences() {
     std::queue<Node*> queue;
 
     // start with the root nodes of both ASTs
-    if (firstASTTree) queue.push(firstASTTree);
-    if (secondASTTree) queue.push(secondASTTree);
+    if (firstASTTree.getRoot()) queue.push(firstASTTree.getRoot());
+    if (secondASTTree.getRoot()) queue.push(secondASTTree.getRoot());
 
     while (!queue.empty()) {
         Node* current = queue.front();
@@ -35,19 +33,19 @@ void TreeComparer::printDifferences() {
 void TreeComparer::processNode(Node* current) {
     std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
-    if (isNodeInFirstAST(nodeKey) && isNodeInSecondAST(nodeKey)) {
+    if (firstASTTree.isNodeInAST(nodeKey) && secondASTTree.isNodeInAST(nodeKey)) {
         // node exists in both ASTs, compare them
-        std::pair<Node*, bool>& secondNodePair = nodeMapSecondAST.at(nodeKey);
-        std::pair<Node*, bool>& firstNodePair = nodeMapFirstAST.at(nodeKey);
+        const std::pair<Node*, bool>& secondNodePair = firstASTTree.getPair(nodeKey);
+        const std::pair<Node*, bool>& firstNodePair = firstASTTree.getPair(nodeKey);
         compareNodes(firstNodePair.first, secondNodePair.first);  // compare the nodes
 
         // mark nodes as processed
-        firstNodePair.second = true;
-        secondNodePair.second = true;
-    } else if (isNodeInFirstAST(nodeKey)) {
+        firstASTTree.markNodeAsProcessed(nodeKey);
+        secondASTTree.markNodeAsProcessed(nodeKey);
+    } else if (firstASTTree.isNodeInAST(nodeKey)) {
         // node exists only in the first AST
         processNodeInFirstAST(current, nodeKey);
-    } else if (isNodeInSecondAST(nodeKey)) {
+    } else if (secondASTTree.isNodeInAST(nodeKey)) {
         // node exists only in the second AST
         processNodeInSecondAST(current, nodeKey);
     } else {
@@ -60,12 +58,12 @@ void TreeComparer::processNode(Node* current) {
 Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed
 */
-void TreeComparer::processNodeInSingleAST(Node* current, const std::string& nodeKey, std::unordered_map<std::string, std::pair<Node*, bool>>& nodes, const char* astName) {
-    if (isNodeProcessedInAST(nodeKey, nodes)) return;  // skip if already processed
+void TreeComparer::processNodeInSingleAST(Node* current, const std::string& nodeKey, Tree& tree, const char* astName) {
+    if (tree.isNodeProcessed(nodeKey)) return;  // skip if already processed
 
     std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
     printSubTree(current, 0);
-    markSubTreeAsProcessed(current, nodes);  // mark entire subtree as processed
+    tree.markSubTreeAsProcessed(current);  // mark entire subtree as processed
     printSeparators();
 }
 
@@ -74,7 +72,7 @@ Description:
     Processes the node that only exists in the first AST, prints the details of the node
 */
 void TreeComparer::processNodeInFirstAST(Node* current, const std::string& nodeKey) {
-    processNodeInSingleAST(current, nodeKey, nodeMapFirstAST, "=FIRST=");
+    processNodeInSingleAST(current, nodeKey, firstASTTree, "=FIRST=");
 }
 
 /*
@@ -82,14 +80,14 @@ Description:
     Processes the node that only exists in the second AST, prints the details of the node
 */
 void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
-    processNodeInSingleAST(current, nodeKey, nodeMapSecondAST, "=SECOND=");
+    processNodeInSingleAST(current, nodeKey, firstASTTree, "=SECOND=");
 }
 
 /*
 Description:
     Comparison logic of two source locations
 */
-void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
+void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* secondNode) {
     // if the source is different, print the details of the locations for each node
     if (firstNode->path != secondNode->path || 
         firstNode->lineNumber != secondNode->lineNumber || 
@@ -106,7 +104,7 @@ void TreeComparer::compareSourceLocations(Node* firstNode, Node* secondNode) {
 Description:
     Comparison logic of two declarations
 */
-void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
+void TreeComparer::compareDeclarations(const Node* firstNode, const Node* secondNode) {
     if (firstNode->kind == "Function") {
         // if both nodes are FUNCTIONS, comparing them accordingly
         compareFunctions(firstNode, secondNode);
@@ -120,7 +118,7 @@ void TreeComparer::compareDeclarations(Node* firstNode, Node* secondNode) {
 Descpiption:
     Comparison logic of two statements
 */
-void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
+void TreeComparer::compareStatements(const Node* firstNode, const Node* secondNode) {
     // if the kinds are different, print the details of the nodes and their kinds
     if (firstNode->kind != secondNode->kind) {
         std::cout << "Declaration node " << secondNode->usr << " | type " << secondNode->type << " has different kinds in the trees. In first AST: "
@@ -137,7 +135,7 @@ void TreeComparer::compareStatements(Node* firstNode, Node* secondNode) {
 Description:
     Comparison logic of two function declarations, the function declarations get compared if they exist in both ASTs
 */
-void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
+void TreeComparer::compareFunctions(const Node* firstNode, const Node* secondNode) {
     size_t firstChildrenSize = firstNode->children.size();
     size_t secondChildrenSize = secondNode->children.size();
 
@@ -158,7 +156,7 @@ void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
             std::cout << "Extra children in the first AST:\n";
             for (size_t i = secondChildrenSize; i < firstChildrenSize; ++i) {
                 printSubTree(firstNode->children[i], 1);
-                markSubTreeAsProcessed(firstNode->children[i], nodeMapFirstAST); 
+                firstASTTree.markSubTreeAsProcessed(firstNode->children[i]);
             }
         }
         // if second AST has more children
@@ -166,7 +164,7 @@ void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
             std::cout << "Extra children in the second AST:\n";
             for (size_t i = firstChildrenSize; i < secondChildrenSize; ++i) {
                 printSubTree(secondNode->children[i], 1); 
-                markSubTreeAsProcessed(secondNode->children[i], nodeMapSecondAST);
+                secondASTTree.markSubTreeAsProcessed(secondNode->children[i]);
             }
         }
     } else {
@@ -181,7 +179,7 @@ void TreeComparer::compareFunctions(Node* firstNode, Node* secondNode) {
 Description:
     Main comparison method for comparing two nodes taking into account many aspects and printing the differences
 */
-void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
+void TreeComparer::compareNodes(const Node* firstNode, const Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
@@ -203,55 +201,6 @@ void TreeComparer::compareNodes(Node* firstNode, Node* secondNode) {
     }
 }
 
-/*
-Description:
-    Sets a flag for a given node and all its children that they have been processed, if the parent node
-    can only be found in one of the ASTs, so no need to process the children again
-*/
-void TreeComparer::markSubTreeAsProcessed(Node* node, std::unordered_map<std::string, std::pair<Node*, bool>>& nodes) {
-    if (!node) {
-        return;
-    }
-
-    std::stack<Node*> stack;
-    stack.push(node);
-
-    while (!stack.empty()) {
-        Node* current = stack.top();
-        stack.pop();
-
-        // generating the key for the node and marking it as processed
-        std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
-        if (!nodeKey.empty()) {
-            nodes.at(nodeKey).second = true;
-        }
-
-        // pushing the children onto the stack
-        for (Node* child : current->children) {
-            if (child) {
-                stack.push(child);
-            }
-        }
-    }
-}
-
-/*
-Description:
-    Prints the subtree of a given node, recursively calling the function for its children
-*/
-void TreeComparer::printSubTree(Node* node, int depth = 0) const {
-    if (!node) {
-        return;
-    }
-
-    // indent for better readability
-    std::string indent(depth * 2, ' ');
-
-    printNodeDetails(node, indent);
-    for (Node* child : node->children) {
-        printSubTree(child, depth + 1);
-    }
-}
 
 /*
 Description:
@@ -267,9 +216,27 @@ void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
 
 /*
 Description:
+    Prints the subtree of a given node, recursively calling the function for its children
+*/
+void TreeComparer::printSubTree(const Node* node, int depth = 0) const {
+    if (!node) {
+        return;
+    }
+
+    // indent for better readability
+    std::string indent(depth * 2, ' ');
+
+    printNodeDetails(node, indent);
+    for (Node* child : node->children) {
+        printSubTree(child, depth + 1);
+    }
+}
+
+/*
+Description:
     Prints the details of a given node to the standard output
 */
-void TreeComparer::printNodeDetails(Node* node, std::string indent = " ") const {
+void TreeComparer::printNodeDetails(const Node* node, std::string indent = " ") const {
     std::cout << indent << "* Type: " << node->type << "\n";
     std::cout << indent << "* Kind: " << node->kind << "\n";
     std::cout << indent << "* USR: " << node->usr << "\n";
@@ -285,36 +252,4 @@ Description:
 */
 void TreeComparer::printSeparators() const {
     std::cout << "**********************************************************\n";
-}
-
-/*
-Description:
-    Helper method to check if a given node is in the AST based on the map of nodes
-*/
-bool TreeComparer::isNodeInAST(const std::string& nodeKey, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodes) const {
-    return nodes.count(nodeKey) > 0;
-}
-
-/*
-Description:
-    Checks if a given node is in the first AST
-*/
-bool TreeComparer::isNodeInFirstAST(const std::string& nodeKey) const {
-    return isNodeInAST(nodeKey, nodeMapFirstAST);
-}
-
-/*
-Description:
-    Checks if a given node is in the second AST
-*/
-bool TreeComparer::isNodeInSecondAST(const std::string& nodeKey) const {
-    return isNodeInAST(nodeKey, nodeMapSecondAST);
-}
-
-/*
-Description:
-    Checks if a given node has been processed in the specified AST map
-*/
-bool TreeComparer::isNodeProcessedInAST(const std::string& nodeKey, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodeMap) const {
-    return nodeMap.at(nodeKey).second;
 }

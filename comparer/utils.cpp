@@ -3,7 +3,7 @@
 Description:
     Generates a unique key for a node based on its type and information
 */
-std::string Utils::getKey(Node* node, bool isDeclaration) const {
+std::string Utils::getKey(const Node* node, bool isDeclaration) const {
     std::string nodeKey = node->kind + "|" + node->usr;
     // for function it's important to make the key unique by adding the source location in the code
     if (node->kind == "Function") {
