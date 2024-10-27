@@ -24,65 +24,62 @@ void TreeComparer::printDifferences() {
         // add children to the queue for further processing
         enqueueChildren(current, queue);
 
-        // generate the key for the node
-        std::string nodeKey = getKey(current, current->type == "Declaration");
+        // process the node
+        processNode(current);
+    }
+}
 
-        if (isNodeInFirstAST(nodeKey)) {
-            processNodeInFirstAST(current, nodeKey);
-        } else if (isNodeInSecondAST(nodeKey)) {
-            processNodeInSecondAST(current, nodeKey);
-        } else {
-            // node does not exist in either AST, should not happen
-            std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
-        }
+void TreeComparer::processNode(Node* current) {
+    std::string nodeKey = getKey(current, current->type == "Declaration");
+
+    if (isNodeInFirstAST(nodeKey) && isNodeInSecondAST(nodeKey)) {
+        // node exists in both ASTs, compare them
+        std::pair<Node*, bool>& secondNodePair = nodeMapSecondAST.at(nodeKey);
+        std::pair<Node*, bool>& firstNodePair = nodeMapFirstAST.at(nodeKey);
+        compareNodes(firstNodePair.first, secondNodePair.first);  // compare the nodes
+
+        // mark nodes as processed
+        firstNodePair.second = true;
+        secondNodePair.second = true;
+    } else if (isNodeInFirstAST(nodeKey)) {
+        // node exists only in the first AST
+        processNodeInFirstAST(current, nodeKey);
+    } else if (isNodeInSecondAST(nodeKey)) {
+        // node exists only in the second AST
+        processNodeInSecondAST(current, nodeKey);
+    } else {
+        // node does not exist in either AST, should not happen
+        std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
     }
 }
 
 /*
 Description:
-    Processes a node in the first AST, checks if the node is already processed, if not, checks if the node exists in the second AST,
-    if not, prints the details of the node. If the node exists in both ASTs, compares them.
+    Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed
+*/
+void TreeComparer::processNodeInSingleAST(Node* current, const std::string& nodeKey, std::unordered_map<std::string, std::pair<Node*, bool>>& nodes, const char* astName) {
+    if (isNodeProcessedInAST(nodeKey, nodes)) return;  // skip if already processed
+
+    std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
+    printSubTree(current, 0);
+    markSubTreeAsProcessed(current, nodes);  // mark entire subtree as processed
+    printSeparators();
+}
+
+/*
+Description:
+    Processes the node that only exists in the first AST, prints the details of the node
 */
 void TreeComparer::processNodeInFirstAST(Node* current, const std::string& nodeKey) {
-    if (isNodeProcessedInFirstAST(nodeKey)) return;  // skip if already processed
-
-    if (!isNodeInSecondAST(nodeKey)) {
-        // Node exists ONLY in the first AST
-        std::cout << "Node " << nodeKey << " only exists in first AST, skipping its children\n";
-        printSubTree(current, 0);
-        markSubTreeAsProcessed(current, nodeMapFirstAST);  // mark entire subtree as processed
-        printSeparators();
-    } else {
-        // Node exists in both ASTs, compare them
-        try {
-            std::pair<Node*, bool>& secondNodePair = nodeMapSecondAST.at(nodeKey);
-            std::pair<Node*, bool>& firstNodePair = nodeMapFirstAST.at(nodeKey);
-            compareNodes(firstNodePair.first, secondNodePair.first);  // compare the nodes
-
-            // mark nodes as processed
-            firstNodePair.second = true;
-            secondNodePair.second = true;
-        } catch (const std::out_of_range& e) {
-            std::cerr << "Error: Node key " << nodeKey << " not found in one of the AST maps.\n";
-        }
-    }
+    processNodeInSingleAST(current, nodeKey, nodeMapFirstAST, "=FIRST=");
 }
 
 /*
 Description:
-    Processes a node in the second AST, checks if the node is already processed, if not, checks if the node exists in the first AST,
-    if not, prints the details of the node. 
+    Processes the node that only exists in the second AST, prints the details of the node
 */
 void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
-    if (nodeMapSecondAST.at(nodeKey).second) return;  // skip if already processed
-
-    if (!isNodeInFirstAST(nodeKey)) {
-        // Node exists ONLY in the second AST
-        std::cout << "Node " << nodeKey << " only exists in second AST, skipping its children\n";
-        printSubTree(current, 0);
-        markSubTreeAsProcessed(current, nodeMapSecondAST);  // mark entire subtree as processed
-        printSeparators();
-    }
+    processNodeInSingleAST(current, nodeKey, nodeMapSecondAST, "=SECOND=");
 }
 
 /*
@@ -368,8 +365,8 @@ bool TreeComparer::isNodeInSecondAST(const std::string& nodeKey) const {
 
 /*
 Description:
-    Checks if a given node has been processed in the first AST
+    Checks if a given node has been processed in the specified AST map
 */
-bool TreeComparer::isNodeProcessedInFirstAST(const std::string& nodeKey) const {
-    return nodeMapFirstAST.at(nodeKey).second;
+bool TreeComparer::isNodeProcessedInAST(const std::string& nodeKey, const std::unordered_map<std::string, std::pair<Node*, bool>>& nodeMap) const {
+    return nodeMap.at(nodeKey).second;
 }
