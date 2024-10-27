@@ -4,14 +4,14 @@ Description:
     Generates a unique key for a node based on its type and information
 */
 std::string Utils::getKey(const Node* node, bool isDeclaration) {
-    std::string nodeKey = node->kind + "|" + node->usr;
-    // for function it's important to make the key unique by adding the source location in the code
-    if (node->kind == "Function") {
-        nodeKey += "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
-    } else if (!isDeclaration) { 
-        // for statements we use the kind, path, line and column
-        nodeKey += "|" + node->kind + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber) + "|" + node->parent->usr; 
+    if (isDeclaration) {
+        if (node->kind == "Typedef" || node->kind == "Field" || node->kind == "IntegralLiteral" || node->kind == "CXXRecord" || 
+            node->kind == "TranslationUnit" || node->kind == "TemplateTypeParm" || node->kind == "ClassTemplate") {
+            return node->kind + "|" + node->usr;
+        } else {
+            return node->kind + "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+        }
+    } else {
+        return node->kind + "|" + node->path + "|" + getKey(node->parent, node->parent->type == "Declaration");  
     }
-
-    return nodeKey;
 }

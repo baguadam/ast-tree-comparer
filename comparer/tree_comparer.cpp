@@ -38,7 +38,7 @@ void TreeComparer::processNode(Node* current) {
     std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
     if (firstASTTree.isNodeInAST(nodeKey) && secondASTTree.isNodeInAST(nodeKey)) {
-        if (firstASTTree.isNodeProcessed(nodeKey) && secondASTTree.isNodeProcessed(nodeKey)) return;  // skip if already processed
+        if (firstASTTree.isNodeProcessed(nodeKey) || secondASTTree.isNodeProcessed(nodeKey)) return;  // skip if already processed
 
         // node exists in both ASTs, compare them
         const Node* firstASTNode = firstASTTree.getNodeFromNodeMap(nodeKey);
@@ -98,7 +98,7 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
     if (firstNode->path != secondNode->path || 
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
-        std::cout << "Node " << firstNode->usr << " has different source locations in the trees.\n";
+        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has different source locations in the trees.\n";
         std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
         std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
         
@@ -114,13 +114,22 @@ void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* second
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        std::cout << "Node " << firstNode->usr << " | type " << firstNode->type << " has a different parent in second AST: "
+        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has a different parent in second AST: "
                   << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";
         printNodeDetails(firstNode->parent, " ");
         std::cout << "Second AST parent details:\n";
         printNodeDetails(secondNode->parent, " ");
 
+        printSeparators();
+    }
+
+    // comparing the number of children
+    size_t firstChildrenSize = firstNode->children.size();
+    size_t secondChildrenSize = secondNode->children.size();
+    if (firstChildrenSize != secondChildrenSize) {
+        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has a different number of children in the trees.\n";
+        std::cout << "First AST children: " << firstChildrenSize << ", Second AST children: " << secondChildrenSize << '\n';
         printSeparators();
     }
 
@@ -167,7 +176,7 @@ void TreeComparer::printNodeDetails(const Node* node, std::string indent = " ") 
     std::cout << indent << "* Kind: " << node->kind << "\n";
     std::cout << indent << "* USR: " << node->usr << "\n";
     std::cout << indent << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "Parent USR: " << (node->parent ? node->parent->usr : "None") << "\n";
+    std::cout << indent << "Parent unique id: " << (node->parent ? Utils::getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
     
     printSeparators();
 }
