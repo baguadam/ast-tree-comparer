@@ -151,21 +151,21 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     std::unordered_set<Node*, NodeHash, NodeEqual> secondStmtSet(secondStmtNodes.begin(), secondStmtNodes.end());
 
     // Iterate over the first set and check for differences
-    for (Node* node : firstStmtSet) {
-        if (secondStmtSet.count(node) == 0) {
-            std::cout << "Node with key: " << nodeKey << " has a statement node in the first AST that does not exist in the second AST.\n";
-            printSubTree(node, 0);
-            printSeparators();
+    for (Node* node : firstStmtNodes) {
+        if (firstStmtSet.count(node) > 0) {
+            if (secondStmtSet.count(node) == 0) {
+                std::cout << "Node with key: " << nodeKey << " has a statement node in the first AST that does not exist in the second AST.\n";
+                printSubTree(node, 0);
+                printSeparators();
 
-            // remove the children of the node from the second set
-            for (Node* child : node->children) {
-                firstStmtSet.erase(child);
-            }
-        } else {
-            auto it = secondStmtSet.find(node);
-            if (it != secondStmtSet.end()) {
-                compareSimilarStmtNodes(node, *it);
-                secondStmtSet.erase(it);
+                // remove the children and and the descendants from the set
+                removeNodeAndDescendatsFromSet(node, firstStmtSet);
+            } else {
+                auto it = secondStmtSet.find(node);
+                if (it != secondStmtSet.end()) {
+                    compareSimilarStmtNodes(node, *it);
+                    secondStmtSet.erase(it);
+                }
             }
         }
     }
@@ -188,6 +188,17 @@ void TreeComparer::compareSimilarStmtNodes(const Node* firstStmtNode, const Node
 
     // compare the source locations of the nodes
     compareSourceLocations(firstStmtNode, secondStmtNode);
+}
+
+/*
+Description:
+    Removes a node and its descendants from the set
+*/
+void TreeComparer::removeNodeAndDescendatsFromSet(Node* node, std::unordered_set<Node*, NodeHash, NodeEqual>& set) {
+    for (Node* child : node->children) {
+        removeNodeAndDescendatsFromSet(child, set);
+    }
+    set.erase(node);
 }
 
 /*
