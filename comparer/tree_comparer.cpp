@@ -111,11 +111,17 @@ Description:
     Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
 void TreeComparer::compareSimilarDeclNodes(const Node* firstNode, const Node* secondNode) {
-    // checking for parents, if the first node has parent, but not the same as the second one,
-    // print the details of the nodes and their parents
+    std::string firstNodeKey = Utils::getKey(firstNode, true);
+    std::string secondNodeKey = Utils::getKey(secondNode, true);
+
+    // get the statement nodes of the declaration nodes
+    auto firstStmtNodes = firstASTTree.getStmtNodes(firstNodeKey);
+    auto secondStmtNodes = secondASTTree.getStmtNodes(secondNodeKey);
+
+    // checking for parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has a different parent in second AST: "
-                  << secondNode->parent->usr << "\n";
+        std::cout << "Node "<< firstNode->kind << " " << firstNode->usr << " " << firstNode->path << " " << firstNode->lineNumber << ":" << firstNode->columnNumber 
+                  << " has a different parent in second AST: " << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";
         printNodeDetails(firstNode->parent, " ");
         std::cout << "Second AST parent details:\n";
@@ -163,11 +169,9 @@ Description:
     Prints the details of a given node to the standard output
 */
 void TreeComparer::printNodeDetails(const Node* node, std::string indent = " ") const {
-    std::cout << indent << "* Type: " << node->type << "\n";
-    std::cout << indent << "* Kind: " << node->kind << "\n";
-    std::cout << indent << "* USR: " << node->usr << "\n";
-    std::cout << indent << "* Location: " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "Parent unique id: " << (node->parent ? Utils::getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
+    std::cout << indent << "Node details:\n";
+    std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
+    std::cout << indent << "*** Parent unique id: " << (node->parent ? Utils::getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
     
     printSeparators();
 }
