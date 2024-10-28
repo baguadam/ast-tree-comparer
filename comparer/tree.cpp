@@ -48,7 +48,7 @@ const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
     std::vector<Node*> stmtNodes;
     auto range = stmtNodeMultiMap.equal_range(nodeKey);
     for (auto it = range.first; it != range.second; ++it) {
-        stmtNodes.push_back(it->second.first);
+        stmtNodes.push_back(it->second);
     }
     return stmtNodes;
 }
@@ -64,7 +64,7 @@ const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNode
 /*
     Returns the statement node map of the tree.
 */
-const std::unordered_multimap<std::string, std::pair<Node*, bool>>& Tree::getStmtNodeMultiMap() const {
+const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
     return stmtNodeMultiMap;
 }
 
@@ -216,7 +216,7 @@ void Tree::createNodeMap() {
             } else {
                 const Node* declarationParent = Utils::findDeclarationParent(node);
                 std::string declNodeKey = Utils::getKey(declarationParent, true);
-                stmtNodeMultiMap.insert({declNodeKey, std::pair<Node*, bool>(node, false)}); // link the statement node to its declaration parent
+                stmtNodeMultiMap.insert({declNodeKey, node}); // link the statement node to its declaration parent
             }
         }
 

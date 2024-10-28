@@ -14,7 +14,7 @@ public:
     
     Node* getRoot() const;
     const std::unordered_map<std::string, std::pair<Node*, bool>>& getDeclNodeMap() const;
-    const std::unordered_multimap<std::string, std::pair<Node*, bool>>& getStmtNodeMultiMap() const;
+    const std::unordered_multimap<std::string, Node*>& getStmtNodeMultiMap() const;
     const Node* getDeclNode(const std::string& nodeKey) const;
     const std::vector<Node*> getStmtNodes(const std::string& nodeKey) const;
     
@@ -27,7 +27,7 @@ public:
 private:
     Node* root;
     std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;
-    std::unordered_multimap<std::string, std::pair<Node*, bool>> stmtNodeMultiMap;
+    std::unordered_multimap<std::string, Node*> stmtNodeMultiMap;
 
     Node* buildTree(const std::string&);
     void createNodeMap();
