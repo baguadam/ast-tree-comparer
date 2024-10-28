@@ -132,7 +132,55 @@ void TreeComparer::compareSimilarDeclNodes(const Node* firstNode, const Node* se
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
+
+    // compare their direct children statements
+    compareStmtNodes(firstStmtNodes, secondStmtNodes);
 }
+
+/*
+Description:
+    Compares the statement nodes of two declaration nodes, prints the differences
+*/
+void TreeComparer::compareStmtNodes(const std::unordered_set<Node*>& firstStmtNodes, const std::unordered_set<Node*>& secondStmtNodes) {
+    size_t firstStmtNodesSize = firstStmtNodes.size();
+    size_t secondStmtNodesSize = secondStmtNodes.size();
+
+    // check if the number of statement nodes is different
+    if (firstStmtNodesSize != secondStmtNodesSize) {
+        std::cout << "Different number of statement nodes for the same declaration node.\n";
+        std::cout << "First AST statement nodes number: " << firstStmtNodesSize << "\n";
+        std::cout << "Second AST statement nodes: " << secondStmtNodesSize << "\n";
+        printSeparators();
+    }
+
+    // iterating through the first set of statement nodes
+    for (Node* firstStmtNode : firstStmtNodes) {
+        if (secondStmtNodes.count(firstStmtNode) == 0) {
+            std::cout << "Statement node " << firstStmtNode->kind << " " << firstStmtNode->usr << " " << firstStmtNode->path << " " 
+                      << firstStmtNode->lineNumber << ":" << firstStmtNode->columnNumber << " ONLY exists in first AST.\n";
+            printSeparators();
+        } else {
+            // statement node exists in both ASTs, compare them
+            const Node* secondStmtNode = *secondStmtNodes.find(firstStmtNode);
+            compareSimilarStmtNodes(firstStmtNode, secondStmtNode);
+        }
+    }
+
+    // iterating through the second set of statement nodes
+    for (Node* secondStmtNode : secondStmtNodes) {
+        if (firstStmtNodes.count(secondStmtNode) == 0) {
+            std::cout << "Statement node " << secondStmtNode->kind << " " << secondStmtNode->usr << " " << secondStmtNode->path << " " 
+                      << secondStmtNode->lineNumber << ":" << secondStmtNode->columnNumber << " ONLY exists in second AST.\n";
+            printSeparators();
+        }
+    }
+}
+
+void TreeComparer::compareSimilarStmtNodes(const Node* firstStmtNode, const Node* secondStmtNode) {
+    // compare the source locations of the nodes
+    compareSourceLocations(firstStmtNode, secondStmtNode);
+}
+
 
 /*
 Description:
