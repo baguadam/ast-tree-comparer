@@ -34,6 +34,27 @@ Node* Tree::getRoot() const {
 
 /*
 Description:
+    Returns the pair of the node based on the key.
+*/
+const Node* Tree::getDeclNode(const std::string& nodeKey) const {
+    return declNodeMap.at(nodeKey).first;
+}
+
+/*
+Description:
+    Returns the statement nodes based on the key of the declaration.
+*/
+const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
+    std::vector<Node*> stmtNodes;
+    auto range = stmtNodeMultiMap.equal_range(nodeKey);
+    for (auto it = range.first; it != range.second; ++it) {
+        stmtNodes.push_back(it->second.first);
+    }
+    return stmtNodes;
+}
+
+/*
+Description:
     Returns the node map of the tree.
 */
 const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNodeMap() const {
@@ -41,11 +62,10 @@ const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNode
 }
 
 /*
-Description:
-    Returns the pair of the node based on the key.
+    Returns the statement node map of the tree.
 */
-const Node* Tree::getDeclNode(const std::string& nodeKey) const {
-    return declNodeMap.at(nodeKey).first;
+const std::unordered_multimap<std::string, std::pair<Node*, bool>>& Tree::getStmtNodeMultiMap() const {
+    return stmtNodeMultiMap;
 }
 
 /*
