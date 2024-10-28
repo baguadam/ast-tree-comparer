@@ -124,15 +124,6 @@ void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* second
         printSeparators();
     }
 
-    // comparing the number of children
-    size_t firstChildrenSize = firstNode->children.size();
-    size_t secondChildrenSize = secondNode->children.size();
-    if (firstChildrenSize != secondChildrenSize) {
-        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has a different number of children in the trees.\n";
-        std::cout << "First AST children: " << firstChildrenSize << ", Second AST children: " << secondChildrenSize << '\n';
-        printSeparators();
-    }
-
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
 }
