@@ -90,7 +90,7 @@ void Tree::markSubTreeAsProcessed(Node* node) {
         }
 
         for (Node* child : current->children) {
-            if (child) {
+            if (child && child->type == "Declaration") {
                 stack.push(child);
             }
         }
