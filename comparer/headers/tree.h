@@ -12,18 +12,19 @@ public:
     ~Tree();
     
     Node* getRoot() const;
-    const std::unordered_map<std::string, std::pair<Node*, bool>>& getNodeMap() const;
+    const std::unordered_map<std::string, std::pair<Node*, bool>>& getDeclNodeMap() const;
     
-    void markNodeAsProcessed(const std::string& nodeKey);
-    bool isNodeProcessed(const std::string& nodeKey) const;
-    bool isNodeInAST(const std::string& nodeKey) const;
-    const Node* getNodeFromNodeMap(const std::string& nodeKey) const;
+    void markDeclNodeAsProcessed(const std::string& nodeKey);
+    bool isDeclNodeProcessed(const std::string& nodeKey) const;
+    bool isDeclNodeInAST(const std::string& nodeKey) const;
+    const Node* getDeclNode(const std::string& nodeKey) const;
     void markPairAsProcessed(const std::string& nodeKey);
     void markSubTreeAsProcessed(Node* node);
 
 private:
     Node* root;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMap;
+    std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;
+    std::unordered_multimap<std::string, std::pair<Node*, bool>> stmtNodeMultiMap;
 
     Node* buildTree(const std::string&);
     void createNodeMap();

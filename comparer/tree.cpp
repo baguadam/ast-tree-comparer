@@ -36,16 +36,16 @@ Node* Tree::getRoot() const {
 Description:
     Returns the node map of the tree.
 */
-const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getNodeMap() const {
-    return nodeMap;
+const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNodeMap() const {
+    return declNodeMap;
 }
 
 /*
 Description:
     Returns the pair of the node based on the key.
 */
-const Node* Tree::getNodeFromNodeMap(const std::string& nodeKey) const {
-    return nodeMap.at(nodeKey).first;
+const Node* Tree::getDeclNode(const std::string& nodeKey) const {
+    return declNodeMap.at(nodeKey).first;
 }
 
 /*
@@ -66,7 +66,7 @@ void Tree::markSubTreeAsProcessed(Node* node) {
 
         std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
         if (!nodeKey.empty()) {
-            markNodeAsProcessed(nodeKey);
+            markDeclNodeAsProcessed(nodeKey);
         }
 
         for (Node* child : current->children) {
@@ -81,24 +81,24 @@ void Tree::markSubTreeAsProcessed(Node* node) {
 Description:
     Marks the pair as processed in the tree.
 */
-void Tree::markNodeAsProcessed(const std::string& nodeKey) {
-    nodeMap.at(nodeKey).second = true;
+void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
+    declNodeMap.at(nodeKey).second = true;
 }
 
 /*
 Description:
     Checks if the node is processed in the tree.
 */
-bool Tree::isNodeProcessed(const std::string& nodeKey) const {
-    return nodeMap.at(nodeKey).second;
+bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
+    return declNodeMap.at(nodeKey).second;
 }
 
 /*
 Description:
     Checks if the node is in the tree.  
 */
-bool Tree::isNodeInAST(const std::string& nodeKey) const {
-    return nodeMap.count(nodeKey) > 0;
+bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
+    return declNodeMap.count(nodeKey) > 0;
 }
 
 /*
@@ -191,7 +191,13 @@ void Tree::createNodeMap() {
         // generating the node key and ensuring if it's valid
         std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
         if (!nodeKey.empty()) {
-            nodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
+            if (node->type == "Declaration") {
+                declNodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
+            } else {
+                const Node* declarationParent = Utils::findDeclarationParent(node);
+                std::string declNodeKey = Utils::getKey(declarationParent, true);
+                stmtNodeMultiMap.insert({declNodeKey, std::pair<Node*, bool>(node, false)}); // link the statement node to its declaration parent
+            }
         }
 
         // processing child nodes
