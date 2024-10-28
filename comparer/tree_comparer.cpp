@@ -151,11 +151,16 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     std::unordered_set<Node*, NodeHash, NodeEqual> secondStmtSet(secondStmtNodes.begin(), secondStmtNodes.end());
 
     // Iterate over the first set and check for differences
-    for (Node* node : firstStmtNodes) {
+    for (Node* node : firstStmtSet) {
         if (secondStmtSet.count(node) == 0) {
             std::cout << "Node with key: " << nodeKey << " has a statement node in the first AST that does not exist in the second AST.\n";
-            printNodeDetails(node, " ");
+            printSubTree(node, 0);
             printSeparators();
+
+            // remove the children of the node from the second set
+            for (Node* child : node->children) {
+                firstStmtSet.erase(child);
+            }
         } else {
             auto it = secondStmtSet.find(node);
             if (it != secondStmtSet.end()) {
