@@ -20,11 +20,11 @@ private:
 
     void compareSourceLocations(const Node*, const Node*);
     void compareDeclarationsAndStatements(const Node*, const Node*);
-    void compareSimilarNodes(const Node*, const Node*);
-    void processNode(Node*);
-    void processNodeInSingleAST(Node*, const std::string&, Tree&, const char*);
-    void processNodeInFirstAST(Node*, const std::string&);
-    void processNodeInSecondAST(Node*, const std::string&);
+    void compareSimilarDeclNodes(const Node*, const Node*);
+    void processDeclNode(Node*);
+    void processDeclNodeInSingleAST(Node*, const std::string&, Tree&, const char*);
+    void processDeclNodeInFirstAST(Node*, const std::string&);
+    void processDeclNodeInSecondAST(Node*, const std::string&);
     void enqueueChildren(Node*, std::queue<Node*>&);
 
     void printNodeDetails(const Node*, const std::string) const;

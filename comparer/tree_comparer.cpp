@@ -25,35 +25,35 @@ void TreeComparer::printDifferences() {
         enqueueChildren(current, queue);
 
         // process the node
-        processNode(current);
+        processDeclNode(current);
     }
 }
 
 /*
 Descpirion:
-    Processes a node by comparing it with the corresponding node in the other AST, if the node exists in both ASTs, 
+    Processes a declaration node by comparing it with the corresponding node in the other AST, if the node exists in both ASTs, 
     compares them, otherwise processes the node that exists only in one of the ASTs.
 */
-void TreeComparer::processNode(Node* current) {
+void TreeComparer::processDeclNode(Node* current) {
     std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
 
-    if (firstASTTree.isNodeInAST(nodeKey) && secondASTTree.isNodeInAST(nodeKey)) {
-        if (firstASTTree.isNodeProcessed(nodeKey) || secondASTTree.isNodeProcessed(nodeKey)) return;  // skip if already processed
-
+    if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists in both ASTs, compare them
-        const Node* firstASTNode = firstASTTree.getNodeFromNodeMap(nodeKey);
-        const Node* secondASTNode = secondASTTree.getNodeFromNodeMap(nodeKey);
-        compareSimilarNodes(firstASTNode, secondASTNode);
+        if (firstASTTree.isDeclNodeProcessed(nodeKey) && secondASTTree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
+
+        const Node* firstASTNode = firstASTTree.getDeclNode(nodeKey);
+        const Node* secondASTNode = secondASTTree.getDeclNode(nodeKey);
+        compareSimilarDeclNodes(firstASTNode, secondASTNode);
 
         // mark nodes as processed
-        firstASTTree.markNodeAsProcessed(nodeKey);
-        secondASTTree.markNodeAsProcessed(nodeKey);
-    } else if (firstASTTree.isNodeInAST(nodeKey)) {
+        firstASTTree.markDeclNodeAsProcessed(nodeKey);
+        secondASTTree.markDeclNodeAsProcessed(nodeKey);
+    } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the first AST
-        processNodeInFirstAST(current, nodeKey);
-    } else if (secondASTTree.isNodeInAST(nodeKey)) {
+        processDeclNodeInFirstAST(current, nodeKey);
+    } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the second AST
-        processNodeInSecondAST(current, nodeKey);
+        processDeclNodeInSecondAST(current, nodeKey);
     } else {
         // node does not exist in either AST, should not happen
         std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
@@ -64,8 +64,8 @@ void TreeComparer::processNode(Node* current) {
 Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed
 */
-void TreeComparer::processNodeInSingleAST(Node* current, const std::string& nodeKey, Tree& tree, const char* astName) {
-    if (tree.isNodeProcessed(nodeKey)) return;  // skip if already processed
+void TreeComparer::processDeclNodeInSingleAST(Node* current, const std::string& nodeKey, Tree& tree, const char* astName) {
+    if (tree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
 
     std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
     printSubTree(current, 0);
@@ -77,16 +77,16 @@ void TreeComparer::processNodeInSingleAST(Node* current, const std::string& node
 Description:
     Processes the node that only exists in the first AST, prints the details of the node
 */
-void TreeComparer::processNodeInFirstAST(Node* current, const std::string& nodeKey) {
-    processNodeInSingleAST(current, nodeKey, firstASTTree, "=FIRST=");
+void TreeComparer::processDeclNodeInFirstAST(Node* current, const std::string& nodeKey) {
+    processDeclNodeInSingleAST(current, nodeKey, firstASTTree, "=FIRST=");
 }
 
 /*
 Description:
     Processes the node that only exists in the second AST, prints the details of the node
 */
-void TreeComparer::processNodeInSecondAST(Node* current, const std::string& nodeKey) {
-    processNodeInSingleAST(current, nodeKey, secondASTTree, "=SECOND=");
+void TreeComparer::processDeclNodeInSecondAST(Node* current, const std::string& nodeKey) {
+    processDeclNodeInSingleAST(current, nodeKey, secondASTTree, "=SECOND=");
 }
 
 /*
@@ -110,7 +110,7 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
 Description:
     Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
-void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* secondNode) {
+void TreeComparer::compareSimilarDeclNodes(const Node* firstNode, const Node* secondNode) {
     // checking for parents, if the first node has parent, but not the same as the second one,
     // print the details of the nodes and their parents
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
@@ -130,11 +130,11 @@ void TreeComparer::compareSimilarNodes(const Node* firstNode, const Node* second
 
 /*
 Description:
-    Enqueues the children of a given node to the queue
+    Enqueues the children of a given node to the queue, only storing the Declaration types for processing
 */
 void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
     for (Node* child : current->children) {
-        if (child) {
+        if (child && child->type == "Declaration") {
             queue.push(child);
         }
     }
