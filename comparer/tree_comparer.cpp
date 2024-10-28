@@ -106,6 +106,10 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
     }
 }
 
+/*
+Description:
+    Comparison logic of two parents of the nodes
+*/
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
         std::cout << "Node " << firstNode->kind << " " << firstNode->usr << " " << firstNode->path << " " << firstNode->lineNumber << ":" << firstNode->columnNumber
@@ -156,20 +160,23 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
             auto it = secondStmtSet.find(node);
             if (it != secondStmtSet.end()) {
                 compareSimilarStmtNodes(node, *it);
+                secondStmtSet.erase(it);
             }
         }
     }
 
-    // Iterate over the second set and check for differences
-    for (Node* node : secondStmtNodes) {
-        if (firstStmtSet.count(node) == 0) {
-            std::cout << "Node with key: " << nodeKey << " has a statement node in the second AST that does not exist in the first AST.\n";
-            printNodeDetails(node, " ");
-            printSeparators();
-        }
+    // Iterate over the second set to print the remaining nodes
+    for (Node* node : secondStmtSet) {
+        std::cout << "Node with key: " << nodeKey << " has a statement node in the second AST that does not exist in the first AST.\n";
+        printNodeDetails(node, " ");
+        printSeparators();
     }
 }
 
+/*
+Descpiption:
+    Compares two similar statement nodes, checking for parents and source locations 
+*/
 void TreeComparer::compareSimilarStmtNodes(const Node* firstStmtNode, const Node* secondStmtNode) {
     // checking for parent
     compareParents(firstStmtNode, secondStmtNode);
