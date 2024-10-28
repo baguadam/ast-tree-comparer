@@ -7,35 +7,29 @@
 #include <unordered_set>
 #include <queue>
 #include "node.h"
+#include "tree.h"
 
 class TreeComparer {
 public:
-    TreeComparer(Node*, Node*);
+    TreeComparer(Tree&, Tree&);
     void printDifferences();
 
 private:
-    Node* firstASTTree;
-    Node* secondASTTree;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapFirstAST;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMapSecondAST;
-    std::string getKey(Node*, bool) const;
-    std::unordered_map<std::string, std::pair<Node*, bool>> createNodeMap(Node*);
+    Tree& firstASTTree;
+    Tree& secondASTTree;
 
-    void compareSourceLocations(Node*, Node*);
-    void compareStatements(Node*, Node*);
-    void compareDeclarations(Node*, Node*);
-    void compareFunctions(Node*, Node*);
-    void compareClasses(Node*, Node*);
-    void compareNodes(Node*, Node*);
+    void compareSourceLocations(const Node*, const Node*);
+    void compareDeclarationsAndStatements(const Node*, const Node*);
+    void compareSimilarNodes(const Node*, const Node*);
+    void processNode(Node*);
+    void processNodeInSingleAST(Node*, const std::string&, Tree&, const char*);
     void processNodeInFirstAST(Node*, const std::string&);
     void processNodeInSecondAST(Node*, const std::string&);
     void enqueueChildren(Node*, std::queue<Node*>&);
-    void markSubTreeAsProcessed(Node*, std::unordered_map<std::string, std::pair<Node*, bool>>&);
 
-    void printNodeDetails(Node*, const std::string) const;
-    void printSubTree(Node*, int) const;
+    void printNodeDetails(const Node*, const std::string) const;
+    void printSubTree(const Node*, int) const;
     void printSeparators() const;
 };
-
 
 #endif
