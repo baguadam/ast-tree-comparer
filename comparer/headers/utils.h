@@ -7,6 +7,9 @@
 class Utils {
 public:
     static std::string getKey(const Node* node, bool isDeclaration);
+
+private:
+    static const Node* findDeclarationParent(const Node* node);
 };
 
 #endif 
