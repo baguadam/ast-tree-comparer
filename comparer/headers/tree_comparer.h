@@ -29,9 +29,7 @@ private:
     void processDeclNodeInSecondAST(Node*, const std::string&);
     void enqueueChildren(Node*, std::queue<Node*>&);
 
-    void printNodeDetails(const Node*, const std::string) const;
     void printSubTree(const Node*, int) const;
-    void printSeparators() const;
 };
 
 #endif

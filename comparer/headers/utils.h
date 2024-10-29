@@ -8,6 +8,8 @@ class Utils {
 public:
     static std::string getKey(const Node* node, bool isDeclaration);
     static const Node* findDeclarationParent(const Node* node);
+    static void printSeparators();
+    static void printNodeDetails(const Node* node, std::string indent);
 };
 
 #endif 

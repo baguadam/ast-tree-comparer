@@ -3,7 +3,11 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) : firstASTTree(firstTree), secondASTTree(secondTree) {} 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) : firstASTTree(firstTree), secondASTTree(secondTree) {
+    if (!firstTree.getRoot() || !secondTree.getRoot()) {
+        throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
+    }
+} 
 
 /*
 Description:
@@ -70,7 +74,7 @@ void TreeComparer::processDeclNodeInSingleAST(Node* current, const std::string& 
     std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
     printSubTree(current, 0);
     tree.markSubTreeAsProcessed(current);  // mark entire subtree as processed
-    printSeparators();
+    Utils::printSeparators();
 }
 
 /*
@@ -102,7 +106,7 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
         std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
         
-        printSeparators();
+        Utils::printSeparators();
     }
 }
 
@@ -115,11 +119,11 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
         std::cout << "Node " << firstNode->kind << " " << firstNode->usr << " " << firstNode->path << " " << firstNode->lineNumber << ":" << firstNode->columnNumber
                   << " has a different parent in second AST: " << secondNode->parent->usr << "\n";
         std::cout << "First AST parent details:\n";
-        printNodeDetails(firstNode->parent, " ");
+        Utils::printNodeDetails(firstNode->parent, " ");
         std::cout << "Second AST parent details:\n";
-        printNodeDetails(secondNode->parent, " ");
+        Utils::printNodeDetails(secondNode->parent, " ");
 
-        printSeparators();
+        Utils::printSeparators();
     }
 }
 
@@ -157,7 +161,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
             std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the FIRST AST: \n";
             printSubTree(stmtNode.first, 0);
             Tree::markStmtSubTreeAsProcessed(stmtNode.first, firstASTStmtMap); // subtree is marked as processed
-            printSeparators();
+            Utils::printSeparators();
         } else {
             // node exists in both ASTs, compare them
             compareSimilarStmtNodes(stmtNode.first, it->second.first);
@@ -177,7 +181,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
             std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the SECOND AST\n";
             printSubTree(stmtNode.first, 0);
             Tree::markStmtSubTreeAsProcessed(stmtNode.first, secondASTStmtMap); // subtree is marked as processed
-            printSeparators();
+            Utils::printSeparators();
         }
     }
 }
@@ -215,28 +219,8 @@ void TreeComparer::printSubTree(const Node* node, int depth = 0) const {
     // indent for better readability
     std::string indent(depth * 2, ' ');
 
-    printNodeDetails(node, indent);
+    Utils::printNodeDetails(node, indent);
     for (Node* child : node->children) {
         printSubTree(child, depth + 1);
     }
-}
-
-/*
-Description:
-    Prints the details of a given node to the standard output
-*/
-void TreeComparer::printNodeDetails(const Node* node, std::string indent = " ") const {
-    std::cout << indent << "Node details:\n";
-    std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "*** Parent unique id: " << (node->parent ? Utils::getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
-    
-    printSeparators();
-}
-
-/*
-Description:
-    Prints a separator for better readability
-*/
-void TreeComparer::printSeparators() const {
-    std::cout << "**********************************************************\n";
 }

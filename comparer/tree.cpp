@@ -12,7 +12,16 @@ Description:
     Constructs a tree from the given file.
 */
 Tree::Tree(const std::string& fileName) {
-    root = buildTree(fileName);
+    std::ifstream file(fileName);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + fileName);
+    }
+    
+    root = buildTree(file);
+    if (!root) {
+        throw std::runtime_error("Failed to build tree from file: " + fileName);
+    }
+    
     createNodeMap();
 }
 
@@ -21,7 +30,10 @@ Description:
     Deletes the tree.
 */
 Tree::~Tree() {
-    deleteTree(root);
+    if (root) {
+        deleteTree(root);
+        root = nullptr;
+    }
 }
 
 /*
@@ -37,7 +49,11 @@ Description:
     Returns the pair of the node based on the key.
 */
 const Node* Tree::getDeclNode(const std::string& nodeKey) const {
-    return declNodeMap.at(nodeKey).first;
+    auto it = declNodeMap.find(nodeKey);
+    if (it == declNodeMap.end()) {
+        throw std::out_of_range("Node key not found in the declaration node map: " + nodeKey);
+    }
+    return it->second.first;
 }
 
 /*
@@ -126,14 +142,9 @@ bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
 Description:
     Builds a tree from the given file, created the node, provides some checks and returns the root node.
 */
-Node* Tree::buildTree(const std::string& fileName) {
+Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
     std::string line;
-    std::ifstream file(fileName);
-    if (!file) {
-        std::cerr << "Unable to open file: " << fileName << std::endl;
-        return nullptr;
-    }
 
     while (std::getline(file, line)) {
         int depth = 0;

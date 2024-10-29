@@ -1,4 +1,5 @@
 #include "./headers/utils.h"
+#include <iostream>
 /*
 Description:
     Generates a unique key for a node based on its type and information
@@ -26,4 +27,16 @@ const Node* Utils::findDeclarationParent(const Node* node) {
         parent = parent->parent;
     }
     return parent;
+}
+
+void Utils::printSeparators() {
+    std::cout << "----------------------------------------\n";
+}
+
+void Utils::printNodeDetails(const Node* node, std::string indent) {
+    std::cout << indent << "Node details:\n";
+    std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
+    std::cout << indent << "*** Parent unique id: " << (node->parent ? getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
+    
+    printSeparators();
 }
