@@ -44,11 +44,12 @@ const Node* Tree::getDeclNode(const std::string& nodeKey) const {
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::vector<Node*> stmtNodes;
+const std::unordered_map<std::string, std::vector<Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
+    std::unordered_map<std::string, std::vector<Node*>> stmtNodes;
     auto range = stmtNodeMultiMap.equal_range(nodeKey);
     for (auto it = range.first; it != range.second; ++it) {
-        stmtNodes.push_back(it->second);
+        std::string stmtNodeKey = it->second->kind;
+        stmtNodes[stmtNodeKey].push_back(it->second);
     }
     return stmtNodes;
 }

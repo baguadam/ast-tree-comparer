@@ -144,38 +144,10 @@ Description:
     then compares the nodes in the first AST with the nodes in the second AST, printing the differences
 */
 void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    std::vector<Node*> firstStmtNodes = firstASTTree.getStmtNodes(nodeKey);
-    std::vector<Node*> secondStmtNodes = secondASTTree.getStmtNodes(nodeKey);
+    std::unordered_map<std::string, std::vector<Node*>> firstASTStmtMap = firstASTTree.getStmtNodes(nodeKey);
+    std::unordered_map<std::string, std::vector<Node*>> secondASTStmtMap = secondASTTree.getStmtNodes(nodeKey);
 
-    std::unordered_set<Node*, NodeHash, NodeEqual> firstStmtSet(firstStmtNodes.begin(), firstStmtNodes.end());
-    std::unordered_set<Node*, NodeHash, NodeEqual> secondStmtSet(secondStmtNodes.begin(), secondStmtNodes.end());
-
-    // Iterate over the first set and check for differences
-    for (Node* node : firstStmtNodes) {
-        if (firstStmtSet.count(node) > 0) {
-            if (secondStmtSet.count(node) == 0) {
-                std::cout << "Node with key: " << nodeKey << " has a statement node in the first AST that does not exist in the second AST.\n";
-                printSubTree(node, 0);
-                printSeparators();
-
-                // remove the children and and the descendants from the set
-                removeNodeAndDescendatsFromSet(node, firstStmtSet);
-            } else {
-                auto it = secondStmtSet.find(node);
-                if (it != secondStmtSet.end()) {
-                    compareSimilarStmtNodes(node, *it);
-                    secondStmtSet.erase(it);
-                }
-            }
-        }
-    }
-
-    // Iterate over the second set to print the remaining nodes
-    for (Node* node : secondStmtSet) {
-        std::cout << "Node with key: " << nodeKey << " has a statement node in the second AST that does not exist in the first AST.\n";
-        printNodeDetails(node, " ");
-        printSeparators();
-    }
+    
 }
 
 /*
