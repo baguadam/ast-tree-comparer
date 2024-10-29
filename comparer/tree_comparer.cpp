@@ -25,6 +25,11 @@ void TreeComparer::printDifferences() {
         Node* current = queue.front();
         queue.pop();
 
+        if (!current) {
+            std::cerr << "Error: Encountered null node during traversal in printDifferences().\n";
+            continue;
+        }
+
         // add children to the queue for further processing
         enqueueChildren(current, queue);
 
@@ -49,9 +54,8 @@ void TreeComparer::processDeclNode(Node* current) {
         const Node* secondASTNode = secondASTTree.getDeclNode(nodeKey);
         compareSimilarDeclNodes(firstASTNode, secondASTNode, nodeKey);
 
-        // mark nodes as processed
-        firstASTTree.markDeclNodeAsProcessed(nodeKey);
-        secondASTTree.markDeclNodeAsProcessed(nodeKey);
+        // compare their direct children statements
+        compareStmtNodes(nodeKey);
     } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the first AST
         processDeclNodeInFirstAST(current, nodeKey);
@@ -72,7 +76,7 @@ void TreeComparer::processDeclNodeInSingleAST(Node* current, const std::string& 
     if (tree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
 
     std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
-    printSubTree(current, 0);
+    Utils::printSubTree(current, 0);
     tree.markSubTreeAsProcessed(current);  // mark entire subtree as processed
     Utils::printSeparators();
 }
@@ -138,8 +142,9 @@ void TreeComparer::compareSimilarDeclNodes(const Node* firstNode, const Node* se
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
 
-    // compare their direct children statements
-    compareStmtNodes(nodeKey);
+    // mark nodes as processed
+    firstASTTree.markDeclNodeAsProcessed(nodeKey);
+    secondASTTree.markDeclNodeAsProcessed(nodeKey);
 }
 
 /*
@@ -159,7 +164,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
         if (it == secondASTStmtMap.end()) {
             // node exists only in the first AST
             std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the FIRST AST: \n";
-            printSubTree(stmtNode.first, 0);
+            Utils::printSubTree(stmtNode.first, 0);
             Tree::markStmtSubTreeAsProcessed(stmtNode.first, firstASTStmtMap); // subtree is marked as processed
             Utils::printSeparators();
         } else {
@@ -179,7 +184,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
         if (firstASTStmtMap.find(stmtKey) == firstASTStmtMap.end()) {
             // node exists only in the second AST
             std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the SECOND AST\n";
-            printSubTree(stmtNode.first, 0);
+            Utils::printSubTree(stmtNode.first, 0);
             Tree::markStmtSubTreeAsProcessed(stmtNode.first, secondASTStmtMap); // subtree is marked as processed
             Utils::printSeparators();
         }
@@ -204,23 +209,5 @@ void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
         if (child && child->type == "Declaration") {
             queue.push(child);
         }
-    }
-}
-
-/*
-Description:
-    Prints the subtree of a given node, recursively calling the function for its children
-*/
-void TreeComparer::printSubTree(const Node* node, int depth = 0) const {
-    if (!node) {
-        return;
-    }
-
-    // indent for better readability
-    std::string indent(depth * 2, ' ');
-
-    Utils::printNodeDetails(node, indent);
-    for (Node* child : node->children) {
-        printSubTree(child, depth + 1);
     }
 }

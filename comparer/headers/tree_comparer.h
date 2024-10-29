@@ -28,8 +28,6 @@ private:
     void processDeclNodeInFirstAST(Node*, const std::string&);
     void processDeclNodeInSecondAST(Node*, const std::string&);
     void enqueueChildren(Node*, std::queue<Node*>&);
-
-    void printSubTree(const Node*, int) const;
 };
 
 #endif

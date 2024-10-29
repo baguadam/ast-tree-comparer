@@ -40,3 +40,16 @@ void Utils::printNodeDetails(const Node* node, std::string indent) {
     
     printSeparators();
 }
+
+void Utils::printSubTree(const Node* node, int depth) {
+    if (!node) {
+        return;
+    }
+
+    std::string indent(depth * 2, ' ');
+
+    printNodeDetails(node, indent);
+    for (Node* child : node->children) {
+        printSubTree(child, depth + 1);
+    }
+}
