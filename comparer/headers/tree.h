@@ -16,7 +16,7 @@ public:
     const std::unordered_map<std::string, std::pair<Node*, bool>>& getDeclNodeMap() const;
     const std::unordered_multimap<std::string, Node*>& getStmtNodeMultiMap() const;
     const Node* getDeclNode(const std::string& nodeKey) const;
-    const std::unordered_map<std::string, std::vector<Node*>> getStmtNodes(const std::string& nodeKey) const;
+    const std::unordered_map<std::string, std::pair<Node*, bool>> getStmtNodes(const std::string& nodeKey) const;
     
     void markDeclNodeAsProcessed(const std::string& nodeKey);
     bool isDeclNodeProcessed(const std::string& nodeKey) const;
@@ -24,6 +24,8 @@ public:
     void markPairAsProcessed(const std::string& nodeKey);
     void markSubTreeAsProcessed(Node* node);
 
+    static void markStmtSubTreeAsProcessed(Node* node, std::unordered_map<std::string, std::pair<Node*, bool>>& stmtNodeMap);
+    
 private:
     Node* root;
     std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;

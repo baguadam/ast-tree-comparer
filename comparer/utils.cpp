@@ -14,8 +14,7 @@ std::string Utils::getKey(const Node* node, bool isDeclaration) {
             key += "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
         }
     } else {
-        const Node* declarationParent = findDeclarationParent(node);
-        key += "|" + declarationParent->usr + "|" + declarationParent->path + "|" + std::to_string(declarationParent->lineNumber) + ":" + std::to_string(declarationParent->columnNumber);  
+        key += "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
     }
 
     return key;

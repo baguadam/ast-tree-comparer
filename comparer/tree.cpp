@@ -44,12 +44,12 @@ const Node* Tree::getDeclNode(const std::string& nodeKey) const {
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::unordered_map<std::string, std::vector<Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::unordered_map<std::string, std::vector<Node*>> stmtNodes;
+const std::unordered_map<std::string, std::pair<Node*, bool>> Tree::getStmtNodes(const std::string& nodeKey) const {
+    std::unordered_map<std::string, std::pair<Node*, bool>> stmtNodes;
     auto range = stmtNodeMultiMap.equal_range(nodeKey);
     for (auto it = range.first; it != range.second; ++it) {
-        std::string stmtNodeKey = it->second->kind;
-        stmtNodes[stmtNodeKey].push_back(it->second);
+        std::string stmtNodeKey = Utils::getKey(it->second, false);
+        stmtNodes[stmtNodeKey] = std::pair<Node*, bool>(it->second, false); // marking the node as not processed
     }
     return stmtNodes;
 }
@@ -240,5 +240,30 @@ void Tree::deleteTree(Node* node) {
             deleteTree(child);
         }
         delete node;
+    }
+}
+
+/*
+Description:
+    Static method that marks the subtree of the statement nodes as processed in the given map.
+*/
+void Tree::markStmtSubTreeAsProcessed(Node* node, std::unordered_map<std::string, std::pair<Node*, bool>>& stmtMap) {
+    if (!node) {
+        return;
+    }
+
+    std::queue<Node*> queue;
+    queue.push(node);
+
+    while (!queue.empty()) {
+        Node* current = queue.front();
+        queue.pop();
+
+        std::string nodeKey = Utils::getKey(current, false);
+        stmtMap.at(nodeKey).second = true;
+
+        for (Node* child : current->children) {
+            queue.push(child);
+        }
     }
 }

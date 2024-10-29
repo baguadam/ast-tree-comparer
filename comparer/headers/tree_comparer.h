@@ -32,8 +32,6 @@ private:
     void printNodeDetails(const Node*, const std::string) const;
     void printSubTree(const Node*, int) const;
     void printSeparators() const;
-
-    void removeNodeAndDescendatsFromSet(Node*, std::unordered_set<Node*, NodeHash, NodeEqual>&);
 };
 
 #endif
