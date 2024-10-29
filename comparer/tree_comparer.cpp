@@ -148,7 +148,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     std::unordered_map<std::string, std::pair<Node*, bool>> secondASTStmtMap = secondASTTree.getStmtNodes(nodeKey);
 
     // Iterate over the first set and check for differences
-    for (const auto& [stmtKey, stmtNode] : firstASTStmtMap) {
+    for (auto& [stmtKey, stmtNode] : firstASTStmtMap) {
         if (stmtNode.second) continue;  // skip if already processed
 
         auto it = secondASTStmtMap.find(stmtKey);
@@ -163,8 +163,8 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
             compareSimilarStmtNodes(stmtNode.first, it->second.first);
 
             // set the nodes as processed
-            firstASTStmtMap[stmtKey].second = true;
-            secondASTStmtMap[stmtKey].second = true;
+            stmtNode.second = true;
+            it->second.second = true;
         }
     }
 
