@@ -21,6 +21,10 @@ std::string Utils::getKey(const Node* node, bool isDeclaration) {
     return key;
 }
 
+/*
+Description:
+    Finds the first declaration parent of a given node (most cases it is for Statement nodes)
+*/
 const Node* Utils::findDeclarationParent(const Node* node) {
     const Node* parent = node->parent;
     while (parent && parent->type != "Declaration") {
@@ -29,10 +33,18 @@ const Node* Utils::findDeclarationParent(const Node* node) {
     return parent;
 }
 
+/*
+Description:
+    Prints a separator line to the console
+*/
 void Utils::printSeparators() {
     std::cout << "----------------------------------------\n";
 }
 
+/*
+Description:
+    Prints the details of a node to the console
+*/
 void Utils::printNodeDetails(const Node* node, std::string indent) {
     std::cout << indent << "Node details:\n";
     std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
@@ -41,6 +53,10 @@ void Utils::printNodeDetails(const Node* node, std::string indent) {
     printSeparators();
 }
 
+/*
+Description:
+    Prints the subtree of a given node to the console
+*/
 void Utils::printSubTree(const Node* node, int depth) {
     if (!node) {
         return;

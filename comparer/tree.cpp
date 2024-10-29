@@ -60,12 +60,11 @@ const Node* Tree::getDeclNode(const std::string& nodeKey) const {
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::unordered_map<std::string, std::pair<Node*, bool>> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::unordered_map<std::string, std::pair<Node*, bool>> stmtNodes;
+const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
+    std::vector<std::pair<std::string, Node*>> stmtNodes;
     auto range = stmtNodeMultiMap.equal_range(nodeKey);
     for (auto it = range.first; it != range.second; ++it) {
-        std::string stmtNodeKey = Utils::getKey(it->second, false);
-        stmtNodes[stmtNodeKey] = std::pair<Node*, bool>(it->second, false); // marking the node as not processed
+        stmtNodes.emplace_back(Utils::getKey(it->second, false), it->second);
     }
     return stmtNodes;
 }
@@ -87,13 +86,14 @@ const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() c
 
 /*
 Description:
-    Marks the subtree as processed in the tree.
+    Traverses the subtree of the given node using the callback function.
 */
-void Tree::markSubTreeAsProcessed(Node* node) {
+void Tree::traverseSubTree(Node* node, std::function<void(Node*)> processNode) {
     if (!node) {
         return;
     }
 
+    // Use stack for DFS traversal
     std::stack<Node*> stack;
     stack.push(node);
 
@@ -101,17 +101,48 @@ void Tree::markSubTreeAsProcessed(Node* node) {
         Node* current = stack.top();
         stack.pop();
 
-        std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
-        if (!nodeKey.empty()) {
-            markDeclNodeAsProcessed(nodeKey);
-        }
+        // Process the current node using the callback function
+        processNode(current);
 
+        // Add children to the stack for DFS
         for (Node* child : current->children) {
-            if (child && child->type == "Declaration") {
+            if (child) {
                 stack.push(child);
             }
         }
     }
+}
+
+/*
+Description:
+    Marks the subtree of the declaration nodes as processed in the tree.
+*/
+void Tree::markDeclSubTreeAsProcessed(Node* node) {
+    auto markDeclNode = [this](Node* current) {
+        if (current->type == "Declaration") {
+            std::string nodeKey = Utils::getKey(current, true);
+            if (!nodeKey.empty()) {
+                markDeclNodeAsProcessed(nodeKey);
+            }
+        }
+    };
+
+    // Use the helper method with DFS traversal
+    traverseSubTree(node, markDeclNode);
+}
+
+/*
+Description:
+    Marks the subtree of the statement nodes as processed in the tree.
+*/
+void Tree::markStmtSubTreeAsProcessed(Node* node, std::unordered_set<std::string>& processedKeys) {
+    auto markStmtNode = [&processedKeys](Node* current) {
+        std::string nodeKey = Utils::getKey(current, false);
+        processedKeys.insert(nodeKey);
+    };
+
+    // Use the helper method with DFS traversal
+    traverseSubTree(node, markStmtNode);
 }
 
 /*
@@ -251,30 +282,5 @@ void Tree::deleteTree(Node* node) {
             deleteTree(child);
         }
         delete node;
-    }
-}
-
-/*
-Description:
-    Static method that marks the subtree of the statement nodes as processed in the given map.
-*/
-void Tree::markStmtSubTreeAsProcessed(Node* node, std::unordered_map<std::string, std::pair<Node*, bool>>& stmtMap) {
-    if (!node) {
-        return;
-    }
-
-    std::queue<Node*> queue;
-    queue.push(node);
-
-    while (!queue.empty()) {
-        Node* current = queue.front();
-        queue.pop();
-
-        std::string nodeKey = Utils::getKey(current, false);
-        stmtMap.at(nodeKey).second = true;
-
-        for (Node* child : current->children) {
-            queue.push(child);
-        }
     }
 }

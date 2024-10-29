@@ -77,8 +77,8 @@ void TreeComparer::processDeclNodeInSingleAST(Node* current, const std::string& 
 
     std::cout << "Node " << nodeKey << " only exists in the " << astName << " AST, skipping its children\n";
     Utils::printSubTree(current, 0);
-    tree.markSubTreeAsProcessed(current);  // mark entire subtree as processed
     Utils::printSeparators();
+    tree.markDeclSubTreeAsProcessed(current);  // mark entire subtree as processed
 }
 
 /*
@@ -153,40 +153,47 @@ Description:
     then compares the nodes in the first AST with the nodes in the second AST, printing the differences
 */
 void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    std::unordered_map<std::string, std::pair<Node*, bool>> firstASTStmtMap = firstASTTree.getStmtNodes(nodeKey);
-    std::unordered_map<std::string, std::pair<Node*, bool>> secondASTStmtMap = secondASTTree.getStmtNodes(nodeKey);
+    std::vector<std::pair<std::string, Node*>> firstASTStmtVec = firstASTTree.getStmtNodes(nodeKey);
+    std::vector<std::pair<std::string, Node*>> secondASTStmtVec = secondASTTree.getStmtNodes(nodeKey);
 
-    // Iterate over the first set and check for differences
-    for (auto& [stmtKey, stmtNode] : firstASTStmtMap) {
-        if (stmtNode.second) continue;  // skip if already processed
+    // processed statement keys
+    std::unordered_set<std::string> processedKeys;
+
+    // map of second AST statement nodes for faster lookup
+    std::unordered_map<std::string, Node*> secondASTStmtMap;
+    for (const auto& [stmtKey, stmtNode] : secondASTStmtVec) {
+        secondASTStmtMap[stmtKey] = stmtNode;
+    }
+
+    // iterate through the first AST vector
+    for (auto& [stmtKey, stmtNode] : firstASTStmtVec) {
+        if (processedKeys.find(stmtKey) != processedKeys.end()) {
+            continue; // skip if already processed
+        }
 
         auto it = secondASTStmtMap.find(stmtKey);
         if (it == secondASTStmtMap.end()) {
             // node exists only in the first AST
-            std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the FIRST AST: \n";
-            Utils::printSubTree(stmtNode.first, 0);
-            Tree::markStmtSubTreeAsProcessed(stmtNode.first, firstASTStmtMap); // subtree is marked as processed
+            std::cout << "STATEMENT Node " << stmtKey << " exists only in the FIRST AST:\n";
+            Utils::printSubTree(stmtNode, 0);
             Utils::printSeparators();
+            firstASTTree.markStmtSubTreeAsProcessed(stmtNode, processedKeys);
         } else {
             // node exists in both ASTs, compare them
-            compareSimilarStmtNodes(stmtNode.first, it->second.first);
+            compareSimilarStmtNodes(stmtNode, it->second);
 
-            // set the nodes as processed
-            stmtNode.second = true;
-            it->second.second = true;
+            // mark nodes as processed
+            processedKeys.insert(stmtKey);
         }
     }
 
-    // Iterate over the second set and check for differences
-    for (const auto& [stmtKey, stmtNode] : secondASTStmtMap) {
-        if (stmtNode.second) continue;  // skip if already processed
-
-        if (firstASTStmtMap.find(stmtKey) == firstASTStmtMap.end()) {
-            // node exists only in the second AST
-            std::cout << "STATEMENT Node " << stmtKey << " difference detected, Statement exists in the SECOND AST\n";
-            Utils::printSubTree(stmtNode.first, 0);
-            Tree::markStmtSubTreeAsProcessed(stmtNode.first, secondASTStmtMap); // subtree is marked as processed
+    // iterate through the statements in the second AST that were not processed
+    for (auto& [stmtKey, stmtNode] : secondASTStmtMap) {
+        if (processedKeys.find(stmtKey) == processedKeys.end()) {
+            std::cout << "STATEMENT Node " << stmtKey << " exists only in the SECOND AST:\n";
+            Utils::printSubTree(stmtNode, 0);
             Utils::printSeparators();
+            secondASTTree.markStmtSubTreeAsProcessed(stmtNode, processedKeys);
         }
     }
 }
