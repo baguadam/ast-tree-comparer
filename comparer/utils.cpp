@@ -52,20 +52,3 @@ void Utils::printNodeDetails(const Node* node, std::string indent) {
     
     printSeparators();
 }
-
-/*
-Description:
-    Prints the subtree of a given node to the console
-*/
-void Utils::printSubTree(const Node* node, int depth) {
-    if (!node) {
-        return;
-    }
-
-    std::string indent(depth * 2, ' ');
-
-    printNodeDetails(node, indent);
-    for (Node* child : node->children) {
-        printSubTree(child, depth + 1);
-    }
-}

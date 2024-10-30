@@ -10,7 +10,6 @@ public:
     static const Node* findDeclarationParent(const Node* node);
     static void printSeparators();
     static void printNodeDetails(const Node* node, std::string indent);
-    static void printSubTree(const Node* node, int depth = 0);
 };
 
 #endif 

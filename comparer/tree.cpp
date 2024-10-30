@@ -84,65 +84,33 @@ const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() c
     return stmtNodeMultiMap;
 }
 
+
 /*
 Description:
-    Traverses the subtree of the given node using the callback function.
+    Processes a sutree of a given node using DFS traversal, uses the callback fuction to process the node, therefore it can be used
+    both for Statements and Declarations.
 */
-void Tree::traverseSubTree(Node* node, std::function<void(Node*)> processNode) {
+void Tree::processSubTree(Node* node, std::function<void(Node*)> processNode) {
     if (!node) {
         return;
     }
 
-    // Use stack for DFS traversal
+    // DFS traversal
     std::stack<Node*> stack;
     stack.push(node);
 
     while (!stack.empty()) {
         Node* current = stack.top();
         stack.pop();
-
-        // Process the current node using the callback function
+         
         processNode(current);
 
-        // Add children to the stack for DFS
         for (Node* child : current->children) {
             if (child) {
                 stack.push(child);
             }
         }
     }
-}
-
-/*
-Description:
-    Marks the subtree of the declaration nodes as processed in the tree.
-*/
-void Tree::markDeclSubTreeAsProcessed(Node* node) {
-    auto markDeclNode = [this](Node* current) {
-        if (current->type == "Declaration") {
-            std::string nodeKey = Utils::getKey(current, true);
-            if (!nodeKey.empty()) {
-                markDeclNodeAsProcessed(nodeKey);
-            }
-        }
-    };
-
-    // Use the helper method with DFS traversal
-    traverseSubTree(node, markDeclNode);
-}
-
-/*
-Description:
-    Marks the subtree of the statement nodes as processed in the tree.
-*/
-void Tree::markStmtSubTreeAsProcessed(Node* node, std::unordered_set<std::string>& processedKeys) {
-    auto markStmtNode = [&processedKeys](Node* current) {
-        std::string nodeKey = Utils::getKey(current, false);
-        processedKeys.insert(nodeKey);
-    };
-
-    // Use the helper method with DFS traversal
-    traverseSubTree(node, markStmtNode);
 }
 
 /*

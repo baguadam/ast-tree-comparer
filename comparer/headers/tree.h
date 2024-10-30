@@ -23,12 +23,7 @@ public:
     void markDeclNodeAsProcessed(const std::string&);
     bool isDeclNodeProcessed(const std::string&) const;
     bool isDeclNodeInAST(const std::string&) const;
-    void markPairAsProcessed(const std::string&);
-    void markDeclSubTreeAsProcessed(Node*);
-    void markStmtSubTreeAsProcessed(Node*, std::unordered_set<std::string>&);
-
-    static void markStmtSubTreeAsProcessed(Node*, std::unordered_map<std::string, std::pair<Node*, bool>>&);
-
+    void processSubTree(Node*, std::function<void(Node*)> processNode);
 private:
     Node* root;
     std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;
@@ -36,7 +31,6 @@ private:
 
     Node* buildTree(std::ifstream&);
     void createNodeMap();
-    void traverseSubTree(Node*, std::function<void(Node*)> processNode);
     void deleteTree(Node*);
 };
 
