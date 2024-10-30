@@ -21,8 +21,6 @@ Tree::Tree(const std::string& fileName) {
     if (!root) {
         throw std::runtime_error("Failed to build tree from file: " + fileName);
     }
-    
-    createNodeMap();
 }
 
 /*
@@ -199,6 +197,9 @@ Node* Tree::buildTree(std::ifstream& file) {
         }
 
         nodeStack.push_back(node);
+
+        // creating the node maps
+        addNodeToNodeMap(node);    
     }
 
     return nodeStack.empty() ? nullptr : nodeStack.front();
@@ -206,44 +207,31 @@ Node* Tree::buildTree(std::ifstream& file) {
 
 /*
 Description:
-    Creates a map of nodes based on their keys, it's essential to compare the trees and print the differences, also the nodes are stored in a pair
-    with the values of the nodes and a flag indicating if the node has been processed or not
+    Add the nodes to the corresponding maps, in case of Declaration nodes, it's added to the declNodeMap, otherwise to the stmtNodeMultiMap.
 */
-void Tree::createNodeMap() {
-    if (!root) {
-        std::cerr << "Root node is missing, cannot create the node map.\n";
+void Tree::addNodeToNodeMap(Node* node) {
+    // generate the node key and validate it
+    std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
+    if (nodeKey.empty()) {
+        return; // skip invalid node
+    }
+
+    if (node->type == "Declaration") {
+        declNodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // Mark the node as not processed
         return;
     }
-    
-    std::queue<Node*> queue;
 
-    queue.push(root);
-    while (!queue.empty()) {
-        Node* node = queue.front();
-        queue.pop();
-
-        if (!node) continue; // in case of missing information
-
-        // generating the node key and ensuring if it's valid
-        std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
-        if (!nodeKey.empty()) {
-            if (node->type == "Declaration") {
-                declNodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
-            } else {
-                const Node* declarationParent = Utils::findDeclarationParent(node);
-                std::string declNodeKey = Utils::getKey(declarationParent, true);
-                stmtNodeMultiMap.insert({declNodeKey, node}); // link the statement node to its declaration parent
-            }
-        }
-
-        // processing child nodes
-        for (Node* child : node->children) {
-            if (child) {
-                queue.push(child);
-            }
-        }
+    // for statement nodes
+    const Node* declarationParent = Utils::findDeclarationParent(node);
+    if (!declarationParent) {
+        std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+        return;
     }
+
+    std::string declNodeKey = Utils::getKey(declarationParent, true);
+    stmtNodeMultiMap.insert({declNodeKey, node});
 }
+
 
 /*
 Description:

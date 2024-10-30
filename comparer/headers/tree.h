@@ -30,7 +30,7 @@ private:
     std::unordered_multimap<std::string, Node*> stmtNodeMultiMap;
 
     Node* buildTree(std::ifstream&);
-    void createNodeMap();
+    void addNodeToNodeMap(Node*);
     void deleteTree(Node*);
 };
 
