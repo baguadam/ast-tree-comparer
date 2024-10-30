@@ -90,24 +90,25 @@ Description:
     Processes a sutree of a given node using DFS traversal, uses the callback fuction to process the node, therefore it can be used
     both for Statements and Declarations.
 */
-void Tree::processSubTree(Node* node, std::function<void(Node*)> processNode) {
+void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNode) {
     if (!node) {
         return;
     }
 
-    // DFS traversal
-    std::stack<Node*> stack;
-    stack.push(node);
+    // stack for DFS traversal; store both the node and its depth in the tree
+    std::stack<std::pair<Node*, int>> stack;
+    stack.push({node, 0});
 
     while (!stack.empty()) {
-        Node* current = stack.top();
+        // pop the current node and its depth
+        auto [current, depth] = stack.top();
         stack.pop();
-         
-        processNode(current);
+        
+        processNode(current, depth);
 
         for (Node* child : current->children) {
             if (child) {
-                stack.push(child);
+                stack.push({child, depth + 1});
             }
         }
     }
@@ -118,7 +119,11 @@ Description:
     Marks the pair as processed in the tree.
 */
 void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
-    declNodeMap.at(nodeKey).second = true;
+    try {
+        declNodeMap.at(nodeKey).second = true;
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Error: Node key " << nodeKey << " not found in the declaration node map.\n";
+    }
 }
 
 /*

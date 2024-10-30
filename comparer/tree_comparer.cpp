@@ -176,38 +176,42 @@ void TreeComparer::compareSimilarStmtNodes(const Node* firstNode, const Node* se
 Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
-void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char* astName, bool isDeclaration, std::unordered_set<std::string>* processedKeys = nullptr) {
+void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char* astName, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
     std::string nodeKey = Utils::getKey(current, isDeclaration);
 
-    // checking if the node is already processed in case of DECLARATIONS
+    // Check if the node is already processed for declarations
     if (isDeclaration && tree.isDeclNodeProcessed(nodeKey)) {
-        return;  // skip
+        return;  // Skip
     }
-    
-    // checking if the node is already processed in case of STATEMENTS
+
+    // Check if the node is already processed for statements
     if (!isDeclaration && processedKeys && processedKeys->find(nodeKey) != processedKeys->end()) {
-        return;  // skip
+        return;  // Skip
     }
 
     std::cout << (isDeclaration ? "Node " : "STATEMENT Node ") << nodeKey << " exists only in the " << astName << " AST:\n";
 
-    auto processNode = [&tree, processedKeys, astName, isDeclaration](Node* currentNode) {
+    // Lambda for processing the node
+    auto processNode = [&tree, processedKeys, isDeclaration](Node* currentNode, int depth) {
         std::string currentNodeKey = Utils::getKey(currentNode, isDeclaration);
         if (!currentNodeKey.empty()) {
-            Utils::printNodeDetails(currentNode, " ");
+            std::string indent(depth * 3, ' ');
+            Utils::printNodeDetails(currentNode, indent);
 
-            if (isDeclaration) {
+            if (isDeclaration && currentNode->type == "Declaration") {
                 tree.markDeclNodeAsProcessed(currentNodeKey);
-            } else {
+            } else if (!isDeclaration && currentNode->type == "Statement") {
                 processedKeys->insert(currentNodeKey);
             }
         }
     };
 
+    // Traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
 
     Utils::printSeparators();
 }
+
 
 /*
 Description:

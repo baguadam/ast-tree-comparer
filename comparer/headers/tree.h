@@ -23,7 +23,7 @@ public:
     void markDeclNodeAsProcessed(const std::string&);
     bool isDeclNodeProcessed(const std::string&) const;
     bool isDeclNodeInAST(const std::string&) const;
-    void processSubTree(Node*, std::function<void(Node*)> processNode);
+    void processSubTree(Node*, std::function<void(Node*, int)>);
 private:
     Node* root;
     std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;
