@@ -58,53 +58,14 @@ void TreeComparer::processDeclNode(Node* current) {
         compareStmtNodes(nodeKey);
     } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the first AST
-        processDeclNodeInFirstAST(current, nodeKey);
+        processNodeInSingleAST(current, firstASTTree, "=FIRST=", true);
     } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the second AST
-        processDeclNodeInSecondAST(current, nodeKey);
+        processNodeInSingleAST(current, secondASTTree, "=SECOND=", true);
     } else {
         // node does not exist in either AST, should not happen
         std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
     }
-}
-
-/*
-Description:
-    Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed
-*/
-void TreeComparer::processDeclNodeInSingleAST(Node* current, const std::string& nodeKey, Tree& tree, const char* astName) {
-    if (tree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
-
-    std::cout << "Node " << nodeKey << " exists only in the " << astName << " AST:\n";
-
-    // lambda for printing and marking the nodes as processed
-    auto processDeclNode = [&tree, astName](Node* currentNode) {
-        std::string currentNodeKey = Utils::getKey(currentNode, currentNode->type == "Declaration");
-        if (!currentNodeKey.empty()) {
-            Utils::printNodeDetails(currentNode, " ");
-            tree.markDeclNodeAsProcessed(currentNodeKey);
-        }
-    };
-
-    tree.processSubTree(current, processDeclNode);  
-
-    Utils::printSeparators();
-}
-
-/*
-Description:
-    Processes the node that only exists in the first AST, prints the details of the node
-*/
-void TreeComparer::processDeclNodeInFirstAST(Node* current, const std::string& nodeKey) {
-    processDeclNodeInSingleAST(current, nodeKey, firstASTTree, "=FIRST=");
-}
-
-/*
-Description:
-    Processes the node that only exists in the second AST, prints the details of the node
-*/
-void TreeComparer::processDeclNodeInSecondAST(Node* current, const std::string& nodeKey) {
-    processDeclNodeInSingleAST(current, nodeKey, secondASTTree, "=SECOND=");
 }
 
 /*
@@ -184,7 +145,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
         auto it = secondASTStmtMap.find(stmtKey);
         if (it == secondASTStmtMap.end()) {
             // node exists only in the first AST
-            processStmtNodeInSingleAST(stmtNode, firstASTTree, "=FIRST=", processedKeys);
+            processNodeInSingleAST(stmtNode, firstASTTree, "=FIRST=", false, &processedKeys);
         } else {
             // node exists in both ASTs, compare them
             compareSimilarStmtNodes(stmtNode, it->second);
@@ -197,7 +158,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     // iterate through the statements in the second AST that were not processed
     for (auto& [stmtKey, stmtNode] : secondASTStmtMap) {
         if (processedKeys.find(stmtKey) == processedKeys.end()) {
-            processStmtNodeInSingleAST(stmtNode, secondASTTree, "=SECOND=", processedKeys);
+            processNodeInSingleAST(stmtNode, secondASTTree, "=SECOND=", false, &processedKeys);
         }
     }
 }
@@ -213,24 +174,37 @@ void TreeComparer::compareSimilarStmtNodes(const Node* firstNode, const Node* se
 
 /*
 Description:
-    Processes a statement node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed
+    Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
-void TreeComparer::processStmtNodeInSingleAST(Node* current, Tree& tree, const char* astName, std::unordered_set<std::string>& processedKeys) {
-    std::string nodeKey = Utils::getKey(current, false);
-    if (processedKeys.find(nodeKey) != processedKeys.end()) return;  // Skip if already processed
+void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char* astName, bool isDeclaration, std::unordered_set<std::string>* processedKeys = nullptr) {
+    std::string nodeKey = Utils::getKey(current, isDeclaration);
 
-    std::cout << "STATEMENT Node " << nodeKey << " exists only in the " << astName << " AST:\n";
+    // checking if the node is already processed in case of DECLARATIONS
+    if (isDeclaration && tree.isDeclNodeProcessed(nodeKey)) {
+        return;  // skip
+    }
+    
+    // checking if the node is already processed in case of STATEMENTS
+    if (!isDeclaration && processedKeys && processedKeys->find(nodeKey) != processedKeys->end()) {
+        return;  // skip
+    }
 
-    // lambda for printing and marking the nodes as processed
-    auto processStmtNode = [&processedKeys](Node* currentNode) {
-        std::string currentNodeKey = Utils::getKey(currentNode, false);
+    std::cout << (isDeclaration ? "Node " : "STATEMENT Node ") << nodeKey << " exists only in the " << astName << " AST:\n";
+
+    auto processNode = [&tree, processedKeys, astName, isDeclaration](Node* currentNode) {
+        std::string currentNodeKey = Utils::getKey(currentNode, isDeclaration);
         if (!currentNodeKey.empty()) {
             Utils::printNodeDetails(currentNode, " ");
-            processedKeys.insert(currentNodeKey);
+
+            if (isDeclaration) {
+                tree.markDeclNodeAsProcessed(currentNodeKey);
+            } else {
+                processedKeys->insert(currentNodeKey);
+            }
         }
     };
 
-    tree.processSubTree(current, processStmtNode);
+    tree.processSubTree(current, processNode);
 
     Utils::printSeparators();
 }
