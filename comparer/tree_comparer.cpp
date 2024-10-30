@@ -212,7 +212,6 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char*
     Utils::printSeparators();
 }
 
-
 /*
 Description:
     Enqueues the children of a given node to the queue, only storing the Declaration types for processing
