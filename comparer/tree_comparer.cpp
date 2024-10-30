@@ -219,7 +219,7 @@ Description:
 */
 void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
     for (Node* child : current->children) {
-        if (child && child->type == "Declaration") {
+        if (child && !child->isProcessed && child->type == "Declaration") {
             queue.push(child);
         }
     }
