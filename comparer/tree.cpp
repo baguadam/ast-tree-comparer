@@ -51,7 +51,7 @@ const Node* Tree::getDeclNode(const std::string& nodeKey) const {
     if (it == declNodeMap.end()) {
         throw std::out_of_range("Node key not found in the declaration node map: " + nodeKey);
     }
-    return it->second.first;
+    return it->second;
 }
 
 /*
@@ -69,9 +69,17 @@ const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::s
 
 /*
 Description:
+    Marks the node as processed in the tree.
+*/
+void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
+    declNodeMap.at(nodeKey)->isProcessed = true;
+}
+
+/*
+Description:
     Returns the node map of the tree.
 */
-const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNodeMap() const {
+const std::unordered_map<std::string, Node*>& Tree::getDeclNodeMap() const {
     return declNodeMap;
 }
 
@@ -81,7 +89,6 @@ const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNode
 const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
     return stmtNodeMultiMap;
 }
-
 
 /*
 Description:
@@ -114,22 +121,10 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
 
 /*
 Description:
-    Marks the pair as processed in the tree.
-*/
-void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
-    try {
-        declNodeMap.at(nodeKey).second = true;
-    } catch (const std::out_of_range& e) {
-        std::cerr << "Error: Node key " << nodeKey << " not found in the declaration node map.\n";
-    }
-}
-
-/*
-Description:
     Checks if the node is processed in the tree.
 */
 bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
-    return declNodeMap.at(nodeKey).second;
+    return declNodeMap.at(nodeKey)->isProcessed;
 }
 
 /*
@@ -217,7 +212,7 @@ void Tree::addNodeToNodeMap(Node* node) {
     }
 
     if (node->type == "Declaration") {
-        declNodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // Mark the node as not processed
+        declNodeMap[nodeKey] = node; // store the node in the map
         return;
     }
 
