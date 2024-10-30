@@ -3,7 +3,10 @@
 #define _TREE_H_
 
 #include <string>
+#include <vector>
+#include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include "node.h"
 
 class Tree {
@@ -12,22 +15,23 @@ public:
     ~Tree();
     
     Node* getRoot() const;
-    const std::unordered_map<std::string, std::pair<Node*, bool>>& getNodeMap() const;
+    const std::unordered_map<std::string, std::pair<Node*, bool>>& getDeclNodeMap() const;
+    const std::unordered_multimap<std::string, Node*>& getStmtNodeMultiMap() const;
+    const Node* getDeclNode(const std::string&) const;
+    const std::vector<std::pair<std::string, Node*>> getStmtNodes(const std::string&) const;
     
-    void markNodeAsProcessed(const std::string& nodeKey);
-    bool isNodeProcessed(const std::string& nodeKey) const;
-    bool isNodeInAST(const std::string& nodeKey) const;
-    const Node* getNodeFromNodeMap(const std::string& nodeKey) const;
-    void markPairAsProcessed(const std::string& nodeKey);
-    void markSubTreeAsProcessed(Node* node);
-
+    void markDeclNodeAsProcessed(const std::string&);
+    bool isDeclNodeProcessed(const std::string&) const;
+    bool isDeclNodeInAST(const std::string&) const;
+    void processSubTree(Node*, std::function<void(Node*, int)>);
 private:
     Node* root;
-    std::unordered_map<std::string, std::pair<Node*, bool>> nodeMap;
+    std::unordered_map<std::string, std::pair<Node*, bool>> declNodeMap;
+    std::unordered_multimap<std::string, Node*> stmtNodeMultiMap;
 
-    Node* buildTree(const std::string&);
+    Node* buildTree(std::ifstream&);
     void createNodeMap();
-    void deleteTree(Node* node);
+    void deleteTree(Node*);
 };
 
 #endif

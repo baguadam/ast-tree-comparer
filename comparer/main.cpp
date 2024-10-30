@@ -4,9 +4,16 @@
 #include <iostream>
 
 int main() {
-    Tree firstStandardAST("../../asts/first_standard_ast.txt");
-    Tree secondStandardAST("../../asts/second_standard_ast.txt");
+    try {
+        Tree firstStandardAST("../../asts/first_standard_ast.txt");
+        Tree secondStandardAST("../../asts/second_standard_ast.txt");
 
-    TreeComparer comparer(firstStandardAST, secondStandardAST);
-    comparer.printDifferences();
+        TreeComparer comparer(firstStandardAST, secondStandardAST);
+        comparer.printDifferences();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

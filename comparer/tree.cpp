@@ -12,7 +12,16 @@ Description:
     Constructs a tree from the given file.
 */
 Tree::Tree(const std::string& fileName) {
-    root = buildTree(fileName);
+    std::ifstream file(fileName);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + fileName);
+    }
+    
+    root = buildTree(file);
+    if (!root) {
+        throw std::runtime_error("Failed to build tree from file: " + fileName);
+    }
+    
     createNodeMap();
 }
 
@@ -21,7 +30,10 @@ Description:
     Deletes the tree.
 */
 Tree::~Tree() {
-    deleteTree(root);
+    if (root) {
+        deleteTree(root);
+        root = nullptr;
+    }
 }
 
 /*
@@ -34,44 +46,69 @@ Node* Tree::getRoot() const {
 
 /*
 Description:
-    Returns the node map of the tree.
-*/
-const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getNodeMap() const {
-    return nodeMap;
-}
-
-/*
-Description:
     Returns the pair of the node based on the key.
 */
-const Node* Tree::getNodeFromNodeMap(const std::string& nodeKey) const {
-    return nodeMap.at(nodeKey).first;
+const Node* Tree::getDeclNode(const std::string& nodeKey) const {
+    auto it = declNodeMap.find(nodeKey);
+    if (it == declNodeMap.end()) {
+        throw std::out_of_range("Node key not found in the declaration node map: " + nodeKey);
+    }
+    return it->second.first;
 }
 
 /*
 Description:
-    Marks the subtree as processed in the tree.
+    Returns the statement nodes based on the key of the declaration.
 */
-void Tree::markSubTreeAsProcessed(Node* node) {
+const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
+    std::vector<std::pair<std::string, Node*>> stmtNodes;
+    auto range = stmtNodeMultiMap.equal_range(nodeKey);
+    for (auto it = range.first; it != range.second; ++it) {
+        stmtNodes.emplace_back(Utils::getKey(it->second, false), it->second);
+    }
+    return stmtNodes;
+}
+
+/*
+Description:
+    Returns the node map of the tree.
+*/
+const std::unordered_map<std::string, std::pair<Node*, bool>>& Tree::getDeclNodeMap() const {
+    return declNodeMap;
+}
+
+/*
+    Returns the statement node map of the tree.
+*/
+const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
+    return stmtNodeMultiMap;
+}
+
+
+/*
+Description:
+    Processes a sutree of a given node using DFS traversal, uses the callback fuction to process the node, therefore it can be used
+    both for Statements and Declarations.
+*/
+void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNode) {
     if (!node) {
         return;
     }
 
-    std::stack<Node*> stack;
-    stack.push(node);
+    // stack for DFS traversal; store both the node and its depth in the tree
+    std::stack<std::pair<Node*, int>> stack;
+    stack.push({node, 0});
 
     while (!stack.empty()) {
-        Node* current = stack.top();
+        // pop the current node and its depth
+        auto [current, depth] = stack.top();
         stack.pop();
-
-        std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
-        if (!nodeKey.empty()) {
-            markNodeAsProcessed(nodeKey);
-        }
+        
+        processNode(current, depth);
 
         for (Node* child : current->children) {
             if (child) {
-                stack.push(child);
+                stack.push({child, depth + 1});
             }
         }
     }
@@ -81,38 +118,37 @@ void Tree::markSubTreeAsProcessed(Node* node) {
 Description:
     Marks the pair as processed in the tree.
 */
-void Tree::markNodeAsProcessed(const std::string& nodeKey) {
-    nodeMap.at(nodeKey).second = true;
+void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
+    try {
+        declNodeMap.at(nodeKey).second = true;
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Error: Node key " << nodeKey << " not found in the declaration node map.\n";
+    }
 }
 
 /*
 Description:
     Checks if the node is processed in the tree.
 */
-bool Tree::isNodeProcessed(const std::string& nodeKey) const {
-    return nodeMap.at(nodeKey).second;
+bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
+    return declNodeMap.at(nodeKey).second;
 }
 
 /*
 Description:
     Checks if the node is in the tree.  
 */
-bool Tree::isNodeInAST(const std::string& nodeKey) const {
-    return nodeMap.count(nodeKey) > 0;
+bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
+    return declNodeMap.count(nodeKey) > 0;
 }
 
 /*
 Description:
     Builds a tree from the given file, created the node, provides some checks and returns the root node.
 */
-Node* Tree::buildTree(const std::string& fileName) {
+Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
     std::string line;
-    std::ifstream file(fileName);
-    if (!file) {
-        std::cerr << "Unable to open file: " << fileName << std::endl;
-        return nullptr;
-    }
 
     while (std::getline(file, line)) {
         int depth = 0;
@@ -191,7 +227,13 @@ void Tree::createNodeMap() {
         // generating the node key and ensuring if it's valid
         std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
         if (!nodeKey.empty()) {
-            nodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
+            if (node->type == "Declaration") {
+                declNodeMap[nodeKey] = std::pair<Node*, bool>(node, false); // marking the node as not processed
+            } else {
+                const Node* declarationParent = Utils::findDeclarationParent(node);
+                std::string declNodeKey = Utils::getKey(declarationParent, true);
+                stmtNodeMultiMap.insert({declNodeKey, node}); // link the statement node to its declaration parent
+            }
         }
 
         // processing child nodes

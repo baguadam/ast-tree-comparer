@@ -19,17 +19,13 @@ private:
     Tree& secondASTTree;
 
     void compareSourceLocations(const Node*, const Node*);
-    void compareDeclarationsAndStatements(const Node*, const Node*);
-    void compareSimilarNodes(const Node*, const Node*);
-    void processNode(Node*);
-    void processNodeInSingleAST(Node*, const std::string&, Tree&, const char*);
-    void processNodeInFirstAST(Node*, const std::string&);
-    void processNodeInSecondAST(Node*, const std::string&);
+    void compareParents(const Node*, const Node*);
+    void compareSimilarDeclNodes(const Node*, const Node*, const std::string&);
+    void compareStmtNodes(const std::string&);
+    void compareSimilarStmtNodes(const Node*, const Node*);
+    void processDeclNode(Node*);
+    void processNodeInSingleAST(Node*, Tree&, const char*, bool, std::unordered_set<std::string>* processedKeys = nullptr);
     void enqueueChildren(Node*, std::queue<Node*>&);
-
-    void printNodeDetails(const Node*, const std::string) const;
-    void printSubTree(const Node*, int) const;
-    void printSeparators() const;
 };
 
 #endif
