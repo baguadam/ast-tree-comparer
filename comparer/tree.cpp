@@ -72,7 +72,12 @@ Description:
     Marks the node as processed in the tree.
 */
 void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
-    declNodeMap.at(nodeKey)->isProcessed = true;
+    auto it = declNodeMap.find(nodeKey);
+    if (it != declNodeMap.end()) {
+        it->second->isProcessed = true;
+    } else {
+        std::cerr << "Warning: Node key not found in the declaration node map: " << nodeKey << '\n';
+    }
 }
 
 /*
@@ -124,7 +129,8 @@ Description:
     Checks if the node is processed in the tree.
 */
 bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
-    return declNodeMap.at(nodeKey)->isProcessed;
+    auto it = declNodeMap.find(nodeKey);
+    return it != declNodeMap.end() && it->second->isProcessed;
 }
 
 /*
