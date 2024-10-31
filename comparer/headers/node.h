@@ -14,6 +14,7 @@ struct Node {
     int columnNumber; // which column in the source file
     Node* parent;
     std::vector<Node*> children;
+    bool isProcessed = false; // flag for processed nodes
 };
 
 #endif
