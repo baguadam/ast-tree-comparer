@@ -46,7 +46,7 @@ Descpirion:
     compares them, otherwise processes the node that exists only in one of the ASTs.
 */
 void TreeComparer::processDeclNode(Node* current) {
-    std::string nodeKey = Utils::getKey(current, current->type == DECLARATION);
+    std::string nodeKey = current->id;
 
     if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists in both ASTs, compare them
@@ -171,7 +171,7 @@ Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
 void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, ASTId ast, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
-    std::string nodeKey = Utils::getKey(current, isDeclaration);
+    std::string nodeKey = isDeclaration ? current->id : Utils::getKey(current, false);
 
     // Check if the node is already processed for declarations
     if (isDeclaration && tree.isDeclNodeProcessed(nodeKey)) {
@@ -185,7 +185,7 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, ASTId ast, 
 
     // Lambda for processing the node
     auto processNode = [this, &tree, ast, processedKeys, isDeclaration](Node* currentNode, int depth) {
-        std::string currentNodeKey = Utils::getKey(currentNode, isDeclaration);
+        std::string currentNodeKey = currentNode->type == DECLARATION ? currentNode->id : Utils::getKey(currentNode, false);
         if (!currentNodeKey.empty()) {
             std::string indent(depth * 3, ' ');
             DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
