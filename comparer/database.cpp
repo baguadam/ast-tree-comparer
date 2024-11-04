@@ -21,7 +21,7 @@ void Database::clearDatabase() {
 
 void Database::initializeStatements() {
     try {
-        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(id, type, kind, usr, path, differenceType, comment) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(id, type, kind, usr, path, differenceType, AST, comment) VALUES (?, ?, ?, ?, ?, ?, ?)");
         queryInsertEdge = std::make_unique<SQLite::Statement>(db, "INSERT INTO Edges(childId, parentId) VALUES (?, ?)");
     } catch (const std::exception& e) {
         std::cerr << "Error initializing statements: " << e.what() << std::endl;
@@ -38,6 +38,8 @@ void Database::createTables() {
                 "usr TEXT NOT NULL,"
                 "path TEXT NOT NULL,"
                 "differenceType TEXT NOT NULL,"
+                "AST INTEGER NOT NULL,"
+                "isHighestLevelNode BOOLEAN DEFAULT 0"
                 "comment TEXT);");
         std::cout << "Nodes table created successfully." << std::endl;
 
@@ -53,15 +55,16 @@ void Database::createTables() {
     }
 }
 
-void Database::insertNode(int id, const std::string& type, const std::string& kind, const std::string& usr, const std::string& path, const std::string& differenceType) {
+void Database::insertNode(int id, const std::string& type, const std::string& kind, const std::string& usr, const std::string& path, const ASTId astId, const std::string& differenceType) {
     try {
-        queryInsertNode->bind(1, id);
+        queryInsertNode->bind(1, id);  
         queryInsertNode->bind(2, type);
         queryInsertNode->bind(3, kind);
         queryInsertNode->bind(4, usr);
         queryInsertNode->bind(5, path);
         queryInsertNode->bind(6, differenceType);
-        queryInsertNode->bind(7, "");
+        queryInsertNode->bind(7, astId);
+        queryInsertNode->bind(8, "");
         queryInsertNode->exec();
         queryInsertNode->reset();
     } catch (const std::exception& e) {

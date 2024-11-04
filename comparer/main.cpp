@@ -5,8 +5,8 @@
 
 int main() {
     try {
-        Tree firstStandardAST("../../asts/vector_98.txt");
-        Tree secondStandardAST("../../asts/vector_11.txt");
+        Tree firstStandardAST("../../asts/first_standard_ast.txt");
+        Tree secondStandardAST("../../asts/second_standard_ast.txt");
 
         TreeComparer comparer(firstStandardAST, secondStandardAST);
         comparer.printDifferences();
