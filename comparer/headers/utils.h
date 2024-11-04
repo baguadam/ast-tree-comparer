@@ -14,6 +14,7 @@ public:
 
     static std::string astIdToString(ASTId ast);
     static std::string nodeTypeToString(NodeType type);
+    static NodeType stringToNodeType(const std::string& type);
     static std::string differenceTypeToString(DifferenceType type);
 };
 

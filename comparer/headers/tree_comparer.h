@@ -27,7 +27,7 @@ private:
     void compareStmtNodes(const std::string&);
     void compareSimilarStmtNodes(const Node*, const Node*);
     void processDeclNode(Node*);
-    void processNodeInSingleAST(Node*, Tree&, const char*, bool, std::unordered_set<std::string>* processedKeys = nullptr);
+    void processNodeInSingleAST(Node*, Tree&, ASTId, bool, std::unordered_set<std::string>* processedKeys = nullptr);
     void enqueueChildren(Node*, std::queue<Node*>&);
 };
 

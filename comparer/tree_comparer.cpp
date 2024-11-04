@@ -46,7 +46,7 @@ Descpirion:
     compares them, otherwise processes the node that exists only in one of the ASTs.
 */
 void TreeComparer::processDeclNode(Node* current) {
-    std::string nodeKey = Utils::getKey(current, current->type == "Declaration");
+    std::string nodeKey = Utils::getKey(current, current->type == DECLARATION);
 
     if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists in both ASTs, compare them
@@ -60,10 +60,10 @@ void TreeComparer::processDeclNode(Node* current) {
         compareStmtNodes(nodeKey);
     } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the first AST
-        processNodeInSingleAST(current, firstASTTree, "=FIRST=", true);
+        processNodeInSingleAST(current, firstASTTree, FIRST_AST, true);
     } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
         // node exists only in the second AST
-        processNodeInSingleAST(current, secondASTTree, "=SECOND=", true);
+        processNodeInSingleAST(current, secondASTTree, SECOND_AST, true);
     } else {
         // node does not exist in either AST, should not happen
         std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
@@ -80,8 +80,8 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
 
-        logger->logNode(firstNode, "DIFFERENT SOURCE LOCATIONS", "  ");
-        logger->logNode(secondNode, "DIFFERENT SOURCE LOCATIONS", "  ");
+        logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST, "  ");
+        logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST, "  ");
     }
 }
 
@@ -91,8 +91,8 @@ Description:
 */
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        logger->logNode(firstNode->parent, "DIFFERENT PARENT", "  ");
-        logger->logNode(secondNode->parent, "DIFFERENT PARENT", "  ");
+        logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST, "  ");
+        logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST, "  ");
     }
 }
 
@@ -139,7 +139,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
         auto it = secondASTStmtMap.find(stmtKey);
         if (it == secondASTStmtMap.end()) {
             // node exists only in the first AST
-            processNodeInSingleAST(stmtNode, firstASTTree, "=FIRST=", false, &processedKeys);
+            processNodeInSingleAST(stmtNode, firstASTTree, FIRST_AST, false, &processedKeys);
         } else {
             // node exists in both ASTs, compare them
             compareSimilarStmtNodes(stmtNode, it->second);
@@ -152,7 +152,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     // iterate through the statements in the second AST that were not processed
     for (auto& [stmtKey, stmtNode] : secondASTStmtMap) {
         if (processedKeys.find(stmtKey) == processedKeys.end()) {
-            processNodeInSingleAST(stmtNode, secondASTTree, "=SECOND=", false, &processedKeys);
+            processNodeInSingleAST(stmtNode, secondASTTree, SECOND_AST, false, &processedKeys);
         }
     }
 }
@@ -170,7 +170,7 @@ void TreeComparer::compareSimilarStmtNodes(const Node* firstNode, const Node* se
 Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
-void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char* astName, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
+void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, ASTId ast, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
     std::string nodeKey = Utils::getKey(current, isDeclaration);
 
     // Check if the node is already processed for declarations
@@ -184,22 +184,32 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char*
     }
 
     // Lambda for processing the node
-    auto processNode = [this, &tree, astName, processedKeys, isDeclaration](Node* currentNode, int depth) {
+    auto processNode = [this, &tree, ast, processedKeys, isDeclaration](Node* currentNode, int depth) {
         std::string currentNodeKey = Utils::getKey(currentNode, isDeclaration);
         if (!currentNodeKey.empty()) {
             std::string indent(depth * 3, ' ');
-            logger->logNode(currentNode, "ONLY IN " + std::string(astName) + " AST", indent);
-            logger->logEdge(currentNode, currentNode->parent, indent);
+            DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
-            if (isDeclaration && currentNode->type == "Declaration") {
-                tree.markDeclNodeAsProcessed(currentNodeKey);
-            } else if (!isDeclaration && currentNode->type == "Statement") {
+            // log the node
+            logger->logNode(currentNode, diffType, ast, indent);
+
+            // log the edge (so that the relation) between the nodes
+            if (currentNode->parent) {
+                logger->logEdge(currentNode, currentNode->parent, indent);
+            }
+
+            // Mark the node as processed
+            if (isDeclaration) {
+                if (currentNode->type == DECLARATION) {
+                    tree.markDeclNodeAsProcessed(currentNodeKey);
+                }
+            } else if (currentNode->type == STATEMENT) {
                 processedKeys->insert(currentNodeKey);
             }
         }
     };
 
-    // Traverse the subtree and process nodes accordingly
+    // traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
 }
 
@@ -209,7 +219,7 @@ Description:
 */
 void TreeComparer::enqueueChildren(Node* current, std::queue<Node*>& queue) {
     for (Node* child : current->children) {
-        if (child && !child->isProcessed && child->type == "Declaration") {
+        if (child && !child->isProcessed && child->type == DECLARATION) {
             queue.push(child);
         }
     }

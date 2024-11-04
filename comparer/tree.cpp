@@ -180,7 +180,7 @@ Node* Tree::buildTree(std::ifstream& file) {
         }
 
         Node* node = new Node;
-        node->type = type;
+        node->type = Utils::stringToNodeType(type);
         node->kind = kind;
         node->usr = usr;
         node->path = path;
@@ -212,12 +212,12 @@ Description:
 */
 void Tree::addNodeToNodeMap(Node* node) {
     // generate the node key and validate it
-    std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
+    std::string nodeKey = Utils::getKey(node, node->type == DECLARATION);
     if (nodeKey.empty()) {
         return; // skip invalid node
     }
 
-    if (node->type == "Declaration") {
+    if (node->type == DECLARATION) {
         declNodeMap[nodeKey] = node; // store the node in the map
         return;
     }

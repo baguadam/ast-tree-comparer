@@ -27,7 +27,7 @@ Description:
 */
 const Node* Utils::findDeclarationParent(const Node* node) {
     const Node* parent = node->parent;
-    while (parent && parent->type != "Declaration") {
+    while (parent && parent->type != DECLARATION) {
         parent = parent->parent;
     }
     return parent;
@@ -48,7 +48,7 @@ Description:
 void Utils::printNodeDetails(const Node* node, std::string indent) {
     std::cout << indent << "Node details:\n";
     std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "*** Parent unique id: " << (node->parent ? getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
+    std::cout << indent << "*** Parent unique id: " << (node->parent ? getKey(node->parent, node->parent->type == DECLARATION) : "None") << "\n";
     
     printSeparators();
 }
@@ -71,9 +71,23 @@ Description:
 */
 std::string Utils::nodeTypeToString(NodeType type) {
     switch (type) {
-        case DECLARATION: return "DECLARATION";
-        case STATEMENT: return "STATEMENT";
-        default: return "UNKNOWN";
+        case DECLARATION: return "Declaration";
+        case STATEMENT: return "Statement";
+        default: return "Unknown";
+    }
+}
+
+/*
+Description:
+    Converts a string to a node type
+*/
+NodeType Utils::stringToNodeType(const std::string& type) {
+    if (type == "Declaration") {
+        return DECLARATION;
+    } else if (type == "Statement") {
+        return STATEMENT;
+    } else {
+        return UNKNOWN;
     }
 }
 

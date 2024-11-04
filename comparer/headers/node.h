@@ -4,9 +4,10 @@
 
 #include <string>
 #include <vector>
+#include "enums.h"
 
 struct Node {
-    std::string type; // (Declaration/Statement)
+    NodeType type; // (Declaration/Statement)
     std::string kind; // (FunctionDecl/VarDecl/IfStmt/WhileStmt/...)
     std::string usr;  // unique identifier (in case of decl types)
     std::string path; // source file
