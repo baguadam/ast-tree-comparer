@@ -79,11 +79,9 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
     if (firstNode->path != secondNode->path || 
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
-        std::cout << "Node with key: " << Utils::getKey(firstNode, firstNode->type == "Declaration") << " has different source locations in the trees.\n";
-        std::cout << "First AST location: " << firstNode->path << ":" << firstNode->lineNumber << ":" << firstNode->columnNumber << '\n';
-        std::cout << "Second AST location: " << secondNode->path << ":" << secondNode->lineNumber << ":" << secondNode->columnNumber << '\n';
-        
-        Utils::printSeparators();
+
+        logger->logNode(firstNode, "DIFFERENT SOURCE LOCATIONS", "  ");
+        logger->logNode(secondNode, "DIFFERENT SOURCE LOCATIONS", "  ");
     }
 }
 
@@ -93,14 +91,8 @@ Description:
 */
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        std::cout << "Node " << firstNode->kind << " " << firstNode->usr << " " << firstNode->path << " " << firstNode->lineNumber << ":" << firstNode->columnNumber
-                  << " has a different parent in second AST: " << secondNode->parent->usr << "\n";
-        std::cout << "First AST parent details:\n";
-        Utils::printNodeDetails(firstNode->parent, " ");
-        std::cout << "Second AST parent details:\n";
-        Utils::printNodeDetails(secondNode->parent, " ");
-
-        Utils::printSeparators();
+        logger->logNode(firstNode->parent, "DIFFERENT PARENT", "  ");
+        logger->logNode(secondNode->parent, "DIFFERENT PARENT", "  ");
     }
 }
 
@@ -191,14 +183,13 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char*
         return;  // Skip
     }
 
-    std::cout << (isDeclaration ? "Node " : "STATEMENT Node ") << nodeKey << " exists only in the " << astName << " AST:\n";
-
     // Lambda for processing the node
-    auto processNode = [&tree, processedKeys, isDeclaration](Node* currentNode, int depth) {
+    auto processNode = [this, &tree, astName, processedKeys, isDeclaration](Node* currentNode, int depth) {
         std::string currentNodeKey = Utils::getKey(currentNode, isDeclaration);
         if (!currentNodeKey.empty()) {
             std::string indent(depth * 3, ' ');
-            Utils::printNodeDetails(currentNode, indent);
+            logger->logNode(currentNode, "ONLY IN " + std::string(astName) + " AST", indent);
+            logger->logEdge(currentNode, currentNode->parent, indent);
 
             if (isDeclaration && currentNode->type == "Declaration") {
                 tree.markDeclNodeAsProcessed(currentNodeKey);
@@ -210,8 +201,6 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const char*
 
     // Traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
-
-    Utils::printSeparators();
 }
 
 /*
