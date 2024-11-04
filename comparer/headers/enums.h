@@ -13,4 +13,11 @@ enum NodeType {
     UNKNOWN
 };
 
+enum DifferenceType {
+    ONLY_IN_FIRST_AST,
+    ONLY_IN_SECOND_AST,
+    DIFFERENT_PARENT,
+    DIFFERENT_SOURCE_LOCATIONS
+};
+
 #endif

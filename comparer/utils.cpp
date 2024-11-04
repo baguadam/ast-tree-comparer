@@ -52,3 +52,41 @@ void Utils::printNodeDetails(const Node* node, std::string indent) {
     
     printSeparators();
 }
+
+/*
+Description:
+    Converts an AST ID to a string
+*/
+std::string Utils::astIdToString(ASTId ast) {
+    switch (ast) {
+        case FIRST_AST: return "FIRST AST";
+        case SECOND_AST: return "SECOND AST";
+        default: return "UNKNOWN AST";
+    }
+}
+
+/*
+Description:
+    Converts a node type to a string
+*/
+std::string Utils::nodeTypeToString(NodeType type) {
+    switch (type) {
+        case DECLARATION: return "DECLARATION";
+        case STATEMENT: return "STATEMENT";
+        default: return "UNKNOWN";
+    }
+}
+
+/*
+Description:
+    Converts a difference type to a string
+*/
+std::string Utils::differenceTypeToString(DifferenceType type) {
+    switch (type) {
+        case ONLY_IN_FIRST_AST: return "NODE EXISTS ONLY IN FIRST AST";
+        case ONLY_IN_SECOND_AST: return "NODE EXISTS ONLY IN SECOND AST";
+        case DIFFERENT_PARENT: return "NODES HAVE DIFFERENT PARENTS";
+        case DIFFERENT_SOURCE_LOCATIONS: return "NODES HAVE DIFFERENT SOURCE LOCATIONS";
+        default: return "UNKNOWN DIFFERENCE";
+    }
+}
