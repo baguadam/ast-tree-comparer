@@ -6,8 +6,11 @@
 
 class ConsoleLogger : TreeComparerLogger { 
 public:
-    void logNode(const Node* node, const std::string& differencType) override;
-    void logEdge(const Node* childId, const Node* parentId) override;
+    void logNode(const Node* node, const std::string& differencType, std::string indent = "") override;
+    void logEdge(const Node* childId, const Node* parentId, std::string indent = "") override;
+
+private:
+    void logSeparators();
 };
 
 #endif
