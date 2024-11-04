@@ -37,7 +37,7 @@ void Database::createTables() {
                 "kind TEXT NOT NULL,"
                 "usr TEXT NOT NULL,"
                 "path TEXT NOT NULL,"
-                "differenceType TEXT NOT NULL,"
+                "differenceType INTEGER NOT NULL,"
                 "AST INTEGER NOT NULL,"
                 "isHighestLevelNode BOOLEAN DEFAULT 0"
                 "comment TEXT);");
@@ -72,7 +72,7 @@ void Database::insertNode(const Node* node, const ASTId astId, const DifferenceT
     }
 }
 
-void Database::insertEdge(int childId, int parentId) {
+void Database::insertEdge(const std::string& childId, const std::string& parentId) {
     try {
         queryInsertEdge->bind(1, childId);
         queryInsertEdge->bind(2, parentId);

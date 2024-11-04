@@ -13,7 +13,7 @@ public:
    Database(const std::string);
 
    void insertNode(const Node*, const ASTId, const DifferenceType);
-   void insertEdge(int, int);
+   void insertEdge(const std::string&, const std::string&);
 
 private:
    SQLite::Database db;
