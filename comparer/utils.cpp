@@ -71,7 +71,7 @@ void Utils::printNodeDetails(const Node* node, std::string indent) {
 Description:
     Converts an AST ID to a string
 */
-std::string Utils::astIdToString(ASTId ast) {
+std::string Utils::astIdToString(const ASTId ast) {
     switch (ast) {
         case FIRST_AST: return "FIRST AST";
         case SECOND_AST: return "SECOND AST";
@@ -83,7 +83,7 @@ std::string Utils::astIdToString(ASTId ast) {
 Description:
     Converts a node type to a string
 */
-std::string Utils::nodeTypeToString(NodeType type) {
+std::string Utils::nodeTypeToString(const NodeType type) {
     switch (type) {
         case DECLARATION: return "Declaration";
         case STATEMENT: return "Statement";
@@ -109,7 +109,7 @@ NodeType Utils::stringToNodeType(const std::string& type) {
 Description:
     Converts a difference type to a string
 */
-std::string Utils::differenceTypeToString(DifferenceType type) {
+std::string Utils::differenceTypeToString(const DifferenceType type) {
     switch (type) {
         case ONLY_IN_FIRST_AST: return "NODE EXISTS ONLY IN FIRST AST";
         case ONLY_IN_SECOND_AST: return "NODE EXISTS ONLY IN SECOND AST";

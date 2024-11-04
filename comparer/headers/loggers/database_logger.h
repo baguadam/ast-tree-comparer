@@ -8,7 +8,7 @@
 class DatabaseLogger : public TreeComparerLogger { 
 public:
     DatabaseLogger(Database& db);
-    void logNode(const Node* node, DifferenceType diffType, ASTId ast, std::string indent = "") override;
+    void logNode(const Node* node, const DifferenceType diffType, const ASTId ast, std::string indent = "") override;
     void logEdge(const Node* childId, const Node* parentId, std::string indent = "") override;
 
 private:

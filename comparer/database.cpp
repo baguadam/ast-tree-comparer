@@ -55,9 +55,9 @@ void Database::createTables() {
     }
 }
 
-void Database::insertNode(int id, const Node* node, const ASTId astId, const std::string& differenceType) {
+void Database::insertNode(const Node* node, const ASTId astId, const DifferenceType differenceType) {
     try {
-        queryInsertNode->bind(1, id);  
+        queryInsertNode->bind(1, node->id);  
         queryInsertNode->bind(2, node->type);
         queryInsertNode->bind(3, node->kind);
         queryInsertNode->bind(4, node->usr);

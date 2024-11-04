@@ -13,10 +13,10 @@ public:
     static void printSeparators();
     static void printNodeDetails(const Node*, std::string);
 
-    static std::string astIdToString(ASTId);
-    static std::string nodeTypeToString(NodeType);
+    static std::string astIdToString(const ASTId);
+    static std::string nodeTypeToString(const NodeType);
     static NodeType stringToNodeType(const std::string&);
-    static std::string differenceTypeToString(DifferenceType);
+    static std::string differenceTypeToString(const DifferenceType);
 };
 
 #endif 
