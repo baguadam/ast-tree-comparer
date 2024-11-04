@@ -199,8 +199,22 @@ Node* Tree::buildTree(std::ifstream& file) {
 
         nodeStack.push_back(node);
 
+        // set the unique id of the node
+        const Node* declarationParent = nullptr;
+        if (node->type == STATEMENT) {
+            declarationParent = Utils::findDeclarationParent(node);
+            if (declarationParent) {
+                node->id = Utils::getStatementId(node, declarationParent);
+            } else {
+                std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+                continue;
+            }
+        } else {
+            node->id = Utils::getKey(node, true);
+        }
+
         // creating the node maps
-        addNodeToNodeMap(node);    
+        addNodeToNodeMap(node, declarationParent);    
     }
 
     return nodeStack.empty() ? nullptr : nodeStack.front();
@@ -210,7 +224,7 @@ Node* Tree::buildTree(std::ifstream& file) {
 Description:
     Add the nodes to the corresponding maps, in case of Declaration nodes, it's added to the declNodeMap, otherwise to the stmtNodeMultiMap.
 */
-void Tree::addNodeToNodeMap(Node* node) {
+void Tree::addNodeToNodeMap(Node* node, const Node* declarationParent) {
     // generate the node key and validate it
     std::string nodeKey = Utils::getKey(node, node->type == DECLARATION);
     if (nodeKey.empty()) {
@@ -223,14 +237,11 @@ void Tree::addNodeToNodeMap(Node* node) {
     }
 
     // for statement nodes
-    const Node* declarationParent = Utils::findDeclarationParent(node);
-    if (!declarationParent) {
-        std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
-        return;
+    if (declarationParent) {
+        stmtNodeMultiMap.insert({declarationParent->id, node});   
+    } else {
+        std::cerr << "Warning: Could not find declaration parent for statement node: " << node->id << '\n';
     }
-
-    std::string declNodeKey = Utils::getKey(declarationParent, true);
-    stmtNodeMultiMap.insert({declNodeKey, node});
 }
 
 /*
