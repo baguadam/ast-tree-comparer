@@ -3,7 +3,9 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) : firstASTTree(firstTree), secondASTTree(secondTree) {
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) : firstASTTree(firstTree), 
+                                                                                                            secondASTTree(secondTree), 
+                                                                                                            logger(std::move(logger)) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
     }

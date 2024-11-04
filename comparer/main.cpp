@@ -1,17 +1,21 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/tree.h"
 #include "./headers/database.h"
-#include "./headers/tree_comparer_logger.h"
-#include "./headers/console_logger.h"
+#include "./headers/loggers/tree_comparer_logger.h"
+#include "./headers/loggers/console_logger.h"
+#include "./headers/loggers/console_logger_creator.h"
 #include <iostream>
 
 int main() {
     try {
         Tree firstStandardAST("../../asts/first_standard_ast.txt");
         Tree secondStandardAST("../../asts/second_standard_ast.txt");
-        TreeComparerLogger logger = ConsoleLogger();
+        
+        // logger
+        ConsoleLoggerCreator loggerCreator;
+        std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
 
-        TreeComparer comparer(firstStandardAST, secondStandardAST, logger);
+        TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger));
         comparer.printDifferences();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

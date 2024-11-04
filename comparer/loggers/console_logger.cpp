@@ -1,20 +1,19 @@
 #include <iostream>
-#include "../headers/loggers/console_logger.h"
+#include "./headers/loggers/console_logger.h"
 #include "./headers/utils.h"
 
-void ConsoleLogger::logNode(const Node* node, const std::string& differencType, std::string indent) {
-    std::cout << indent << "Node details:\n";
-    std::cout << indent << node->kind << " " << node->type << " " << node->usr << " " << node->path << " " << node->lineNumber << ":" << node->columnNumber << "\n";
-    std::cout << indent << "*** Parent unique id: " << (node->parent ? Utils::getKey(node->parent, node->parent->type == "Declaration") : "None") << "\n";
-    
+void ConsoleLogger::logNode(const Node* node, const std::string& differenceType, std::string indent) {
+    std::cout << indent << "Node with difference type: " << differenceType << "\n";
+    Utils::printNodeDetails(node, indent);
     logSeparators();
 }
 
 void ConsoleLogger::logEdge(const Node* child, const Node* parent, std::string indent) {
-    std::cout << indent << "Edge: " << Utils::getKey(child, false) << " -> " << Utils::getKey(parent, true) << "\n";
-    Utils::printSeparators();
+    std::cout << indent << "Child Node: " << Utils::getKey(child, child->type == "Declaration") 
+              << " has parent Node: " << Utils::getKey(parent, parent->type == "Declaration") << "\n";
+    logSeparators();
 }
 
 void ConsoleLogger::logSeparators() {
-    std::cout << "----------------------------------------\n";
+    Utils::printSeparators();
 }
