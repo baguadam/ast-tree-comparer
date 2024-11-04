@@ -1,5 +1,5 @@
 #include <iostream>
-#include "./headers/console_logger.h"
+#include "../headers/loggers/console_logger.h"
 #include "./headers/utils.h"
 
 void ConsoleLogger::logNode(const Node* node, const std::string& differencType, std::string indent) {
@@ -10,7 +10,7 @@ void ConsoleLogger::logNode(const Node* node, const std::string& differencType, 
     logSeparators();
 }
 
-void logEdge(const Node* child, const Node* parent, std::string indent) {
+void ConsoleLogger::logEdge(const Node* child, const Node* parent, std::string indent) {
     std::cout << indent << "Edge: " << Utils::getKey(child, false) << " -> " << Utils::getKey(parent, true) << "\n";
     Utils::printSeparators();
 }

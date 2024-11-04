@@ -4,7 +4,7 @@
 
 #include "tree_comparer_logger.h"
 
-class ConsoleLogger : TreeComparerLogger { 
+class ConsoleLogger : public TreeComparerLogger { 
 public:
     void logNode(const Node* node, const std::string& differencType, std::string indent = "") override;
     void logEdge(const Node* childId, const Node* parentId, std::string indent = "") override;

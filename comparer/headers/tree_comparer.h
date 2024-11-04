@@ -8,15 +8,17 @@
 #include <queue>
 #include "node.h"
 #include "tree.h"
+#include "tree_comparer_logger.h"
 
 class TreeComparer {
 public:
-    TreeComparer(Tree&, Tree&);
+    TreeComparer(Tree&, Tree&, TreeComparerLogger&);
     void printDifferences();
 
 private:
     Tree& firstASTTree;
     Tree& secondASTTree;
+    TreeComparerLogger& logger;
 
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);
