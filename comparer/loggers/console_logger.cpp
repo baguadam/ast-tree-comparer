@@ -7,5 +7,3 @@ void ConsoleLogger::logNode(const Node* node, const DifferenceType diffType, con
     Utils::printNodeDetails(node, indent);
     Utils::printSeparators();
 }
-
-void ConsoleLogger::logEdge(const Node* childId, const Node* parentId, std::string indent) { }
