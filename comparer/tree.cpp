@@ -233,7 +233,6 @@ void Tree::addNodeToNodeMap(Node* node) {
     stmtNodeMultiMap.insert({declNodeKey, node});
 }
 
-
 /*
 Description:
     Recursively deletes the tree starting from the given node.

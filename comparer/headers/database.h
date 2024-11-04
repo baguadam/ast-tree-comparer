@@ -6,12 +6,13 @@
 #include <memory>
 #include <SQLiteCpp/SQLiteCpp.h>
 #include "enums.h"
+#include "node.h"
 
 class Database {
 public:
    Database(const std::string);
 
-   void insertNode(int, const std::string&, const std::string&, const std::string&, const std::string&, const ASTId, const std::string&);
+   void insertNode(int, const Node*, const ASTId, const std::string&);
    void insertEdge(int, int);
 
 private:

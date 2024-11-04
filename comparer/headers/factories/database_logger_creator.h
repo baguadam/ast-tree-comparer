@@ -3,7 +3,7 @@
 #define _DATABASE_LOGGER_CREATOR_H_
 
 #include "logger_creator.h"
-#include "database_logger.h"
+#include "../loggers/database_logger.h"
 
 class DatabaseLoggerCreator : public LoggerCreator { 
 public:

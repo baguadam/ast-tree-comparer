@@ -23,6 +23,20 @@ std::string Utils::getKey(const Node* node, bool isDeclaration) {
 
 /*
 Description:
+    Generates a unique key for a statement node based on its child and parent
+*/
+std::string Utils::getStatementId(const Node* node, const Node* declarationParent) {
+    if (declarationParent) {
+        std::string parentKey = Utils::getKey(declarationParent, true);
+        std::string statementKey = Utils::getKey(node, false);
+        return parentKey + "|" + statementKey;  // Concatenate parent and current node's key
+    } else {
+        return Utils::getKey(node, node->type == DECLARATION);  // Fallback: if no declaration parent, use the node's key
+    }
+}
+
+/*
+Description:
     Finds the first declaration parent of a given node (most cases it is for Statement nodes)
 */
 const Node* Utils::findDeclarationParent(const Node* node) {

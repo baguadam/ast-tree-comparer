@@ -7,9 +7,10 @@
 #include "enums.h"
 
 struct Node {
-    NodeType type; // (Declaration/Statement)
+    std::string id;   // unique identifier
+    NodeType type;    // (Declaration/Statement)
     std::string kind; // (FunctionDecl/VarDecl/IfStmt/WhileStmt/...)
-    std::string usr;  // unique identifier (in case of decl types)
+    std::string usr;  // usr
     std::string path; // source file
     int lineNumber;   // which line in the source file
     int columnNumber; // which column in the source file

@@ -3,7 +3,7 @@
 #include "./headers/database.h"
 #include "./headers/loggers/tree_comparer_logger.h"
 #include "./headers/loggers/console_logger.h"
-#include "./headers/loggers/console_logger_creator.h"
+#include "./headers/factories/console_logger_creator.h"
 #include <iostream>
 
 int main() {

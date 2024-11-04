@@ -1,7 +1,7 @@
 #ifndef _LOGGER_CREATOR_H
 #define _LOGGER_CREATOR_H
 
-#include "tree_comparer_logger.h"
+#include "../loggers/tree_comparer_logger.h"
 #include <memory>
 
 class LoggerCreator {

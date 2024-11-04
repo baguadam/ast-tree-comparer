@@ -33,7 +33,7 @@ void Database::createTables() {
         std::cout << "Creating Nodes table..." << std::endl;
         db.exec("CREATE TABLE IF NOT EXISTS Nodes ("
                 "id INTEGER PRIMARY KEY,"
-                "type TEXT NOT NULL,"
+                "type INTEGER NOT NULL,"
                 "kind TEXT NOT NULL,"
                 "usr TEXT NOT NULL,"
                 "path TEXT NOT NULL,"
@@ -55,13 +55,13 @@ void Database::createTables() {
     }
 }
 
-void Database::insertNode(int id, const std::string& type, const std::string& kind, const std::string& usr, const std::string& path, const ASTId astId, const std::string& differenceType) {
+void Database::insertNode(int id, const Node* node, const ASTId astId, const std::string& differenceType) {
     try {
         queryInsertNode->bind(1, id);  
-        queryInsertNode->bind(2, type);
-        queryInsertNode->bind(3, kind);
-        queryInsertNode->bind(4, usr);
-        queryInsertNode->bind(5, path);
+        queryInsertNode->bind(2, node->type);
+        queryInsertNode->bind(3, node->kind);
+        queryInsertNode->bind(4, node->usr);
+        queryInsertNode->bind(5, node->path);
         queryInsertNode->bind(6, differenceType);
         queryInsertNode->bind(7, astId);
         queryInsertNode->bind(8, "");

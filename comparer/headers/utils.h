@@ -7,15 +7,16 @@
 
 class Utils {
 public:
-    static std::string getKey(const Node* node, bool isDeclaration);
-    static const Node* findDeclarationParent(const Node* node);
+    static std::string getKey(const Node*, bool);
+    static std::string getStatementId(const Node*, const Node*);
+    static const Node* findDeclarationParent(const Node*);
     static void printSeparators();
-    static void printNodeDetails(const Node* node, std::string indent);
+    static void printNodeDetails(const Node*, std::string);
 
-    static std::string astIdToString(ASTId ast);
-    static std::string nodeTypeToString(NodeType type);
-    static NodeType stringToNodeType(const std::string& type);
-    static std::string differenceTypeToString(DifferenceType type);
+    static std::string astIdToString(ASTId);
+    static std::string nodeTypeToString(NodeType);
+    static NodeType stringToNodeType(const std::string&);
+    static std::string differenceTypeToString(DifferenceType);
 };
 
 #endif 
