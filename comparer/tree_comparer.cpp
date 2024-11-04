@@ -193,11 +193,6 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId
             // log the node
             logger->logNode(currentNode, diffType, ast, indent);
 
-            // log the edge (so that the relation) between the nodes
-            if (currentNode->parent) {
-                logger->logEdge(currentNode, currentNode->parent, indent);
-            }
-
             // Mark the node as processed
             if (isDeclaration) {
                 if (currentNode->type == DECLARATION) {
