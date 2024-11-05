@@ -2,6 +2,7 @@
 #define _UTILS_H_
 
 #include <string>
+#include <vector>
 #include "node.h"
 #include "enums.h"
 
@@ -17,6 +18,8 @@ public:
     static std::string nodeTypeToString(const NodeType);
     static NodeType stringToNodeType(const std::string&);
     static std::string differenceTypeToString(const DifferenceType);
+
+    static std::vector<std::string> splitString(const std::string&, const char);
 };
 
 #endif 

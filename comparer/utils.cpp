@@ -1,5 +1,8 @@
 #include "./headers/utils.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
+
 /*
 Description:
     Generates a unique key for a node based on its type and information
@@ -117,4 +120,16 @@ std::string Utils::differenceTypeToString(const DifferenceType type) {
         case DIFFERENT_SOURCE_LOCATIONS: return "NODES HAVE DIFFERENT SOURCE LOCATIONS";
         default: return "UNKNOWN DIFFERENCE";
     }
+}
+
+std::vector<std::string> Utils::splitString(const std::string& str, const char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string item;
+
+    while (std::getline(ss, item, delimiter)) {
+        tokens.push_back(item);
+    }
+
+    return tokens;
 }

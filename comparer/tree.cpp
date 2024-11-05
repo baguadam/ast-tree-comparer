@@ -1,7 +1,6 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 #include <queue>
 #include <stack>
 #include "./headers/tree.h"
@@ -155,29 +154,18 @@ Node* Tree::buildTree(std::ifstream& file) {
             ++depth;
         }
 
-        std::string type, kind, usr = "N/A", path = "N/A";
-        int lineNumber = -1, columnNumber = -1;
-        std::istringstream iss(line);
-
-        // read the node information based on the current type
-        if (!(iss >> type >> kind)) {
-            std::cerr << "Error parsing type and kind from line: " << line << std::endl;
-            continue; // skip invalid line
+        std::vector<std::string> tokens = Utils::splitString(line, '\t');
+        if (tokens.size() < 6) {
+            std::cerr << "Warning: Invalid line in the file: " << line << '\n';
+            continue;
         }
 
-        // try to read optional fields; default to "N/A" or -1 if not available
-        if (!(iss >> usr)) {
-            usr = "N/A"; // fallback if usr is missing
-        }
-        if (!(iss >> path)) {
-            path = "N/A"; // fallback if path is missing
-        }
-        if (!(iss >> lineNumber)) {
-            lineNumber = -1; // fallback if line number is missing
-        }
-        if (!(iss >> columnNumber)) {
-            columnNumber = -1; // fallback if column number is missing
-        }
+        std::string type = tokens[0];
+        std::string kind = tokens[1];
+        std::string usr = tokens[2];
+        std::string path = tokens[3];
+        int lineNumber = std::stoi(tokens[4]);
+        int columnNumber = std::stoi(tokens[5]);
 
         Node* node = new Node;
         node->type = Utils::stringToNodeType(type);

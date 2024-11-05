@@ -50,12 +50,12 @@ public:
     }
 
     llvm::outs()
-      << "Declaration "
-      << decl->getDeclKindName() << ' '
-      << getUSR(decl) << ' '
-      << filePath << ' '
-      << sm.getSpellingLineNumber(loc) << ' '
-      << sm.getSpellingColumnNumber(loc) << ' '
+      << "Declaration\t"
+      << decl->getDeclKindName() << '\t'
+      << getUSR(decl) << '\t'
+      << filePath << '\t'
+      << sm.getSpellingLineNumber(loc) << '\t'
+      << sm.getSpellingColumnNumber(loc) << '\t'
       << (decl->isImplicit() ? "(implicit)" : "") << '\n';
 
     return true;
@@ -74,11 +74,11 @@ public:
     }
 
     llvm::outs()
-      << "Statement "
-      << stmt->getStmtClassName() << ' '
-      << "N/A" << ' ' // no USR for statements
-      << filePath << ' '
-      << sm.getSpellingLineNumber(loc) << ' '
+      << "Statement\t"
+      << stmt->getStmtClassName() << '\t'
+      << "N/A" << '\t' // no USR for statements
+      << filePath << '\t'
+      << sm.getSpellingLineNumber(loc) << '\t'
       << sm.getSpellingColumnNumber(loc) << '\n';
 
     return true;

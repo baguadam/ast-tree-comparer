@@ -9,8 +9,8 @@
 
 int main() {
     try {
-        Tree firstStandardAST("../../asts/first_standard_ast.txt");
-        Tree secondStandardAST("../../asts/second_standard_ast.txt");
+        Tree firstStandardAST("../../asts/vector_98.txt");
+        Tree secondStandardAST("../../asts/vector_11.txt");
 
         // db
         Database db("../../asts/ast_diff.db3");
