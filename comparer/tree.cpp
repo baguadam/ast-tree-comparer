@@ -163,43 +163,50 @@ Node* Tree::buildTree(std::ifstream& file) {
 
         // trimming the type from the leading whitespace
         Utils::ltrim(tokens[0]);
+        try {
+            int lineNumber = std::stoi(tokens[4]);
+            int columNumber = std::stoi(tokens[5]);
 
-        Node* node = new Node;
-        node->type = Utils::stringToNodeType(tokens[0]);
-        node->kind = tokens[1];
-        node->usr = tokens[2];
-        node->path = tokens[3];
-        node->lineNumber = stoi(tokens[4]);
-        node->columnNumber = stoi(tokens[5]);
+            Node* node = new Node;
+            node->type = Utils::stringToNodeType(tokens[0]);
+            node->kind = tokens[1];
+            node->usr = tokens[2];
+            node->path = tokens[3];
+            node->lineNumber = lineNumber;
+            node->columnNumber = columNumber;
 
-        while (nodeStack.size() > depth) {
-            nodeStack.pop_back();
-        }
-
-        // set the parent of the current node
-        node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
-        if (node->parent) {
-            node->parent->children.push_back(node);
-        }
-
-        nodeStack.push_back(node);
-
-        // set the unique id of the node
-        const Node* declarationParent = nullptr;
-        if (node->type == STATEMENT) {
-            declarationParent = Utils::findDeclarationParent(node);
-            if (declarationParent) {
-                node->id = Utils::getStatementId(node, declarationParent);
-            } else {
-                std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
-                continue;
+            while (nodeStack.size() > depth) {
+                nodeStack.pop_back();
             }
-        } else {
-            node->id = Utils::getKey(node, true);
-        }
 
-        // creating the node maps
-        addNodeToNodeMap(node, declarationParent);    
+            // set the parent of the current node
+            node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
+            if (node->parent) {
+                node->parent->children.push_back(node);
+            }
+
+            nodeStack.push_back(node);
+
+            // set the unique id of the node
+            const Node* declarationParent = nullptr;
+            if (node->type == STATEMENT) {
+                declarationParent = Utils::findDeclarationParent(node);
+                if (declarationParent) {
+                    node->id = Utils::getStatementId(node, declarationParent);
+                } else {
+                    std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+                    continue;
+                }
+            } else {
+                node->id = Utils::getKey(node, true);
+            }
+
+            // creating the node maps
+            addNodeToNodeMap(node, declarationParent);    
+        } catch(const std::exception& e) {
+            std::cerr << "ERROR: parsing to int " << line << '\n';
+            continue;
+        }
     }
 
     return nodeStack.empty() ? nullptr : nodeStack.front();
