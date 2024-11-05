@@ -191,7 +191,7 @@ Node* Tree::buildTree(std::ifstream& file) {
             if (declarationParent) {
                 node->id = Utils::getStatementId(node, declarationParent);
             } else {
-                // std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+                std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
                 continue;
             }
         } else {
