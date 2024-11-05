@@ -9,7 +9,7 @@
 class TreeComparerLogger {
 public:
     virtual ~TreeComparerLogger() = default;
-    virtual void logNode(const Node* node, const DifferenceType diffType, const ASTId ast, std::string indent = "") = 0;
+    virtual void logNode(const Node* node, const DifferenceType diffType, const ASTId ast, int depth = 0) = 0;
 };
 
 #endif

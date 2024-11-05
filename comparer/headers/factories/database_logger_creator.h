@@ -7,9 +7,14 @@
 
 class DatabaseLoggerCreator : public LoggerCreator { 
 public:
+    DatabaseLoggerCreator(Database& db) : db(db) { }
+
     std::unique_ptr<TreeComparerLogger> createLogger() override {
-        return std::make_unique<DatabaseLogger>();
+        return std::make_unique<DatabaseLogger>(db);
     }
+
+private:
+    Database& db;
 };
 
 #endif

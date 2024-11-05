@@ -12,7 +12,7 @@ class Database {
 public:
    Database(const std::string);
 
-   void insertNode(const Node*, const ASTId, const DifferenceType);
+   void insertNode(const Node*, const ASTId, const DifferenceType, bool isHighestLevelNode = false);
    void insertEdge(const std::string&, const std::string&);
 
 private:

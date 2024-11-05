@@ -80,8 +80,8 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
 
-        logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST, "  ");
-        logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST, "  ");
+        logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST);
+        logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST);
     }
 }
 
@@ -91,8 +91,8 @@ Description:
 */
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
-        logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST, "  ");
-        logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST, "  ");
+        logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST);
+        logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST);
     }
 }
 
@@ -187,11 +187,10 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId
     auto processNode = [this, &tree, ast, processedKeys, isDeclaration](Node* currentNode, int depth) {
         std::string currentNodeKey = currentNode->type == DECLARATION ? currentNode->id : Utils::getKey(currentNode, false);
         if (!currentNodeKey.empty()) {
-            std::string indent(depth * 3, ' ');
             const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
             // log the node
-            logger->logNode(currentNode, diffType, ast, indent);
+            logger->logNode(currentNode, diffType, ast, depth);
 
             // Mark the node as processed
             if (isDeclaration) {

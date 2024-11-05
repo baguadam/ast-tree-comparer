@@ -6,7 +6,7 @@
 
 class ConsoleLogger : public TreeComparerLogger { 
 public:
-    void logNode(const Node* node, const DifferenceType diffType, const ASTId ast, std::string indent = "") override;
+    void logNode(const Node* node, const DifferenceType diffType, const ASTId ast, int depth = 0) override;
 };
 
 #endif
