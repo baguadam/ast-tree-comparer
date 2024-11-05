@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 #include <queue>
 #include <stack>
 #include "./headers/tree.h"
@@ -154,26 +155,22 @@ Node* Tree::buildTree(std::ifstream& file) {
             ++depth;
         }
 
-        std::vector<std::string> tokens = Utils::splitString(line, '\t');
+        std::vector<std::string> tokens = Utils::splitString(line);
         if (tokens.size() < 6) {
             std::cerr << "Warning: Invalid line in the file: " << line << '\n';
             continue;
         }
 
-        std::string type = tokens[0];
-        std::string kind = tokens[1];
-        std::string usr = tokens[2];
-        std::string path = tokens[3];
-        int lineNumber = std::stoi(tokens[4]);
-        int columnNumber = std::stoi(tokens[5]);
+        // trimming the type from the leading whitespace
+        Utils::ltrim(tokens[0]);
 
         Node* node = new Node;
-        node->type = Utils::stringToNodeType(type);
-        node->kind = kind;
-        node->usr = usr;
-        node->path = path;
-        node->lineNumber = lineNumber;
-        node->columnNumber = columnNumber;
+        node->type = Utils::stringToNodeType(tokens[0]);
+        node->kind = tokens[1];
+        node->usr = tokens[2];
+        node->path = tokens[3];
+        node->lineNumber = stoi(tokens[4]);
+        node->columnNumber = stoi(tokens[5]);
 
         while (nodeStack.size() > depth) {
             nodeStack.pop_back();
@@ -194,7 +191,7 @@ Node* Tree::buildTree(std::ifstream& file) {
             if (declarationParent) {
                 node->id = Utils::getStatementId(node, declarationParent);
             } else {
-                std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+                // std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
                 continue;
             }
         } else {
@@ -220,7 +217,11 @@ void Tree::addNodeToNodeMap(Node* node, const Node* declarationParent) {
     }
 
     if (node->type == DECLARATION) {
-        declNodeMap[nodeKey] = node; // store the node in the map
+        if (declNodeMap.find(nodeKey) != declNodeMap.end()) {
+            std::cerr << "Warning: Duplicate declaration node key detected: " << nodeKey << '\n';
+        } else {
+            declNodeMap[nodeKey] = node;
+        }
         return;
     }
 

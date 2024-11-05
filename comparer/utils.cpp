@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 /*
 Description:
@@ -104,6 +105,7 @@ NodeType Utils::stringToNodeType(const std::string& type) {
     } else if (type == "Statement") {
         return STATEMENT;
     } else {
+        std::cerr << "Warning: Unknown node type: " << type << '\n';
         return UNKNOWN;
     }
 }
@@ -122,6 +124,10 @@ std::string Utils::differenceTypeToString(const DifferenceType type) {
     }
 }
 
+/*
+Description:
+    Splits a line for the necessary columns based on the given deliminator (our case it is most likely '|')
+*/
 std::vector<std::string> Utils::splitString(const std::string& str, const char delimiter) {
     std::vector<std::string> tokens;
     std::stringstream ss(str);
@@ -132,4 +138,14 @@ std::vector<std::string> Utils::splitString(const std::string& str, const char d
     }
 
     return tokens;
+}
+
+/*
+Description:
+    Trims the leading whitespace of a string
+*/
+void Utils::ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
 }

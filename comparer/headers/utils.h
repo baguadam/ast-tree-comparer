@@ -19,7 +19,8 @@ public:
     static NodeType stringToNodeType(const std::string&);
     static std::string differenceTypeToString(const DifferenceType);
 
-    static std::vector<std::string> splitString(const std::string&, const char);
+    static std::vector<std::string> splitString(const std::string&, const char delimiter = '|');
+    static void ltrim(std::string&);
 };
 
 #endif 
