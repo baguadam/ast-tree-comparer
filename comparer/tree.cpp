@@ -148,6 +148,7 @@ Description:
 Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
     std::string line;
+    int currentIndex = 0;
 
     while (std::getline(file, line)) {
         int depth = 0;
@@ -174,6 +175,9 @@ Node* Tree::buildTree(std::ifstream& file) {
             node->path = tokens[3];
             node->lineNumber = lineNumber;
             node->columnNumber = columNumber;
+
+            // topological order of the node
+            node->topologicalOrder = currentIndex++;
 
             while (nodeStack.size() > depth) {
                 nodeStack.pop_back();

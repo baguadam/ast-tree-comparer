@@ -41,6 +41,39 @@ std::string Utils::getStatementId(const Node* node, const Node* declarationParen
 
 /*
 Description:
+    Generates an enhanced key of the node from the path to the root
+*/
+std::string Utils::getEnhancedKey(const Node* node) {
+    std::string key = node->kind + "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+
+    const Node* parent = node->parent;
+    while (parent) {
+        key += "|Parent:" + parent->kind + "|" + parent->usr;
+        parent = parent->parent;
+    }
+
+    return key;
+}
+
+/*
+Description:
+    Generates a unique fingerprint for a node based on its information and children, each node is hashed separately and the 
+    result is combined using XOR operation
+*/
+size_t Utils::getFingerPrint(const Node* node) {
+    size_t hash = hashString(node->kind) ^ hashString(node->usr) ^
+                  hashString(node->path) ^ std::hash<int>{}(node->lineNumber) ^
+                  std::hash<int>{}(node->columnNumber) ^ std::hash<int>{}(node->topologicalOrder);
+
+    for (const Node* child : node->children) {
+        hash ^= getFingerPrint(child);
+    }
+
+    return hash;
+}
+
+/*
+Description:
     Finds the first declaration parent of a given node (most cases it is for Statement nodes)
 */
 const Node* Utils::findDeclarationParent(const Node* node) {
@@ -148,4 +181,13 @@ void Utils::ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
         return !std::isspace(ch);
     }));
+}
+
+/*
+Description:
+    Hashes a string using the std::hash function
+*/
+size_t Utils::hashString(const std::string& str) {
+    std::hash<std::string> hasher;
+    return hasher(str);
 }
