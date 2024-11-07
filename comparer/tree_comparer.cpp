@@ -34,7 +34,7 @@ void TreeComparer::printDifferences() {
 
         // process the node
         processDeclNode(current);
-        
+
         // add children to the queue for further processing
         enqueueChildren(current, queue);
     }
@@ -193,34 +193,17 @@ Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
 void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId ast, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
+    if (current->isProcessed) {
+        return;  // skip
+    }
+
     std::string nodeKey = current-> enhancedKey;
 
-    // check if the node is already processed for declarations
-    if (isDeclaration && current->isProcessed) {
-        return;  // skip
-    }
-
-    // check if the node is already processed for statements
-    if (!isDeclaration && processedKeys && processedKeys->find(nodeKey) != processedKeys->end()) {
-        return;  // skip
-    }
-
     // Lambda for processing the node
-    auto processNode = [this, &tree, ast, processedKeys, isDeclaration](Node* currentNode, int depth) {
-        std::string currentNodeKey = currentNode->enhancedKey;
+    auto processNode = [this, ast](Node* currentNode, int depth) {
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
-
-        // log the node
-        logger->logNode(currentNode, diffType, ast, depth);
-
-        // Mark the node as processed
-        if (isDeclaration) {
-            if (currentNode->type == DECLARATION) {
-                currentNode->isProcessed = true;
-            }
-        } else if (currentNode->type == STATEMENT) {
-            processedKeys->insert(currentNodeKey);
-        }
+        logger->logNode(currentNode, diffType, ast, depth); // log the node
+        currentNode->isProcessed = true;
     };
 
     // traverse the subtree and process nodes accordingly
