@@ -21,6 +21,8 @@ Tree::Tree(const std::string& fileName) {
     if (!root) {
         throw std::runtime_error("Failed to build tree from file: " + fileName);
     }
+
+    file.close(); // explicitly close the file
 }
 
 /*
@@ -51,10 +53,9 @@ std::vector<Node*> Tree::getNodesFromMap(const std::unordered_multimap<std::stri
 
     auto range = multiMap.equal_range(nodeKey);
     matchingNodes.reserve(std::distance(range.first, range.second));
-
-    for (auto it = range.first; it != range.second; ++it) {
-        matchingNodes.push_back(it->second);
-    }
+    std::transform(range.first, range.second, std::back_inserter(matchingNodes), [](const auto& pair) {
+        return pair.second;
+    });
 
     return matchingNodes;
 }
