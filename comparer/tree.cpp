@@ -59,12 +59,14 @@ Description:
     Returns the statement nodes based on the key of the declaration.
 */
 const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::vector<std::pair<std::string, Node*>> stmtNodes;
+    std::vector<Node*> stmtNodes;
+
     auto range = stmtNodeMultiMap.equal_range(nodeKey);
+    stmtNodes.reserve(std::distance(range.first, range.second)); // reserve the space for the vector
+
     for (auto it = range.first; it != range.second; ++it) {
-        stmtNodes.emplace_back(Utils::getKey(it->second, false), it->second);
+        stmtNodes.push_back(it->second);
     }
-    return stmtNodes;
 }
 
 /*
