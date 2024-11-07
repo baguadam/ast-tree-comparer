@@ -32,11 +32,11 @@ void TreeComparer::printDifferences() {
             continue;
         }
 
-        // add children to the queue for further processing
-        enqueueChildren(current, queue);
-
         // process the node
         processDeclNode(current);
+        
+        // add children to the queue for further processing
+        enqueueChildren(current, queue);
     }
 }
 
