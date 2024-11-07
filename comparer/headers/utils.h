@@ -8,9 +8,8 @@
 
 class Utils {
 public:
-    static std::string getKey(const Node*, bool);
-    static std::string getStatementId(const Node*, const Node*);
-    static std::string getEnhancedKey(const Node*);
+    static std::string getStmtKey(const Node*, const std::string&);
+    static std::string getEnhancedDeclKey(const Node*);
     static size_t getFingerPrint(const Node*);
     static const Node* findDeclarationParent(const Node*);
 

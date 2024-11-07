@@ -147,6 +147,7 @@ Description:
 */
 Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
+    Node* lastDeclarationNode = nullptr;
     std::string line;
     int currentIndex = 0;
 
@@ -164,6 +165,7 @@ Node* Tree::buildTree(std::ifstream& file) {
 
         // trimming the type from the leading whitespace
         Utils::ltrim(tokens[0]);
+
         try {
             int lineNumber = std::stoi(tokens[4]);
             int columNumber = std::stoi(tokens[5]);
@@ -180,7 +182,7 @@ Node* Tree::buildTree(std::ifstream& file) {
             node->topologicalOrder = currentIndex++;
 
             while (nodeStack.size() > depth) {
-                nodeStack.pop_back();
+                nodeStack.resize(depth);
             }
 
             // set the parent of the current node
@@ -191,22 +193,23 @@ Node* Tree::buildTree(std::ifstream& file) {
 
             nodeStack.push_back(node);
 
-            // set the unique id of the node
-            const Node* declarationParent = nullptr;
-            if (node->type == STATEMENT) {
-                declarationParent = Utils::findDeclarationParent(node);
-                if (declarationParent) {
-                    node->id = Utils::getStatementId(node, declarationParent);
+            // set the unique id and the fingerprint of the node
+            if (node->type == DECLARATION) {
+                node->enhancedKey = Utils::getEnhancedDeclKey(node);
+                node->fingerprint = Utils::getFingerPrint(node);
+                lastDeclarationNode = node;
+                addDeclNodeToNodeMap(node);
+            } else {
+                if (lastDeclarationNode) {
+                    node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
+                    addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
                 } else {
-                    std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
+                    std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
+                    delete node; // avoid memory leak
                     continue;
                 }
-            } else {
-                node->id = Utils::getKey(node, true);
             }
 
-            // creating the node maps
-            addNodeToNodeMap(node, declarationParent);    
         } catch(const std::exception& e) {
             std::cerr << "ERROR: parsing to int " << line << '\n';
             continue;
@@ -218,29 +221,24 @@ Node* Tree::buildTree(std::ifstream& file) {
 
 /*
 Description:
-    Add the nodes to the corresponding maps, in case of Declaration nodes, it's added to the declNodeMap, otherwise to the stmtNodeMultiMap.
+    Adds the statement node with its key to the stmtNodeMultiMap.
 */
-void Tree::addNodeToNodeMap(Node* node, const Node* declarationParent) {
-    // generate the node key and validate it
-    std::string nodeKey = Utils::getKey(node, node->type == DECLARATION);
-    if (nodeKey.empty()) {
-        return; // skip invalid node
-    }
-
-    if (node->type == DECLARATION) {
-        if (declNodeMap.find(nodeKey) != declNodeMap.end()) {
-            std::cerr << "Warning: Duplicate declaration node key detected: " << nodeKey << '\n';
-        } else {
-            declNodeMap[nodeKey] = node;
-        }
-        return;
-    }
-
-    // for statement nodes
-    if (declarationParent) {
-        stmtNodeMultiMap.insert({declarationParent->id, node});   
+void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParentKey) {
+    if (!declarationParentKey.empty()) {
+        stmtNodeMultiMap.emplace(declarationParentKey, node);  // Use emplace for direct insertion
     } else {
-        std::cerr << "Warning: Could not find declaration parent for statement node: " << node->id << '\n';
+        std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
+    }
+}
+
+/*
+Description:
+    Adds the declaration node with its key to the declNodeMap.
+*/
+void Tree::addDeclNodeToNodeMap(Node* node) {
+    auto result = declNodeMap.insert({node->enhancedKey, node});
+    if (!result.second) {
+        std::cerr << "Warning: Duplicate declaration node key detected: " << node->enhancedKey << '\n';
     }
 }
 
