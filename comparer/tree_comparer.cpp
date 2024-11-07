@@ -141,43 +141,42 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     std::vector<Node*> firstAstStmtNodes = firstASTTree.getStmtNodes(nodeKey);
     std::vector<Node*> secondAstStmtNodes = secondASTTree.getStmtNodes(nodeKey);    
 
-    // second ast nodes in a multimap for faster access
+    // Map of second AST statement nodes for lookup
     std::unordered_multimap<std::string, Node*> secondASTStmtMultiMap;
     for (Node* node : secondAstStmtNodes) {
         secondASTStmtMultiMap.emplace(node->enhancedKey, node);
     }
 
+    // first pass: Identify matches and mark them
     for (Node* stmtNode : firstAstStmtNodes) {
-        // all matches from the second AST multimap
-        auto range = secondASTStmtMultiMap.equal_range(stmtNode->enhancedKey);
-        bool foundMatch = false;
-
-        // compare the possible matches
-        for (auto it = range.first; it != range.second; ++it) {
-            Node* matchingNode = it->second;
-
-            if (stmtNode->fingerprint == matchingNode->fingerprint) {
-                // Nodes match, no need for further comparison
-                foundMatch = true;
-                stmtNode->isProcessed = true;
-                matchingNode->isProcessed = true;
-                secondASTStmtMultiMap.erase(it);
-                break;
-            }
+        if (stmtNode->isProcessed) {
+            continue; // skip if already processed
         }
 
-        if (!foundMatch) {
-            // Node exists only in the first AST
+        auto range = secondASTStmtMultiMap.equal_range(stmtNode->enhancedKey);
+        for (auto it = range.first; it != range.second; ++it) {
+            Node* matchingNode = it->second;
+            if (stmtNode->fingerprint == matchingNode->fingerprint) {
+                stmtNode->isProcessed = true;
+                matchingNode->isProcessed = true;
+                break; // Only one match is needed
+            }
+        }
+    }
+
+    // second pass: Process unmatched nodes
+    for (Node* stmtNode : firstAstStmtNodes) {
+        if (!stmtNode->isProcessed) {
             processNodeInSingleAST(stmtNode, firstASTTree, FIRST_AST, false);
         }
     }
 
-    // remaining nodes from the second AST
-    for (const auto& [stmtKey, stmtNode] : secondASTStmtMultiMap) {
-        processNodeInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
+    for (Node* stmtNode : secondAstStmtNodes) {
+        if (!stmtNode->isProcessed) {
+            processNodeInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
+        }
     }
 }
-
 
 /*
 Description:
