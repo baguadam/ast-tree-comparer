@@ -23,7 +23,7 @@ private:
 
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);
-    void compareSimilarDeclNodes(const Node*, const Node*, const std::string&);
+    void compareSimilarDeclNodes(Node*, Node*, const std::string&);
     void compareStmtNodes(const std::string&);
     void compareSimilarStmtNodes(const Node*, const Node*);
     void processDeclNode(Node*);

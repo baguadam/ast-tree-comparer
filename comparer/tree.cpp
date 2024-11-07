@@ -179,11 +179,12 @@ Node* Tree::buildTree(std::ifstream& file) {
             }
 
             nodeStack.push_back(node);
+            
+            node->fingerprint = Utils::getFingerPrint(node); // set fingerprint for both declaration and statement nodes
 
             // set the unique id and the fingerprint of the node
             if (node->type == DECLARATION) {
                 node->enhancedKey = Utils::getEnhancedDeclKey(node);
-                node->fingerprint = Utils::getFingerPrint(node);
                 lastDeclarationNode = node;
                 addDeclNodeToNodeMap(node);
             } else {

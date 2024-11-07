@@ -59,30 +59,32 @@ void TreeComparer::processDeclNode(Node* current) {
                   [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; });
     
         // comparing the nodes one by one based on the topological order
-        size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());       
+        size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());
+        for (size_t i = 0; i < minSize; ++i) {
+            Node* firstNode = firstASTDeclNodes[i];
+            Node* secondNode = secondASTDeclNodes[i];
 
+            if (firstNode->fingerprint == secondNode->fingerprint) {
+                firstNode->isProcessed = true;
+                secondNode->isProcessed = true;
+                continue; // skip if they have the same fingerprint
+            }
+
+            compareSimilarDeclNodes(firstASTDeclNodes[i], secondASTDeclNodes[i], nodeKey);
+        }
+
+        if (firstASTDeclNodes.size() > minSize) {
+            for (size_t i = minSize; i < firstASTDeclNodes.size(); ++i) {
+                processNodeInSingleAST(firstASTDeclNodes[i], firstASTTree, FIRST_AST, true);
+            }
+        }
+
+        if (secondASTDeclNodes.size() > minSize) {
+            for (size_t i = minSize; i < secondASTDeclNodes.size(); ++i) {
+                processNodeInSingleAST(secondASTDeclNodes[i], secondASTTree, SECOND_AST, true);
+            }
+        }
     }
-
-    // if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
-    //     // node exists in both ASTs, compare them
-    //     if (firstASTTree.isDeclNodeProcessed(nodeKey) && secondASTTree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
-
-    //     const Node* firstASTNode = firstASTTree.getDeclNode(nodeKey);
-    //     const Node* secondASTNode = secondASTTree.getDeclNode(nodeKey);
-    //     compareSimilarDeclNodes(firstASTNode, secondASTNode, nodeKey);
-
-    //     // compare their direct children statements
-    //     compareStmtNodes(nodeKey);
-    // } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
-    //     // node exists only in the first AST
-    //     processNodeInSingleAST(current, firstASTTree, FIRST_AST, true);
-    // } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
-    //     // node exists only in the second AST
-    //     processNodeInSingleAST(current, secondASTTree, SECOND_AST, true);
-    // } else {
-    //     // node does not exist in either AST, should not happen
-    //     std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
-    // }
 }
 
 /*
@@ -115,62 +117,67 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
 Description:
     Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
-void TreeComparer::compareSimilarDeclNodes(const Node* firstNode, const Node* secondNode, const std::string& nodeKey) {
+void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
     // checking for parents
     compareParents(firstNode, secondNode);
 
     // comparing the source locations of the nodes
     compareSourceLocations(firstNode, secondNode);
 
+    // compare their statement nodes
+    compareStmtNodes(nodeKey);
+
     // mark nodes as processed
-    firstASTTree.markDeclNodeAsProcessed(nodeKey);
-    secondASTTree.markDeclNodeAsProcessed(nodeKey);
+    firstNode->isProcessed = true;
+    secondNode->isProcessed = true;
 }
 
 /*
 Description:
     Compares the statement nodes of two declaration nodes, creates a set of nodes for each AST using unique hash and equal functions,
-    then compares the nodes in the first AST with the nodes in the second AST, printing the differences
+    then compares the nodes in the first AST with the nodes in the second AST, printing the differences.
 */
 void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    std::vector<std::pair<std::string, Node*>> firstASTStmtVec = firstASTTree.getStmtNodes(nodeKey);
-    std::vector<std::pair<std::string, Node*>> secondASTStmtVec = secondASTTree.getStmtNodes(nodeKey);
+    std::vector<Node*> firstAstStmtNodes = firstASTTree.getStmtNodes(nodeKey);
+    std::vector<Node*> secondAstStmtNodes = secondASTTree.getStmtNodes(nodeKey);    
 
-    // processed statement keys
-    std::unordered_set<std::string> processedKeys;
-
-    // map of second AST statement nodes for faster lookup
-    std::unordered_map<std::string, Node*> secondASTStmtMap;
-    for (const auto& [stmtKey, stmtNode] : secondASTStmtVec) {
-        secondASTStmtMap[stmtKey] = stmtNode;
+    // second ast nodes in a multimap for faster access
+    std::unordered_multimap<std::string, Node*> secondASTStmtMultiMap;
+    for (Node* node : secondAstStmtNodes) {
+        secondASTStmtMultiMap.emplace(node->enhancedKey, node);
     }
 
-    // iterate through the first AST vector
-    for (auto& [stmtKey, stmtNode] : firstASTStmtVec) {
-        if (processedKeys.find(stmtKey) != processedKeys.end()) {
-            continue; // skip if already processed
+    for (Node* stmtNode : firstAstStmtNodes) {
+        // all matches from the second AST multimap
+        auto range = secondASTStmtMultiMap.equal_range(stmtNode->enhancedKey);
+        bool foundMatch = false;
+
+        // compare the possible matches
+        for (auto it = range.first; it != range.second; ++it) {
+            Node* matchingNode = it->second;
+
+            if (stmtNode->fingerprint == matchingNode->fingerprint) {
+                // Nodes match, no need for further comparison
+                foundMatch = true;
+                stmtNode->isProcessed = true;
+                matchingNode->isProcessed = true;
+                secondASTStmtMultiMap.erase(it);
+                break;
+            }
         }
 
-        auto it = secondASTStmtMap.find(stmtKey);
-        if (it == secondASTStmtMap.end()) {
-            // node exists only in the first AST
-            processNodeInSingleAST(stmtNode, firstASTTree, FIRST_AST, false, &processedKeys);
-        } else {
-            // node exists in both ASTs, compare them
-            compareSimilarStmtNodes(stmtNode, it->second);
-
-            // mark nodes as processed
-            processedKeys.insert(stmtKey);
+        if (!foundMatch) {
+            // Node exists only in the first AST
+            processNodeInSingleAST(stmtNode, firstASTTree, FIRST_AST, false);
         }
     }
 
-    // iterate through the statements in the second AST that were not processed
-    for (auto& [stmtKey, stmtNode] : secondASTStmtMap) {
-        if (processedKeys.find(stmtKey) == processedKeys.end()) {
-            processNodeInSingleAST(stmtNode, secondASTTree, SECOND_AST, false, &processedKeys);
-        }
+    // remaining nodes from the second AST
+    for (const auto& [stmtKey, stmtNode] : secondASTStmtMultiMap) {
+        processNodeInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
     }
 }
+
 
 /*
 Description:
@@ -186,35 +193,33 @@ Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
 void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId ast, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
-    std::string nodeKey = isDeclaration ? current->id : Utils::getKey(current, false);
+    std::string nodeKey = current-> enhancedKey;
 
-    // Check if the node is already processed for declarations
-    if (isDeclaration && tree.isDeclNodeProcessed(nodeKey)) {
-        return;  // Skip
+    // check if the node is already processed for declarations
+    if (isDeclaration && current->isProcessed) {
+        return;  // skip
     }
 
-    // Check if the node is already processed for statements
+    // check if the node is already processed for statements
     if (!isDeclaration && processedKeys && processedKeys->find(nodeKey) != processedKeys->end()) {
-        return;  // Skip
+        return;  // skip
     }
 
     // Lambda for processing the node
     auto processNode = [this, &tree, ast, processedKeys, isDeclaration](Node* currentNode, int depth) {
-        std::string currentNodeKey = currentNode->type == DECLARATION ? currentNode->id : Utils::getKey(currentNode, false);
-        if (!currentNodeKey.empty()) {
-            const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
+        std::string currentNodeKey = currentNode->enhancedKey;
+        const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
-            // log the node
-            logger->logNode(currentNode, diffType, ast, depth);
+        // log the node
+        logger->logNode(currentNode, diffType, ast, depth);
 
-            // Mark the node as processed
-            if (isDeclaration) {
-                if (currentNode->type == DECLARATION) {
-                    tree.markDeclNodeAsProcessed(currentNodeKey);
-                }
-            } else if (currentNode->type == STATEMENT) {
-                processedKeys->insert(currentNodeKey);
+        // Mark the node as processed
+        if (isDeclaration) {
+            if (currentNode->type == DECLARATION) {
+                currentNode->isProcessed = true;
             }
+        } else if (currentNode->type == STATEMENT) {
+            processedKeys->insert(currentNodeKey);
         }
     };
 
