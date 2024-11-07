@@ -44,50 +44,43 @@ Node* Tree::getRoot() const {
 
 /*
 Description:
-    Returns the pair of the node based on the key.
+    General method to get nodes from either the declaration or statement multimap based on the key.
 */
-const Node* Tree::getDeclNode(const std::string& nodeKey) const {
-    auto it = declNodeMap.find(nodeKey);
-    if (it == declNodeMap.end()) {
-        throw std::out_of_range("Node key not found in the declaration node map: " + nodeKey);
+std::vector<Node*> Tree::getNodesFromMap(const std::unordered_multimap<std::string, Node*>& multiMap, const std::string& nodeKey) const {
+    std::vector<Node*> matchingNodes;
+
+    auto range = multiMap.equal_range(nodeKey);
+    matchingNodes.reserve(std::distance(range.first, range.second));
+
+    for (auto it = range.first; it != range.second; ++it) {
+        matchingNodes.push_back(it->second);
     }
-    return it->second;
+
+    return matchingNodes;
+}
+
+/*
+Description:
+    Returns the declaration nodes based on the key.
+*/
+const std::vector<Node*> Tree::getDeclNodes(const std::string& nodeKey) const {
+    return getNodesFromMap(declNodeMultiMap, nodeKey);
 }
 
 /*
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::vector<Node*> stmtNodes;
-
-    auto range = stmtNodeMultiMap.equal_range(nodeKey);
-    stmtNodes.reserve(std::distance(range.first, range.second)); // reserve the space for the vector
-
-    for (auto it = range.first; it != range.second; ++it) {
-        stmtNodes.push_back(it->second);
-    }
-}
-
-/*
-Description:
-    Marks the node as processed in the tree.
-*/
-void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
-    auto it = declNodeMap.find(nodeKey);
-    if (it != declNodeMap.end()) {
-        it->second->isProcessed = true;
-    } else {
-        std::cerr << "Warning: Node key not found in the declaration node map: " << nodeKey << '\n';
-    }
+const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
+    return getNodesFromMap(stmtNodeMultiMap, nodeKey);
 }
 
 /*
 Description:
     Returns the node map of the tree.
 */
-const std::unordered_map<std::string, Node*>& Tree::getDeclNodeMap() const {
-    return declNodeMap;
+const std::unordered_multimap<std::string, Node*>& Tree::getDeclNodeMultiMap() const {
+    return declNodeMultiMap;
 }
 
 /*
@@ -95,6 +88,14 @@ const std::unordered_map<std::string, Node*>& Tree::getDeclNodeMap() const {
 */
 const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
     return stmtNodeMultiMap;
+}
+
+/*
+Description:
+    Checks if the node is in the tree.  
+*/
+bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
+    return declNodeMultiMap.count(nodeKey) > 0;
 }
 
 /*
@@ -124,23 +125,6 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
             }
         }
     }
-}
-
-/*
-Description:
-    Checks if the node is processed in the tree.
-*/
-bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
-    auto it = declNodeMap.find(nodeKey);
-    return it != declNodeMap.end() && it->second->isProcessed;
-}
-
-/*
-Description:
-    Checks if the node is in the tree.  
-*/
-bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
-    return declNodeMap.count(nodeKey) > 0;
 }
 
 /*
@@ -235,13 +219,10 @@ void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParent
 
 /*
 Description:
-    Adds the declaration node with its key to the declNodeMap.
+    Adds the declaration node with its key to the declNodeMultiMap.
 */
 void Tree::addDeclNodeToNodeMap(Node* node) {
-    auto result = declNodeMap.insert({node->enhancedKey, node});
-    if (!result.second) {
-        std::cerr << "Warning: Duplicate declaration node key detected: " << node->enhancedKey << '\n';
-    }
+    declNodeMultiMap.emplace(node->enhancedKey, node);
 }
 
 /*
