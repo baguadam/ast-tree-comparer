@@ -46,28 +46,43 @@ Descpirion:
     compares them, otherwise processes the node that exists only in one of the ASTs.
 */
 void TreeComparer::processDeclNode(Node* current) {
-    std::string nodeKey = current->id;
+    std::string nodeKey = current->enhancedKey;
 
     if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
-        // node exists in both ASTs, compare them
-        if (firstASTTree.isDeclNodeProcessed(nodeKey) && secondASTTree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
+        std::vector<Node*> firstASTDeclNodes = firstASTTree.getDeclNodes(nodeKey);
+        std::vector<Node*> secondASTDeclNodes = secondASTTree.getDeclNodes(nodeKey);
 
-        const Node* firstASTNode = firstASTTree.getDeclNode(nodeKey);
-        const Node* secondASTNode = secondASTTree.getDeclNode(nodeKey);
-        compareSimilarDeclNodes(firstASTNode, secondASTNode, nodeKey);
+        // sort the nodes based on their topological order
+        std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), 
+                  [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; });
+        std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), 
+                  [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; });
+    
+        // comparing the nodes one by one based on the topological order
+        size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());       
 
-        // compare their direct children statements
-        compareStmtNodes(nodeKey);
-    } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
-        // node exists only in the first AST
-        processNodeInSingleAST(current, firstASTTree, FIRST_AST, true);
-    } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
-        // node exists only in the second AST
-        processNodeInSingleAST(current, secondASTTree, SECOND_AST, true);
-    } else {
-        // node does not exist in either AST, should not happen
-        std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
     }
+
+    // if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
+    //     // node exists in both ASTs, compare them
+    //     if (firstASTTree.isDeclNodeProcessed(nodeKey) && secondASTTree.isDeclNodeProcessed(nodeKey)) return;  // skip if already processed
+
+    //     const Node* firstASTNode = firstASTTree.getDeclNode(nodeKey);
+    //     const Node* secondASTNode = secondASTTree.getDeclNode(nodeKey);
+    //     compareSimilarDeclNodes(firstASTNode, secondASTNode, nodeKey);
+
+    //     // compare their direct children statements
+    //     compareStmtNodes(nodeKey);
+    // } else if (firstASTTree.isDeclNodeInAST(nodeKey)) {
+    //     // node exists only in the first AST
+    //     processNodeInSingleAST(current, firstASTTree, FIRST_AST, true);
+    // } else if (secondASTTree.isDeclNodeInAST(nodeKey)) {
+    //     // node exists only in the second AST
+    //     processNodeInSingleAST(current, secondASTTree, SECOND_AST, true);
+    // } else {
+    //     // node does not exist in either AST, should not happen
+    //     std::cerr << "Error: Node key " << nodeKey << " not found in either AST map.\n";
+    // }
 }
 
 /*
