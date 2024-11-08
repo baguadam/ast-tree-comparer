@@ -178,6 +178,13 @@ void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
     bool isSecondSingleNode = std::distance(secondASTRange.first, secondASTRange.second) == 1;
 
     if (isFirstSingleNode && isSecondSingleNode) {
+        bool isFirstNodeProcessed = firstASTRange.first->second->isProcessed;
+        bool isSecondNodeProcessed = secondASTRange.first->second->isProcessed;
+        
+        if (isFirstNodeProcessed || isSecondNodeProcessed) {
+            return;  // skip already processed nodes
+        }
+
         // GENERAL CASE: both ranges have only one node
         Node* firstNode = firstASTRange.first->second;
         Node* secondNode = secondASTRange.first->second;
