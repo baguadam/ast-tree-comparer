@@ -208,8 +208,12 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
 
     // sort the nodes based on their topological order for proper comparison
     auto comparer = [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; };
-    std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), comparer);
-    std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), comparer);
+    if (firstASTDeclNodes.size() > 1) {
+        std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), comparer);
+    }
+    if (secondASTDeclNodes.size() > 1) {
+        std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), comparer);
+    }
 
     // compare nodes from both ASTs using the sorted vectors
     size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());
@@ -269,6 +273,10 @@ void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode, cons
     compareSimilarDeclNodes(firstNode, secondNode, nodeKey);
 }
 
+/*
+Description:
+    Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
+*/
 void TreeComparer::processRemainingNodes(std::vector<Node*>::const_iterator begin, 
                                          std::vector<Node*>::const_iterator end, 
                                          Tree& tree, const ASTId ast) {
