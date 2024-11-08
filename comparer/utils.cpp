@@ -18,14 +18,7 @@ Description:
     Generates an enhanced key of the node from the path to the root
 */
 std::string Utils::getEnhancedDeclKey(const Node* node) {
-    std::string key = node->kind + "|" + node->usr + "|";
-
-    const Node* parent = node->parent;
-    while (parent) {
-        key += "|Parent:" + parent->kind + "|" + parent->usr;
-        parent = parent->parent;
-    }
-
+    std::string key = node->kind + "|" + node->usr + "|" + node->path + "|";
     return key;
 }
 

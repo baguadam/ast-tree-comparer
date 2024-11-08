@@ -252,13 +252,14 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         return;  // skip
     }
 
-    std::string nodeKey = current-> enhancedKey;
-    auto correspondingASTTree = (ast == FIRST_AST) ? secondASTTree : firstASTTree;
+    Tree& correspondingASTTree = (ast == FIRST_AST) ? secondASTTree : firstASTTree;
 
     // Lambda for processing the node
     auto processNode = [this, ast, &correspondingASTTree](Node* currentNode, int depth) {
         std::string currentNodeKey = currentNode->enhancedKey;
         bool existsInCorrespondingAST = correspondingASTTree.isDeclNodeInAST(currentNodeKey);
+
+        std::cout << "Processing node: " << currentNode->kind << " " << currentNode->usr << ", exists: " << existsInCorrespondingAST << '\n';
 
         // don't mark and print nodes in the subtree that exists in both AST, leave them for further comparison
         if (existsInCorrespondingAST) {
