@@ -25,7 +25,7 @@ private:
     void compareParents(const Node*, const Node*);
     void compareSimilarDeclNodes(Node*, Node*, const std::string&);
     void compareStmtNodes(const std::string&);
-    void compareSimilarStmtNodes(const Node*, const Node*);
+    void compareSimilarStmtNodes(Node*, Node*);
     void processDeclNodes(Node*);
     void processDeclNodesInBothASTs(const std::string&);
     void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,

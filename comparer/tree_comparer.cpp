@@ -114,53 +114,54 @@ Description:
     then compares the nodes in the first AST with the nodes in the second AST, printing the differences.
 */
 void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    std::vector<Node*> firstAstStmtNodes = firstASTTree.getStmtNodes(nodeKey);
-    std::vector<Node*> secondAstStmtNodes = secondASTTree.getStmtNodes(nodeKey);    
+    auto firstASTStmtRange = firstASTTree.getStmtNodes(nodeKey);
+    auto secondASTStmtRange = secondASTTree.getStmtNodes(nodeKey);
 
     // Map of second AST statement nodes for lookup
-    std::unordered_multimap<std::string, Node*> secondASTStmtMultiMap;
-    for (Node* node : secondAstStmtNodes) {
-        secondASTStmtMultiMap.emplace(node->enhancedKey, node);
+    std::unordered_map<std::string, Node*> secondASTMap;
+    for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
+        Node* node = it->second;
+        secondASTMap.emplace(it->second->enhancedKey, node);
     }
 
     // first pass: Identify matches and mark them
-    for (Node* stmtNode : firstAstStmtNodes) {
+    for (auto it = firstASTStmtRange.first; it != firstASTStmtRange.second; ++it) {
+        Node* stmtNode = it->second;
+
         if (stmtNode->isProcessed) {
             continue; // skip if already processed
         }
 
-        auto range = secondASTStmtMultiMap.equal_range(stmtNode->enhancedKey);
-        for (auto it = range.first; it != range.second; ++it) {
-            Node* matchingNode = it->second;
-            if (stmtNode->fingerprint == matchingNode->fingerprint) {
-                stmtNode->isProcessed = true;
-                matchingNode->isProcessed = true;
-                break; // one match is needed
+        auto secondNodeIt = secondASTMap.find(stmtNode->enhancedKey);
+        if (secondNodeIt == secondASTMap.end()) {
+            processNodesInSingleAST(stmtNode, firstASTTree, FIRST_AST, false);
+        } else {
+            Node* secondNode = secondNodeIt->second;
+
+            if (!secondNode->isProcessed) { 
+                compareSimilarStmtNodes(stmtNode, secondNode);
             }
         }
     }
 
-    // second pass: Process unmatched nodes
-    for (Node* stmtNode : firstAstStmtNodes) {
-        if (!stmtNode->isProcessed) {
-            processNodesInSingleAST(stmtNode, firstASTTree, FIRST_AST, false);
-        }
-    }
-
-    for (Node* stmtNode : secondAstStmtNodes) {
+    // second pass: process unmatched nodes in secont AST
+    for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
+        Node* stmtNode = it->second;
         if (!stmtNode->isProcessed) {
             processNodesInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
         }
-    }
+    } 
 }
 
 /*
 Description:
     Comparison logic of two similar statement nodes, checking for parents and source locations
 */
-void TreeComparer::compareSimilarStmtNodes(const Node* firstNode, const Node* secondNode) {
+void TreeComparer::compareSimilarStmtNodes(Node* firstNode, Node* secondNode) {
     // checking for parents
     compareParents(firstNode, secondNode);
+    firstNode->isProcessed = true;
+    secondNode->isProcessed = true;
 }
 
 /*
@@ -229,7 +230,7 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
     }
 
 
-    // Process any remaining nodes in both ASTs
+    // process any remaining nodes in both ASTs
     processRemainingNodes(firstASTDeclNodes.begin() + minSize, firstASTDeclNodes.end(), firstASTTree, FIRST_AST);
     processRemainingNodes(secondASTDeclNodes.begin() + minSize, secondASTDeclNodes.end(), secondASTTree, SECOND_AST);
 }
