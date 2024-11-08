@@ -169,11 +169,14 @@ Description:
     that are returned by the getDeclNodes method of the Tree class, sorts the nodes based on their topological order for proper comparison.
 */
 void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
-    // ranges for the nodes in both ASTs
     auto firstASTRange = firstASTTree.getDeclNodes(nodeKey);
     auto secondASTRange = secondASTTree.getDeclNodes(nodeKey);
 
-    if (std::distance(firstASTRange.first, firstASTRange.second) == 1 && std::distance(secondASTRange.first, secondASTRange.second) == 1) {
+    // Check the number of nodes in both ranges
+    bool isFirstSingleNode = std::distance(firstASTRange.first, firstASTRange.second) == 1;
+    bool isSecondSingleNode = std::distance(secondASTRange.first, secondASTRange.second) == 1;
+
+    if (isFirstSingleNode && isSecondSingleNode) {
         // GENERAL CASE: both ranges have only one node
         Node* firstNode = firstASTRange.first->second;
         Node* secondNode = secondASTRange.first->second;
@@ -221,20 +224,10 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
         checkNodeFingerprints(firstNode, secondNode, nodeKey);
     }
 
-    // Process any remaining nodes in both ASTs
-    for (size_t i = minSize; i < firstASTDeclNodes.size(); ++i) {
-        Node* node = firstASTDeclNodes[i];
-        if (!node->isProcessed) {
-            processNodesInSingleAST(node, firstASTTree, FIRST_AST, true);
-        }
-    }
 
-    for (size_t i = minSize; i < secondASTDeclNodes.size(); ++i) {
-        Node* node = secondASTDeclNodes[i];
-        if (!node->isProcessed) {
-            processNodesInSingleAST(node, secondASTTree, SECOND_AST, true);
-        }
-    }
+    // Process any remaining nodes in both ASTs
+    processRemainingNodes(firstASTDeclNodes.begin() + minSize, firstASTDeclNodes.end(), firstASTTree, FIRST_AST);
+    processRemainingNodes(secondASTDeclNodes.begin() + minSize, secondASTDeclNodes.end(), secondASTTree, SECOND_AST);
 }
 
 /*
@@ -264,13 +257,26 @@ Description:
     Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
 */
 void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
-    if (firstNode->fingerprint == secondNode->fingerprint &&
-        firstNode->kind == secondNode->kind &&
-        firstNode->children.size() == secondNode->children.size()) {
-        firstNode->isProcessed = true;
-        secondNode->isProcessed = true;
-    } else {
-        compareSimilarDeclNodes(firstNode, secondNode, nodeKey);
+    if (firstNode->fingerprint == secondNode->fingerprint) {
+        // additional checks in case of fingerprint collision
+        if (firstNode->kind == secondNode->kind && firstNode->children.size() == secondNode->children.size()) {
+            firstNode->isProcessed = true;
+            secondNode->isProcessed = true;
+            return;  // nodes considered identical, no further processing needed
+        }
+    }
+    // fallback to detailed node comparison
+    compareSimilarDeclNodes(firstNode, secondNode, nodeKey);
+}
+
+void TreeComparer::processRemainingNodes(std::vector<Node*>::const_iterator begin, 
+                                         std::vector<Node*>::const_iterator end, 
+                                         Tree& tree, const ASTId ast) {
+    for (auto it = begin; it != end; ++it) {
+        Node* node = *it;
+        if (!node->isProcessed) {
+            processNodesInSingleAST(node, tree, ast, node->type == DECLARATION);
+        }
     }
 }
 

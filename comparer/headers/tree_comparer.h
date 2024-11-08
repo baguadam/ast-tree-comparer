@@ -34,6 +34,7 @@ private:
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&,
                                const std::string&);
     void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
+    void processRemainingNodes(std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator, Tree&, const ASTId);
     void checkNodeFingerprints(Node*, Node*, const std::string&);
     
     void enqueueChildren(Node*, std::queue<Node*>&);
