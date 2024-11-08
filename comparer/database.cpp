@@ -57,7 +57,7 @@ void Database::createTables() {
 
 void Database::insertNode(const Node* node, const ASTId astId, const DifferenceType differenceType, bool isHighestLevelNode) {
     try {
-        queryInsertNode->bind(1, node->id);  
+        queryInsertNode->bind(1, node->enhancedKey);  
         queryInsertNode->bind(2, node->type);
         queryInsertNode->bind(3, node->kind);
         queryInsertNode->bind(4, node->usr);
