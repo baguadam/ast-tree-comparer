@@ -259,8 +259,6 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         std::string currentNodeKey = currentNode->enhancedKey;
         bool existsInCorrespondingAST = correspondingASTTree.isDeclNodeInAST(currentNodeKey);
 
-        std::cout << "Processing node: " << currentNode->kind << " " << currentNode->usr << ", exists: " << existsInCorrespondingAST << '\n';
-
         // don't mark and print nodes in the subtree that exists in both AST, leave them for further comparison
         if (existsInCorrespondingAST) {
             return;  // skip
