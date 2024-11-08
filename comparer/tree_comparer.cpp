@@ -48,42 +48,18 @@ Descpirion:
 void TreeComparer::processDeclNode(Node* current) {
     std::string nodeKey = current->enhancedKey;
 
-    if (firstASTTree.isDeclNodeInAST(nodeKey) && secondASTTree.isDeclNodeInAST(nodeKey)) {
-        std::vector<Node*> firstASTDeclNodes = firstASTTree.getDeclNodes(nodeKey);
-        std::vector<Node*> secondASTDeclNodes = secondASTTree.getDeclNodes(nodeKey);
+    bool existsInFirstAST = firstASTTree.isDeclNodeInAST(nodeKey);
+    bool existsInSecondAST = secondASTTree.isDeclNodeInAST(nodeKey);
 
-        // sort the nodes based on their topological order
-        std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), 
-                  [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; });
-        std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), 
-                  [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; });
-    
-        // comparing the nodes one by one based on the topological order
-        size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());
-        for (size_t i = 0; i < minSize; ++i) {
-            Node* firstNode = firstASTDeclNodes[i];
-            Node* secondNode = secondASTDeclNodes[i];
-
-            if (firstNode->fingerprint == secondNode->fingerprint) {
-                firstNode->isProcessed = true;
-                secondNode->isProcessed = true;
-                continue; // skip if they have the same fingerprint
-            }
-
-            compareSimilarDeclNodes(firstASTDeclNodes[i], secondASTDeclNodes[i], nodeKey);
-        }
-
-        if (firstASTDeclNodes.size() > minSize) {
-            for (size_t i = minSize; i < firstASTDeclNodes.size(); ++i) {
-                processNodeInSingleAST(firstASTDeclNodes[i], firstASTTree, FIRST_AST, true);
-            }
-        }
-
-        if (secondASTDeclNodes.size() > minSize) {
-            for (size_t i = minSize; i < secondASTDeclNodes.size(); ++i) {
-                processNodeInSingleAST(secondASTDeclNodes[i], secondASTTree, SECOND_AST, true);
-            }
-        }
+    if (existsInFirstAST && existsInSecondAST) {
+        processDeclNodeInBothASTs(nodeKey);
+    } else if (existsInFirstAST) {
+        processNodeInSingleAST(current, firstASTTree, FIRST_AST, true);
+    } else if (existsInSecondAST) {
+        processNodeInSingleAST(current, secondASTTree, SECOND_AST, true);
+    } else {
+        // should not happen! 
+        std::cerr << "Error: Node with key " << nodeKey << " does not exist in any of the ASTs.\n";
     }
 }
 
@@ -185,6 +161,49 @@ Description:
 void TreeComparer::compareSimilarStmtNodes(const Node* firstNode, const Node* secondNode) {
     // checking for parents
     compareParents(firstNode, secondNode);
+}
+
+/*
+
+*/
+void TreeComparer::processDeclNodeInBothASTs(const std::string& nodeKey) {
+    std::vector<Node*> firstASTDeclNodes = firstASTTree.getDeclNodes(nodeKey);
+    std::vector<Node*> secondASTDeclNodes = secondASTTree.getDeclNodes(nodeKey);
+
+    // sort the nodes based on their topological order
+    auto comparer = [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; };
+    std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), comparer);
+    std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), comparer);
+    
+    // comparing the nodes one by one based on the topological order
+    size_t minSize = std::min(firstASTDeclNodes.size(), secondASTDeclNodes.size());
+    for (size_t i = 0; i < minSize; ++i) {
+        Node* firstNode = firstASTDeclNodes[i];
+        Node* secondNode = secondASTDeclNodes[i];
+
+        if (firstNode->fingerprint == secondNode->fingerprint) {
+            // additional check for the same fingerprint (for key collisions)
+            if (firstNode->kind == secondNode->kind && firstNode->children.size() == secondNode->children.size()) {
+                firstNode->isProcessed = true;
+                secondNode->isProcessed = true;
+                continue; // skip if they have the same fingerprint
+            }
+        }
+
+        compareSimilarDeclNodes(firstASTDeclNodes[i], secondASTDeclNodes[i], nodeKey);
+    }
+
+    if (firstASTDeclNodes.size() > minSize) {
+        for (size_t i = minSize; i < firstASTDeclNodes.size(); ++i) {
+            processNodeInSingleAST(firstASTDeclNodes[i], firstASTTree, FIRST_AST, true);
+        }
+    }
+
+    if (secondASTDeclNodes.size() > minSize) {
+        for (size_t i = minSize; i < secondASTDeclNodes.size(); ++i) {
+            processNodeInSingleAST(secondASTDeclNodes[i], secondASTTree, SECOND_AST, true);
+        }
+    }
 }
 
 /*
