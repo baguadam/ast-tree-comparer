@@ -9,7 +9,7 @@ void DatabaseLogger::logNode(const Node* node, const DifferenceType diffType, co
         db.insertNode(node, ast, diffType, isHighestLevelNode);
 
         if (node->parent) {
-            db.insertEdge(node->id, node->parent->id);
+            db.insertEdge(node->enhancedKey, node->parent->enhancedKey);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error logging node: " << e.what() << std::endl;
