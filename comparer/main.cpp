@@ -9,15 +9,15 @@
 
 int main() {
     try {
-        Tree firstStandardAST("../../asts/first_standard_ast.txt");
-        Tree secondStandardAST("../../asts/second_standard_ast.txt");
+        Tree firstStandardAST("../../asts/vector_98.txt");
+        Tree secondStandardAST("../../asts/vector_11.txt");
 
         // db
-        // Database db("../../asts/ast_diff.db3");
+        Database db("../../asts/ast_diff.db3");
         
         // logger
-        ConsoleLoggerCreator loggerCreator;
-        // DatabaseLoggerCreator loggerCreator(db);
+        // ConsoleLoggerCreator loggerCreator;
+        DatabaseLoggerCreator loggerCreator(db);
         std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
 
         TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger));

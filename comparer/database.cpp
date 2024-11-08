@@ -21,7 +21,7 @@ void Database::clearDatabase() {
 
 void Database::initializeStatements() {
     try {
-        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(id, type, kind, usr, path, differenceType, AST, isHighestLevelNode, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(key, type, kind, usr, path, differenceType, AST, isHighestLevelNode, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         queryInsertEdge = std::make_unique<SQLite::Statement>(db, "INSERT INTO Edges(childId, parentId) VALUES (?, ?)");
     } catch (const std::exception& e) {
         std::cerr << "Error initializing statements: " << e.what() << std::endl;
@@ -32,7 +32,8 @@ void Database::createTables() {
     try {
         std::cout << "Creating Nodes table..." << std::endl;
         db.exec("CREATE TABLE IF NOT EXISTS Nodes ("
-                "id TEXT PRIMARY KEY,"
+                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "key TEXT NOT NULL,"
                 "type INTEGER NOT NULL,"
                 "kind TEXT NOT NULL,"
                 "usr TEXT NOT NULL,"
@@ -45,8 +46,8 @@ void Database::createTables() {
 
         std::cout << "Creating Edges table..." << std::endl;
         db.exec("CREATE TABLE IF NOT EXISTS Edges ("
-                "childId TEXT NOT NULL,"
-                "parentId TEXT NOT NULL,"
+                "childId INTEGER NOT NULL,"
+                "parentId INTEGER NOT NULL,"
                 "FOREIGN KEY(childId) REFERENCES Nodes(id),"
                 "FOREIGN KEY(parentId) REFERENCES Nodes(id));");
         std::cout << "Edges table created successfully." << std::endl;
