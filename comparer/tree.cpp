@@ -48,7 +48,7 @@ Node* Tree::getRoot() const {
 Description:
     General method to get nodes from either the declaration or statement multimap based on the key.
 */
-std::vector<Node*> Tree::getNodesFromMap(const std::unordered_multimap<std::string, Node*>& multiMap, const std::string& nodeKey) const {
+const std::vector<Node*>& Tree::getNodesFromMap(const std::unordered_multimap<std::string, Node*>& multiMap, const std::string& nodeKey) const {
     std::vector<Node*> matchingNodes;
 
     auto range = multiMap.equal_range(nodeKey);
@@ -64,7 +64,7 @@ std::vector<Node*> Tree::getNodesFromMap(const std::unordered_multimap<std::stri
 Description:
     Returns the declaration nodes based on the key.
 */
-const std::vector<Node*> Tree::getDeclNodes(const std::string& nodeKey) const {
+const std::vector<Node*>& Tree::getDeclNodes(const std::string& nodeKey) const {
     auto uniqueIt = declNodeMap.find(nodeKey);
 
     if (uniqueIt != declNodeMap.end()) {
@@ -78,7 +78,7 @@ const std::vector<Node*> Tree::getDeclNodes(const std::string& nodeKey) const {
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
+const std::vector<Node*>& Tree::getStmtNodes(const std::string& nodeKey) const {
     return getNodesFromMap(stmtNodeMultiMap, nodeKey);
 }
 

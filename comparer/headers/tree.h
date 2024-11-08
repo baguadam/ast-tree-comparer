@@ -15,9 +15,9 @@ public:
     ~Tree();
     
     Node* getRoot() const;
-    std::vector<Node*> getNodesFromMap(const std::unordered_multimap<std::string, Node*>&, const std::string&) const;
-    const std::vector<Node*> getDeclNodes(const std::string& nodeKey) const;
-    const std::vector<Node*> getStmtNodes(const std::string& nodeKey) const;
+    const std::vector<Node*>& getNodesFromMap(const std::unordered_multimap<std::string, Node*>&, const std::string&) const;
+    const std::vector<Node*>& getDeclNodes(const std::string& nodeKey) const;
+    const std::vector<Node*>& getStmtNodes(const std::string& nodeKey) const;
     const std::unordered_map<std::string, Node*>& getDeclNodeMap() const;
     const std::unordered_multimap<std::string, Node*>& getMultiDeclNodeMap() const;
     const std::unordered_multimap<std::string, Node*>& getStmtNodeMultiMap() const;
