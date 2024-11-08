@@ -26,10 +26,16 @@ private:
     void compareSimilarDeclNodes(Node*, Node*, const std::string&);
     void compareStmtNodes(const std::string&);
     void compareSimilarStmtNodes(const Node*, const Node*);
-    void processDeclNode(Node*);
-    void processDeclNodeInBothASTs(const std::string&);
-    void processNodeInSingleAST(Node*, Tree&, const ASTId, bool);
-    void processRemainingNodes(const std::vector<Node*>&, Tree&, const ASTId, size_t, bool);
+    void processDeclNodes(Node*);
+    void processDeclNodesInBothASTs(const std::string&);
+    void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
+                                               std::unordered_multimap<std::string, Node*>::const_iterator>&,
+                               const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
+                                               std::unordered_multimap<std::string, Node*>::const_iterator>&,
+                               const std::string&);
+    void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
+    void checkNodeFingerprints(Node*, Node*, const std::string&);
+    
     void enqueueChildren(Node*, std::queue<Node*>&);
 };
 
