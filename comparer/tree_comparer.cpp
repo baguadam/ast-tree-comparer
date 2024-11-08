@@ -194,15 +194,11 @@ void TreeComparer::processDeclNodeInBothASTs(const std::string& nodeKey) {
     }
 
     if (firstASTDeclNodes.size() > minSize) {
-        for (size_t i = minSize; i < firstASTDeclNodes.size(); ++i) {
-            processNodeInSingleAST(firstASTDeclNodes[i], firstASTTree, FIRST_AST, true);
-        }
+        processRemainingNodes(firstASTDeclNodes, firstASTTree, FIRST_AST, minSize, true);
     }
 
     if (secondASTDeclNodes.size() > minSize) {
-        for (size_t i = minSize; i < secondASTDeclNodes.size(); ++i) {
-            processNodeInSingleAST(secondASTDeclNodes[i], secondASTTree, SECOND_AST, true);
-        }
+        processRemainingNodes(secondASTDeclNodes, secondASTTree, SECOND_AST, minSize, true);
     }
 }
 
@@ -210,7 +206,7 @@ void TreeComparer::processDeclNodeInBothASTs(const std::string& nodeKey) {
 Description:
     Processes a node that exists only in one of the ASTs, prints the details of the node and marks the subtree as processed, handles both DECLARATIONS and STATEMENTS
 */
-void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId ast, bool isDeclaration, std::unordered_set<std::string>* processedKeys) {
+void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId ast, bool isDeclaration) {
     if (current->isProcessed) {
         return;  // skip
     }
@@ -226,6 +222,16 @@ void TreeComparer::processNodeInSingleAST(Node* current, Tree& tree, const ASTId
 
     // traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
+}
+
+/*
+Description:
+    Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
+*/
+void TreeComparer::processRemainingNodes(const std::vector<Node*>& nodes, Tree& tree, const ASTId ast, size_t index, bool isDeclaration) {
+    for (size_t i = index; i < nodes.size(); ++i) {
+        processNodeInSingleAST(nodes[i], tree, ast, isDeclaration);
+    }
 }
 
 /*
