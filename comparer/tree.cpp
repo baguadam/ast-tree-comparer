@@ -109,7 +109,6 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
         auto [current, depth] = stack.top();
         stack.pop();
         
-        current->isProcessed = true; // mark the node as processed
         processNode(current, depth);
 
         for (Node* child : current->children) {
