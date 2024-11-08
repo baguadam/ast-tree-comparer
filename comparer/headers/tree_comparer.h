@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <functional>
 #include <queue>
 #include "node.h"
 #include "tree.h"
@@ -20,6 +21,7 @@ private:
     Tree& firstASTTree;
     Tree& secondASTTree;
     std::unique_ptr<TreeComparerLogger> logger;
+    std::function<bool(const Node*, const Node*)> topologicalComparer;
 
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);

@@ -58,10 +58,13 @@ Tree::getDeclNodes(const std::string& nodeKey) const {
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
-                std::unordered_multimap<std::string, Node*>::const_iterator> 
-Tree::getStmtNodes(const std::string& nodeKey) const {
-    return stmtNodeMultiMap.equal_range(nodeKey);
+const std::pair<std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator> Tree::getStmtNodes(const std::string& nodeKey) const {
+    auto it = stmtNodeMultiMap.find(nodeKey);
+    if (it != stmtNodeMultiMap.end()) {
+        return {it->second.cbegin(), it->second.cend()};
+    }
+
+    return {std::vector<Node*>::const_iterator{}, std::vector<Node*>::const_iterator{}}; // empty range is key is not found
 }
 
 /*
@@ -75,7 +78,7 @@ const std::unordered_multimap<std::string, Node*>& Tree::getDeclNodeMultiMap() c
 /*
     Returns the statement node map of the tree.
 */
-const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
+const std::unordered_map<std::string, std::vector<Node*>>& Tree::getStmtNodeMultiMap() const {
     return stmtNodeMultiMap;
 }
 
@@ -106,6 +109,7 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
         auto [current, depth] = stack.top();
         stack.pop();
         
+        current->isProcessed = true; // mark the node as processed
         processNode(current, depth);
 
         for (Node* child : current->children) {
@@ -122,7 +126,6 @@ Description:
 */
 Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
-    Node* lastDeclarationNode = nullptr;
     std::string line;
     int currentIndex = 0;
 
@@ -173,9 +176,9 @@ Node* Tree::buildTree(std::ifstream& file) {
             // set the unique id and the fingerprint of the node
             if (node->type == DECLARATION) {
                 node->enhancedKey = Utils::getEnhancedDeclKey(node);
-                lastDeclarationNode = node;
                 addDeclNodeToNodeMap(node);
             } else {
+                const Node* lastDeclarationNode = Utils::findDeclarationParent(node);
                 if (lastDeclarationNode) {
                     node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
                     addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
@@ -201,7 +204,7 @@ Description:
 */
 void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParentKey) {
     if (!declarationParentKey.empty()) {
-        stmtNodeMultiMap.emplace(declarationParentKey, node);  // Use emplace for direct insertion
+        stmtNodeMultiMap[declarationParentKey].emplace_back(node);
     } else {
         std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
     }

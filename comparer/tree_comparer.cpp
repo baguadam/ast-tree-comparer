@@ -3,9 +3,11 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) : firstASTTree(firstTree), 
-                                                                                                            secondASTTree(secondTree), 
-                                                                                                            logger(std::move(logger)) {
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) 
+    : firstASTTree(firstTree), 
+      secondASTTree(secondTree), 
+      logger(std::move(logger)),
+      topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
     }
@@ -117,16 +119,16 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
     auto firstASTStmtRange = firstASTTree.getStmtNodes(nodeKey);
     auto secondASTStmtRange = secondASTTree.getStmtNodes(nodeKey);
 
-    // Map of second AST statement nodes for lookup
+    // map of second AST statement nodes for lookup
     std::unordered_map<std::string, Node*> secondASTMap;
     for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
-        Node* node = it->second;
-        secondASTMap.emplace(it->second->enhancedKey, node);
+        Node* node = *it;
+        secondASTMap.emplace(node->enhancedKey, node);
     }
 
     // first pass: Identify matches and mark them
     for (auto it = firstASTStmtRange.first; it != firstASTStmtRange.second; ++it) {
-        Node* stmtNode = it->second;
+        Node* stmtNode = *it;
 
         if (stmtNode->isProcessed) {
             continue; // skip if already processed
@@ -146,7 +148,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
 
     // second pass: process unmatched nodes in secont AST
     for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
-        Node* stmtNode = it->second;
+        Node* stmtNode = *it;
         if (!stmtNode->isProcessed) {
             processNodesInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
         }
@@ -215,12 +217,11 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
     std::transform(secondASTRange.first, secondASTRange.second, std::back_inserter(secondASTDeclNodes), [](const auto& pair) { return pair.second; });
 
     // sort the nodes based on their topological order for proper comparison
-    auto comparer = [](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; };
     if (firstASTDeclNodes.size() > 1) {
-        std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), comparer);
+        std::sort(firstASTDeclNodes.begin(), firstASTDeclNodes.end(), topologicalComparer);
     }
     if (secondASTDeclNodes.size() > 1) {
-        std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), comparer);
+        std::sort(secondASTDeclNodes.begin(), secondASTDeclNodes.end(), topologicalComparer);
     }
 
     // compare nodes from both ASTs using the sorted vectors
@@ -257,7 +258,6 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
     auto processNode = [this, ast](Node* currentNode, int depth) {
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
         logger->logNode(currentNode, diffType, ast, depth); // log the node
-        currentNode->isProcessed = true;
     };
 
     // traverse the subtree and process nodes accordingly
