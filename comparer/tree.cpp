@@ -65,7 +65,13 @@ Description:
     Returns the declaration nodes based on the key.
 */
 const std::vector<Node*> Tree::getDeclNodes(const std::string& nodeKey) const {
-    return getNodesFromMap(declNodeMultiMap, nodeKey);
+    auto uniqueIt = declNodeMap.find(nodeKey);
+
+    if (uniqueIt != declNodeMap.end()) {
+        return std::vector<Node*>{uniqueIt->second};
+    } else {
+        return getNodesFromMap(multiDeclNodeMap, nodeKey);
+    }
 }
 
 /*
@@ -78,10 +84,18 @@ const std::vector<Node*> Tree::getStmtNodes(const std::string& nodeKey) const {
 
 /*
 Description:
-    Returns the node map of the tree.
+    Returns the declaration node map of the unique nodes in the tree.
 */
-const std::unordered_multimap<std::string, Node*>& Tree::getDeclNodeMultiMap() const {
-    return declNodeMultiMap;
+const std::unordered_map<std::string, Node*>& Tree::getDeclNodeMap() const {
+    return declNodeMap;
+}
+
+/*
+Description:
+    Returns the declaration node of the multiple nodes in the tree.
+*/
+const std::unordered_multimap<std::string, Node*>& Tree::getMultiDeclNodeMap() const {
+    return multiDeclNodeMap;
 }
 
 /*
@@ -96,7 +110,7 @@ Description:
     Checks if the node is in the tree.  
 */
 bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
-    return declNodeMultiMap.count(nodeKey) > 0;
+    return (declNodeMap.count(nodeKey) > 0 || multiDeclNodeMap.count(nodeKey) > 0);
 }
 
 /*
@@ -221,10 +235,26 @@ void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParent
 
 /*
 Description:
-    Adds the declaration node with its key to the declNodeMultiMap.
+    Adds the declaration node to the corresponding map. If the node is unique so far, it gets added to a simple map,
+    otherwise, it gets added to the multimap with the same key.
 */
 void Tree::addDeclNodeToNodeMap(Node* node) {
-    declNodeMultiMap.emplace(node->enhancedKey, node);
+    auto uniqueDeclIt = declNodeMap.find(node->enhancedKey);
+    if (uniqueDeclIt != declNodeMap.end()) {
+        // The node gets duplicant here, add the existing node to the multimap
+        multiDeclNodeMap.emplace(node->enhancedKey, uniqueDeclIt->second);
+        multiDeclNodeMap.emplace(node->enhancedKey, node);
+
+        declNodeMap.erase(uniqueDeclIt); // remove from the map
+    } else {
+        // the node doesn't exist in the unique map
+        auto multiDeclIt = multiDeclNodeMap.find(node->enhancedKey);
+        if (multiDeclIt != multiDeclNodeMap.end()) {
+            multiDeclNodeMap.emplace(node->enhancedKey, node); // if already in the multi map
+        } else {
+            declNodeMap.emplace(node->enhancedKey, node); // the node doesn't exist anywhere so far
+        }
+    }
 }
 
 /*
