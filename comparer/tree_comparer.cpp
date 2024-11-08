@@ -135,7 +135,7 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
             if (stmtNode->fingerprint == matchingNode->fingerprint) {
                 stmtNode->isProcessed = true;
                 matchingNode->isProcessed = true;
-                break; // Only one match is needed
+                break; // one match is needed
             }
         }
     }
