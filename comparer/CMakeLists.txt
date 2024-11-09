@@ -15,7 +15,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs/SQLiteCpp)
 include_directories(headers)
 
 # specifying the sources
-set(SOURCES tree.cpp tree_comparer.cpp database.cpp utils.cpp main.cpp)
+set(SOURCES tree.cpp tree_comparer.cpp database.cpp utils.cpp ./loggers/console_logger.cpp ./loggers/database_logger.cpp main.cpp)
 
 add_executable(ast-tree-comparer ${SOURCES})
 

@@ -5,13 +5,15 @@
 #include <string>
 #include <memory>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include "enums.h"
+#include "node.h"
 
 class Database {
 public:
    Database(const std::string);
 
-   void insertNode(int, const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
-   void insertEdge(int, int);
+   void insertNode(const Node*, const ASTId, const DifferenceType, bool isHighestLevelNode = false);
+   void insertEdge(const std::string&, const std::string&);
 
 private:
    SQLite::Database db;

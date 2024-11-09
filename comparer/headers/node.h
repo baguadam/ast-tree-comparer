@@ -4,17 +4,24 @@
 
 #include <string>
 #include <vector>
-
+#include "enums.h"
 struct Node {
-    std::string type; // (Declaration/Statement)
-    std::string kind; // (FunctionDecl/VarDecl/IfStmt/WhileStmt/...)
-    std::string usr;  // unique identifier (in case of decl types)
-    std::string path; // source file
-    int lineNumber;   // which line in the source file
-    int columnNumber; // which column in the source file
-    Node* parent;
-    std::vector<Node*> children;
-    bool isProcessed = false; // flag for processed nodes
-};
+    // Node properties
+    NodeType type;                   // Declaration/Statement
+    std::string kind;                // FunctionDecl/VarDecl/IfStmt/WhileStmt/...
+    std::string usr;                 // USR
+    std::string path;                // Source file path
+    int lineNumber;                  // Which line in the source file
+    int columnNumber;                // Which column in the source file
+    int topologicalOrder = -1;       // Topological order of the node
 
+    // Relationships
+    Node* parent = nullptr;          // Parent node pointer
+    std::vector<Node*> children;     // Children of this node
+
+    // Unique properties and flags
+    std::string enhancedKey;         // Identifier (path from the root)
+    size_t fingerprint = 0;          // Hashed fingerprint value of the node (only for declaration nodes)
+    bool isProcessed = false;        // Flag for processed nodes
+};
 #endif

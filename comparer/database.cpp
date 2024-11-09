@@ -21,7 +21,7 @@ void Database::clearDatabase() {
 
 void Database::initializeStatements() {
     try {
-        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(id, type, kind, usr, path, differenceType, comment) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        queryInsertNode = std::make_unique<SQLite::Statement>(db, "INSERT INTO Nodes(key, type, kind, usr, path, differenceType, AST, isHighestLevelNode, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         queryInsertEdge = std::make_unique<SQLite::Statement>(db, "INSERT INTO Edges(childId, parentId) VALUES (?, ?)");
     } catch (const std::exception& e) {
         std::cerr << "Error initializing statements: " << e.what() << std::endl;
@@ -32,12 +32,15 @@ void Database::createTables() {
     try {
         std::cout << "Creating Nodes table..." << std::endl;
         db.exec("CREATE TABLE IF NOT EXISTS Nodes ("
-                "id INTEGER PRIMARY KEY,"
-                "type TEXT NOT NULL,"
+                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "key TEXT NOT NULL,"
+                "type INTEGER NOT NULL,"
                 "kind TEXT NOT NULL,"
                 "usr TEXT NOT NULL,"
                 "path TEXT NOT NULL,"
-                "differenceType TEXT NOT NULL,"
+                "differenceType INTEGER NOT NULL,"
+                "AST INTEGER NOT NULL,"
+                "isHighestLevelNode BOOLEAN DEFAULT 0,"
                 "comment TEXT);");
         std::cout << "Nodes table created successfully." << std::endl;
 
@@ -53,15 +56,17 @@ void Database::createTables() {
     }
 }
 
-void Database::insertNode(int id, const std::string& type, const std::string& kind, const std::string& usr, const std::string& path, const std::string& differenceType) {
+void Database::insertNode(const Node* node, const ASTId astId, const DifferenceType differenceType, bool isHighestLevelNode) {
     try {
-        queryInsertNode->bind(1, id);
-        queryInsertNode->bind(2, type);
-        queryInsertNode->bind(3, kind);
-        queryInsertNode->bind(4, usr);
-        queryInsertNode->bind(5, path);
+        queryInsertNode->bind(1, node->enhancedKey);  
+        queryInsertNode->bind(2, node->type);
+        queryInsertNode->bind(3, node->kind);
+        queryInsertNode->bind(4, node->usr);
+        queryInsertNode->bind(5, node->path);
         queryInsertNode->bind(6, differenceType);
-        queryInsertNode->bind(7, "");
+        queryInsertNode->bind(7, astId);
+        queryInsertNode->bind(8, isHighestLevelNode);
+        queryInsertNode->bind(9, "");
         queryInsertNode->exec();
         queryInsertNode->reset();
     } catch (const std::exception& e) {
@@ -69,7 +74,7 @@ void Database::insertNode(int id, const std::string& type, const std::string& ki
     }
 }
 
-void Database::insertEdge(int childId, int parentId) {
+void Database::insertEdge(const std::string& childId, const std::string& parentId) {
     try {
         queryInsertEdge->bind(1, childId);
         queryInsertEdge->bind(2, parentId);

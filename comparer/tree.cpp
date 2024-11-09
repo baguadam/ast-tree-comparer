@@ -21,6 +21,8 @@ Tree::Tree(const std::string& fileName) {
     if (!root) {
         throw std::runtime_error("Failed to build tree from file: " + fileName);
     }
+
+    file.close(); // explicitly close the file
 }
 
 /*
@@ -44,55 +46,48 @@ Node* Tree::getRoot() const {
 
 /*
 Description:
-    Returns the pair of the node based on the key.
+    Returns the declaration nodes based on the key.
 */
-const Node* Tree::getDeclNode(const std::string& nodeKey) const {
-    auto it = declNodeMap.find(nodeKey);
-    if (it == declNodeMap.end()) {
-        throw std::out_of_range("Node key not found in the declaration node map: " + nodeKey);
-    }
-    return it->second;
+const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
+                std::unordered_multimap<std::string, Node*>::const_iterator>
+Tree::getDeclNodes(const std::string& nodeKey) const {
+    return declNodeMultiMap.equal_range(nodeKey);
 }
 
 /*
 Description:
     Returns the statement nodes based on the key of the declaration.
 */
-const std::vector<std::pair<std::string, Node*>> Tree::getStmtNodes(const std::string& nodeKey) const {
-    std::vector<std::pair<std::string, Node*>> stmtNodes;
-    auto range = stmtNodeMultiMap.equal_range(nodeKey);
-    for (auto it = range.first; it != range.second; ++it) {
-        stmtNodes.emplace_back(Utils::getKey(it->second, false), it->second);
+const std::pair<std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator> Tree::getStmtNodes(const std::string& nodeKey) const {
+    auto it = stmtNodeMultiMap.find(nodeKey);
+    if (it != stmtNodeMultiMap.end()) {
+        return {it->second.cbegin(), it->second.cend()};
     }
-    return stmtNodes;
+
+    return {std::vector<Node*>::const_iterator{}, std::vector<Node*>::const_iterator{}}; // empty range is key is not found
 }
 
 /*
 Description:
-    Marks the node as processed in the tree.
+    Returns the declaration node of the multiple nodes in the tree.
 */
-void Tree::markDeclNodeAsProcessed(const std::string& nodeKey) {
-    auto it = declNodeMap.find(nodeKey);
-    if (it != declNodeMap.end()) {
-        it->second->isProcessed = true;
-    } else {
-        std::cerr << "Warning: Node key not found in the declaration node map: " << nodeKey << '\n';
-    }
-}
-
-/*
-Description:
-    Returns the node map of the tree.
-*/
-const std::unordered_map<std::string, Node*>& Tree::getDeclNodeMap() const {
-    return declNodeMap;
+const std::unordered_multimap<std::string, Node*>& Tree::getDeclNodeMultiMap() const {
+    return declNodeMultiMap;
 }
 
 /*
     Returns the statement node map of the tree.
 */
-const std::unordered_multimap<std::string, Node*>& Tree::getStmtNodeMultiMap() const {
+const std::unordered_map<std::string, std::vector<Node*>>& Tree::getStmtNodeMultiMap() const {
     return stmtNodeMultiMap;
+}
+
+/*
+Description:
+    Checks if the node is in the tree.  
+*/
+bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
+    return (declNodeMultiMap.count(nodeKey) > 0);
 }
 
 /*
@@ -126,28 +121,12 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
 
 /*
 Description:
-    Checks if the node is processed in the tree.
-*/
-bool Tree::isDeclNodeProcessed(const std::string& nodeKey) const {
-    auto it = declNodeMap.find(nodeKey);
-    return it != declNodeMap.end() && it->second->isProcessed;
-}
-
-/*
-Description:
-    Checks if the node is in the tree.  
-*/
-bool Tree::isDeclNodeInAST(const std::string& nodeKey) const {
-    return declNodeMap.count(nodeKey) > 0;
-}
-
-/*
-Description:
     Builds a tree from the given file, created the node, provides some checks and returns the root node.
 */
 Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
     std::string line;
+    int currentIndex = 0;
 
     while (std::getline(file, line)) {
         int depth = 0;
@@ -155,52 +134,64 @@ Node* Tree::buildTree(std::ifstream& file) {
             ++depth;
         }
 
-        std::string type, kind, usr = "N/A", path = "N/A";
-        int lineNumber = -1, columnNumber = -1;
-        std::istringstream iss(line);
-
-        // read the node information based on the current type
-        if (!(iss >> type >> kind)) {
-            std::cerr << "Error parsing type and kind from line: " << line << std::endl;
-            continue; // skip invalid line
+        std::vector<std::string> tokens = Utils::splitString(line);
+        if (tokens.size() < 6) {
+            std::cerr << "Warning: Invalid line in the file: " << line << '\n';
+            continue;
         }
 
-        // try to read optional fields; default to "N/A" or -1 if not available
-        if (!(iss >> usr)) {
-            usr = "N/A"; // fallback if usr is missing
-        }
-        if (!(iss >> path)) {
-            path = "N/A"; // fallback if path is missing
-        }
-        if (!(iss >> lineNumber)) {
-            lineNumber = -1; // fallback if line number is missing
-        }
-        if (!(iss >> columnNumber)) {
-            columnNumber = -1; // fallback if column number is missing
-        }
+        // trimming the type from the leading whitespace
+        Utils::ltrim(tokens[0]);
 
-        Node* node = new Node;
-        node->type = type;
-        node->kind = kind;
-        node->usr = usr;
-        node->path = path;
-        node->lineNumber = lineNumber;
-        node->columnNumber = columnNumber;
+        try {
+            int lineNumber = std::stoi(tokens[4]);
+            int columNumber = std::stoi(tokens[5]);
 
-        while (nodeStack.size() > depth) {
-            nodeStack.pop_back();
+            Node* node = new Node;
+            node->type = Utils::stringToNodeType(tokens[0]);
+            node->kind = tokens[1];
+            node->usr = tokens[2];
+            node->path = tokens[3];
+            node->lineNumber = lineNumber;
+            node->columnNumber = columNumber;
+
+            // topological order of the node
+            node->topologicalOrder = currentIndex++;
+
+            while (nodeStack.size() > depth) {
+                nodeStack.resize(depth);
+            }
+
+            // set the parent of the current node
+            node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
+            if (node->parent) {
+                node->parent->children.push_back(node);
+            }
+
+            nodeStack.push_back(node);
+            
+            node->fingerprint = Utils::getFingerPrint(node); // set fingerprint for both declaration and statement nodes
+
+            // set the unique id and the fingerprint of the node
+            if (node->type == DECLARATION) {
+                node->enhancedKey = Utils::getEnhancedDeclKey(node);
+                addDeclNodeToNodeMap(node);
+            } else {
+                const Node* lastDeclarationNode = Utils::findDeclarationParent(node);
+                if (lastDeclarationNode) {
+                    node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
+                    addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
+                } else {
+                    std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
+                    delete node; // avoid memory leak
+                    continue;
+                }
+            }
+
+        } catch(const std::exception& e) {
+            std::cerr << "ERROR: parsing to int " << line << '\n';
+            continue;
         }
-
-        // set the parent of the current node
-        node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
-        if (node->parent) {
-            node->parent->children.push_back(node);
-        }
-
-        nodeStack.push_back(node);
-
-        // creating the node maps
-        addNodeToNodeMap(node);    
     }
 
     return nodeStack.empty() ? nullptr : nodeStack.front();
@@ -208,31 +199,23 @@ Node* Tree::buildTree(std::ifstream& file) {
 
 /*
 Description:
-    Add the nodes to the corresponding maps, in case of Declaration nodes, it's added to the declNodeMap, otherwise to the stmtNodeMultiMap.
+    Adds the statement node with its key to the stmtNodeMultiMap.
 */
-void Tree::addNodeToNodeMap(Node* node) {
-    // generate the node key and validate it
-    std::string nodeKey = Utils::getKey(node, node->type == "Declaration");
-    if (nodeKey.empty()) {
-        return; // skip invalid node
+void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParentKey) {
+    if (!declarationParentKey.empty()) {
+        stmtNodeMultiMap[declarationParentKey].emplace_back(node);
+    } else {
+        std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
     }
-
-    if (node->type == "Declaration") {
-        declNodeMap[nodeKey] = node; // store the node in the map
-        return;
-    }
-
-    // for statement nodes
-    const Node* declarationParent = Utils::findDeclarationParent(node);
-    if (!declarationParent) {
-        std::cerr << "Warning: Could not find declaration parent for statement node: " << Utils::getKey(node, false) << '\n';
-        return;
-    }
-
-    std::string declNodeKey = Utils::getKey(declarationParent, true);
-    stmtNodeMultiMap.insert({declNodeKey, node});
 }
 
+/*
+Description:
+    Adds the declaration node to the declNodeMultiMap.
+*/
+void Tree::addDeclNodeToNodeMap(Node* node) {
+    declNodeMultiMap.emplace(node->enhancedKey, node);
+}
 
 /*
 Description:

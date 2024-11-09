@@ -15,22 +15,22 @@ public:
     ~Tree();
     
     Node* getRoot() const;
-    const std::unordered_map<std::string, Node*>& getDeclNodeMap() const;
-    const std::unordered_multimap<std::string, Node*>& getStmtNodeMultiMap() const;
-    const Node* getDeclNode(const std::string&) const;
-    const std::vector<std::pair<std::string, Node*>> getStmtNodes(const std::string&) const;
-    
-    void markDeclNodeAsProcessed(const std::string&);
-    bool isDeclNodeProcessed(const std::string&) const;
+    const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
+                    std::unordered_multimap<std::string, Node*>::const_iterator> getDeclNodes(const std::string& nodeKey) const;
+    const std::pair<std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator> getStmtNodes(const std::string& nodeKey) const;
+    const std::unordered_multimap<std::string, Node*>& getDeclNodeMultiMap() const;
+    const std::unordered_map<std::string, std::vector<Node*>>& getStmtNodeMultiMap() const;
+
     bool isDeclNodeInAST(const std::string&) const;
     void processSubTree(Node*, std::function<void(Node*, int)>);
 private:
     Node* root;
-    std::unordered_map<std::string, Node*> declNodeMap;
-    std::unordered_multimap<std::string, Node*> stmtNodeMultiMap;
+    std::unordered_multimap<std::string, Node*> declNodeMultiMap;
+    std::unordered_map<std::string, std::vector<Node*>> stmtNodeMultiMap;
 
     Node* buildTree(std::ifstream&);
-    void addNodeToNodeMap(Node*);
+    void addStmtNodeToNodeMap(Node*, const std::string&);
+    void addDeclNodeToNodeMap(Node*);
     void deleteTree(Node*);
 };
 
