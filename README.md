@@ -14,20 +14,21 @@ pacman -S mingw-w64-x86_64-clang mingw-w64-x86_64-llvm mingw-w64-x86_64-lld ming
 
 4. After the installation completed, check if everything has been isntalled and set properly:
 
-````sh
+```sh
 clang --version
 llvm-config --version
 cmake --version
 ninja --version
-``
+```
 
 5. If so, navigate to the _dump-tool_ directory and create a directory for build and execute the following commands:
+
 ```sh
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" ..
 ninja
-````
+```
 
 6. You might need to adjust the following parts in your code according to your installation and Clang version
 
