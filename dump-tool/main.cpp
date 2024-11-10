@@ -5,22 +5,17 @@
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/Process.h>
 
-class TreeBuilder : public clang::RecursiveASTVisitor<TreeBuilder>
-{
+class TreeBuilder : public clang::RecursiveASTVisitor<TreeBuilder> {
 public:
-  explicit TreeBuilder(clang::ASTContext* Context)
-    : Context(Context), depth(-1)
-  {
-  }
+  explicit TreeBuilder(clang::ASTContext *Context)
+      : Context(Context), depth(-1) {}
 
-  bool shouldVisitImplicitCode() const
-  {
-    return true;
-  }
+  bool shouldVisitImplicitCode() const { return true; }
 
-  bool TraverseDecl(clang::Decl* decl)
-  {
+  bool TraverseDecl(clang::Decl *decl) {
     ++depth;
     bool result = clang::RecursiveASTVisitor<TreeBuilder>::TraverseDecl(decl);
     --depth;
@@ -28,8 +23,7 @@ public:
     return result;
   }
 
-  bool TraverseStmt(clang::Stmt* stmt)
-  {
+  bool TraverseStmt(clang::Stmt *stmt) {
     ++depth;
     bool result = clang::RecursiveASTVisitor<TreeBuilder>::TraverseStmt(stmt);
     --depth;
@@ -37,81 +31,64 @@ public:
     return result;
   }
 
-  bool VisitDecl(clang::Decl* decl)
-  {
+  bool VisitDecl(clang::Decl *decl) {
     indent();
 
     clang::SourceLocation loc = decl->getBeginLoc();
-    clang::SourceManager& sm = Context->getSourceManager();
-    // handling empty file path
+    clang::SourceManager &sm = Context->getSourceManager();
     std::string filePath = sm.getFilename(loc).str();
     if (filePath.empty()) {
       filePath = "N/A";
     }
 
-    llvm::outs()
-      << "Declaration\t"
-      << decl->getDeclKindName() << '\t'
-      << getUSR(decl) << '\t'
-      << filePath << '\t'
-      << sm.getSpellingLineNumber(loc) << '\t'
-      << sm.getSpellingColumnNumber(loc) << '\t'
-      << (decl->isImplicit() ? "(implicit)" : "") << '\n';
+    llvm::outs() << "Declaration\t" << decl->getDeclKindName() << '\t'
+                 << getUSR(decl) << '\t' << filePath << '\t'
+                 << sm.getSpellingLineNumber(loc) << '\t'
+                 << sm.getSpellingColumnNumber(loc) << '\t'
+                 << (decl->isImplicit() ? "(implicit)" : "") << '\n';
 
     return true;
   }
 
-  bool VisitStmt(clang::Stmt* stmt)
-  {
+  bool VisitStmt(clang::Stmt *stmt) {
     indent();
 
     clang::SourceLocation loc = stmt->getBeginLoc();
-    clang::SourceManager& sm = Context->getSourceManager();
-    // handling empty file path
+    clang::SourceManager &sm = Context->getSourceManager();
     std::string filePath = sm.getFilename(loc).str();
     if (filePath.empty()) {
       filePath = "N/A";
     }
 
-    llvm::outs()
-      << "Statement\t"
-      << stmt->getStmtClassName() << '\t'
-      << "N/A" << '\t' // no USR for statements
-      << filePath << '\t'
-      << sm.getSpellingLineNumber(loc) << '\t'
-      << sm.getSpellingColumnNumber(loc) << '\n';
+    llvm::outs() << "Statement\t" << stmt->getStmtClassName() << '\t'
+                 << "N/A" << '\t' << filePath << '\t'
+                 << sm.getSpellingLineNumber(loc) << '\t'
+                 << sm.getSpellingColumnNumber(loc) << '\n';
 
     return true;
   }
 
 private:
-  void indent() const
-  {
+  void indent() const {
     for (int i = 0; i < depth; ++i)
       llvm::outs() << ' ';
   }
 
-  std::string getUSR(clang::Decl* decl) const
-  {
+  std::string getUSR(clang::Decl *decl) const {
     llvm::SmallVector<char> Usr;
     clang::index::generateUSRForDecl(decl, Usr);
-    char* data = Usr.data();
-    return std::string(data, data + Usr.size());
+    return std::string(Usr.begin(), Usr.end());
   }
 
-  clang::ASTContext* Context;
+  clang::ASTContext *Context;
   int depth;
 };
 
-class MyASTConsumer : public clang::ASTConsumer
-{
+class MyASTConsumer : public clang::ASTConsumer {
 public:
-  explicit MyASTConsumer(clang::ASTContext* Context) : Visitor(Context)
-  {
-  }
+  explicit MyASTConsumer(clang::ASTContext *Context) : Visitor(Context) {}
 
-  virtual void HandleTranslationUnit(clang::ASTContext &Context)
-  {
+  virtual void HandleTranslationUnit(clang::ASTContext &Context) override {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
@@ -119,44 +96,39 @@ private:
   TreeBuilder Visitor;
 };
 
-class MyFrontendAction : public clang::ASTFrontendAction
-{
+class MyFrontendAction : public clang::ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-    clang::CompilerInstance& Compiler,
-    llvm::StringRef InFile) override
-  {
+      clang::CompilerInstance &Compiler, llvm::StringRef InFile) override {
     return std::make_unique<MyASTConsumer>(&Compiler.getASTContext());
   }
 };
 
-int main(int argc, const char* argv[])
-{
+int main(int argc, const char *argv[]) {
   llvm::cl::OptionCategory MyToolCategory("my-tool options");
 
   auto ExpectedParser =
-    clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory);
+      clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory);
 
-  if (!ExpectedParser)
-  {
+  if (!ExpectedParser) {
     llvm::errs() << ExpectedParser.takeError();
     return 1;
   }
 
-  clang::tooling::CommonOptionsParser& OptionsParser = ExpectedParser.get();
-  clang::tooling::ClangTool Tool(
-    OptionsParser.getCompilations(),
-    OptionsParser.getSourcePathList());
+  clang::tooling::CommonOptionsParser &OptionsParser = ExpectedParser.get();
+  clang::tooling::ClangTool Tool(OptionsParser.getCompilations(),
+                                 OptionsParser.getSourcePathList());
 
-  std::vector<std::string> Args{
-    "-I/usr/lib/clang/14/include",
-    "-I/usr/local/include",
-    "-I/usr/include"
+  // Automatically detect Clang's include paths via llvm-config
+  std::vector<std::string> Args = {
+    "-IC:/msys64/mingw64/include",
+    "-IC:/msys64/mingw64/lib/clang/18/include", // adjust version if needed
+    "-IC:/msys64/mingw64/include/c++/14.2.0",
   };
 
-  Tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(
-    Args, clang::tooling::ArgumentInsertPosition::END));
+  Tool.appendArgumentsAdjuster(
+      clang::tooling::getInsertArgumentAdjuster(Args,
+                                                clang::tooling::ArgumentInsertPosition::END));
 
-  return Tool.run(
-    clang::tooling::newFrontendActionFactory<MyFrontendAction>().get());
+  return Tool.run(clang::tooling::newFrontendActionFactory<MyFrontendAction>().get());
 }
