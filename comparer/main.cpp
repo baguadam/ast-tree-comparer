@@ -4,20 +4,15 @@
 #include "./headers/loggers/tree_comparer_logger.h"
 #include "./headers/loggers/console_logger.h"
 #include "./headers/factories/console_logger_creator.h"
-#include "./headers/factories/database_logger_creator.h"
 #include <iostream>
 
 int main() {
     try {
-        Tree firstStandardAST("../../asts/vector_98.txt");
-        Tree secondStandardAST("../../asts/vector_11.txt");
-
-        // db
-        Database db("../../asts/ast_diff.db3");
+        Tree firstStandardAST("../../asts/first_standard_ast.txt");
+        Tree secondStandardAST("../../asts/second_standard_ast.txt");
         
         // logger
-        // ConsoleLoggerCreator loggerCreator;
-        DatabaseLoggerCreator loggerCreator(db);
+        ConsoleLoggerCreator loggerCreator;
         std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
 
         TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger));

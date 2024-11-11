@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stack>
+#include <algorithm>
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 

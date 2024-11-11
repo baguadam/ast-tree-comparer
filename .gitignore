@@ -38,7 +38,7 @@ comparer/comparer
 *.lib
 
 # Exclude the build directory
-comparer/build/
+comparer/ms/
 
 # Exclude executables and libraries in any subdirectory
 **/*.exe
