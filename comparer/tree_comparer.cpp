@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stack>
+#include <algorithm>
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
@@ -7,6 +8,7 @@ TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<Tr
     : firstASTTree(firstTree), 
       secondASTTree(secondTree), 
       logger(std::move(logger)),
+      dbWrapper(std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005")),
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
