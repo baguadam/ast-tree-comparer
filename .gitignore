@@ -8,6 +8,7 @@ libs/
 
 # ast-dump-tool build
 dump-tool/build
+dump-tool/ms
 
 comparer/comparer
 
@@ -38,6 +39,7 @@ comparer/comparer
 
 # Exclude the build directory
 comparer/build/
+comparer/ms
 
 # Exclude executables and libraries in any subdirectory
 **/*.exe
