@@ -32,7 +32,7 @@ Description:
     Adds a node to the batch for creation in the database, if the batch size exceeds 5000, the batch is executed, also \ characters are properly escaped
     for valid JSON syntax
 */
-void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel) {
+void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel, const std::string& differenceType, const std::string& astOrigin) {
     // properly escape backslashes in the path and enhancedKey
     std::string escapedPath = Utils::escapeString(node.path);
     std::string escapedEnhancedKey = Utils::escapeString(node.enhancedKey);
@@ -47,6 +47,8 @@ void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel) {
                << "\", \"lineNumber\": " << node.lineNumber
                << ", \"columnNumber\": " << node.columnNumber
                << ", \"isHighLevel\": " << (isHighLevel ? "true" : "false")
+               << ", \"differenceType\": \"" << differenceType
+               << "\", \"astOrigin\": \"" << astOrigin << "\""
                << "}";
 
     nodeBatch.push_back(nodeStream.str());
@@ -64,19 +66,8 @@ Description:
 */
 void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node& child) {
     // Properly escape backslashes in the parent and child keys
-    std::string escapedParentKey = parent.enhancedKey;
-    std::string escapedChildKey = child.enhancedKey;
-
-    std::string::size_type pos = 0;
-    while ((pos = escapedParentKey.find("\\", pos)) != std::string::npos) {
-        escapedParentKey.replace(pos, 1, "\\\\");
-        pos += 2;
-    }
-    pos = 0;
-    while ((pos = escapedChildKey.find("\\", pos)) != std::string::npos) {
-        escapedChildKey.replace(pos, 1, "\\\\");
-        pos += 2;
-    }
+    std::string escapedParentKey = Utils::escapeString(parent.enhancedKey);
+    std::string escapedChildKey = Utils::escapeString(child.enhancedKey);
 
     std::ostringstream relStream;
     relStream << "{\"parentKey\": \"" << escapedParentKey
@@ -202,6 +193,12 @@ Description:
 void Neo4jDatabaseWrapper::clearDatabase() {
     std::string query = "{\"statements\": [{\"statement\": \"MATCH (n) DETACH DELETE n\"}]}";
     sendRequest(query);
+
+    std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
+    sendRequest(indexDifferenceType);
+
+    std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
+    sendRequest(indexAstOrigin);
 }
 
 /*
