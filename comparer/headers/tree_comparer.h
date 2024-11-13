@@ -10,6 +10,7 @@
 #include <queue>
 #include "node.h"
 #include "tree.h"
+#include "neo4j_database_wrapper.h"
 #include "./loggers/tree_comparer_logger.h"
 
 class TreeComparer {
@@ -20,7 +21,8 @@ public:
 private:
     Tree& firstASTTree;
     Tree& secondASTTree;
-    std::unique_ptr<TreeComparerLogger> logger;
+    std::unique_ptr<Neo4jDatabaseWrapper> dbWrapper;
+    std::unique_ptr<TreeComparerLogger> logger;  
     std::function<bool(const Node*, const Node*)> topologicalComparer;
 
     void compareSourceLocations(const Node*, const Node*);

@@ -121,7 +121,7 @@ void Tree::processSubTree(Node* node, std::function<void(Node*, int)> processNod
 
 /*
 Description:
-    Builds a tree from the given file, created the node, provides some checks and returns the root node.
+    Builds a tree from the given file, creates nodes, performs various checks, and returns the root node.
 */
 Node* Tree::buildTree(std::ifstream& file) {
     std::vector<Node*> nodeStack;
@@ -129,70 +129,83 @@ Node* Tree::buildTree(std::ifstream& file) {
     int currentIndex = 0;
 
     while (std::getline(file, line)) {
+        // normalize line endings (remove trailing \r if present, typical in Windows)
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+
+        if (line.empty()) {
+            continue;
+        }
+
+        // depth of the current node
         int depth = 0;
-        while (line[depth] == ' ') {
+        while (depth < line.size() && line[depth] == ' ') {
             ++depth;
         }
 
         std::vector<std::string> tokens = Utils::splitString(line);
         if (tokens.size() < 6) {
-            std::cerr << "Warning: Invalid line in the file: " << line << '\n';
+            std::cerr << "Warning: Invalid line in the file (expected at least 6 tokens): " << line << '\n';
             continue;
         }
 
-        // trimming the type from the leading whitespace
+        // trimming
         Utils::ltrim(tokens[0]);
 
+        int lineNumber = 0;
+        int columnNumber = 0;
         try {
-            int lineNumber = std::stoi(tokens[4]);
-            int columNumber = std::stoi(tokens[5]);
+            lineNumber = std::stoi(tokens[4]);
+            columnNumber = std::stoi(tokens[5]);
+        } catch (const std::exception& e) {
+            std::cerr << "ERROR: Failed to parse line or column number from line: " << line << " - " << e.what() << '\n';
+            exit(EXIT_FAILURE);
+        }
 
-            Node* node = new Node;
-            node->type = Utils::stringToNodeType(tokens[0]);
-            node->kind = tokens[1];
-            node->usr = tokens[2];
-            node->path = tokens[3];
-            node->lineNumber = lineNumber;
-            node->columnNumber = columNumber;
+        // new node
+        Node* node = new Node;
+        node->type = Utils::stringToNodeType(tokens[0]);
+        node->kind = tokens[1];
+        node->usr = tokens[2];
+        node->path = tokens[3];
+        node->lineNumber = lineNumber;
+        node->columnNumber = columnNumber;
+        node->topologicalOrder = currentIndex++;
 
-            // topological order of the node
-            node->topologicalOrder = currentIndex++;
+        // adjust the stack's size
+        if (nodeStack.size() > depth) {
+            nodeStack.resize(depth);
+        }
 
-            while (nodeStack.size() > depth) {
-                nodeStack.resize(depth);
-            }
+        // parent of the current node
+        node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
+        if (node->parent) {
+            node->parent->children.push_back(node);
+        }
+        nodeStack.push_back(node);
 
-            // set the parent of the current node
-            node->parent = nodeStack.empty() ? nullptr : nodeStack.back();
-            if (node->parent) {
-                node->parent->children.push_back(node);
-            }
-
-            nodeStack.push_back(node);
-            
-            node->fingerprint = Utils::getFingerPrint(node); // set fingerprint for both declaration and statement nodes
-
-            // set the unique id and the fingerprint of the node
-            if (node->type == DECLARATION) {
-                node->enhancedKey = Utils::getEnhancedDeclKey(node);
-                addDeclNodeToNodeMap(node);
+        // fingerprint generation + unique key
+        node->fingerprint = Utils::getFingerPrint(node);
+        if (node->type == DECLARATION) {
+            node->enhancedKey = Utils::getEnhancedDeclKey(node);
+            addDeclNodeToNodeMap(node);
+        } else {
+            const Node* lastDeclarationNode = Utils::findDeclarationParent(node);
+            if (lastDeclarationNode) {
+                node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
+                addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
             } else {
-                const Node* lastDeclarationNode = Utils::findDeclarationParent(node);
-                if (lastDeclarationNode) {
-                    node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
-                    addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
-                } else {
-                    std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
-                    delete node; // avoid memory leak
-                    continue;
-                }
+                // if no declaration parent found, delete the node to prevent a memory leak
+                std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind
+                          << " at path: " << node->path << " (line: " << node->lineNumber
+                          << ", column: " << node->columnNumber << ")\n";
+                delete node;
+                continue;
             }
-
-        } catch(const std::exception& e) {
-            std::cerr << "ERROR: parsing to int " << line << '\n';
-            continue;
         }
     }
+
 
     return nodeStack.empty() ? nullptr : nodeStack.front();
 }
