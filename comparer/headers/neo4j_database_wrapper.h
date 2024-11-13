@@ -12,7 +12,7 @@ public:
     Neo4jDatabaseWrapper(const std::string& uri, const std::string& username, const std::string& password);
     ~Neo4jDatabaseWrapper();
 
-    void addNodeToBatch(const Node& node, bool isHighLevel);
+    void addNodeToBatch(const Node& node, bool isHighLevel, const std::string&, const std::string&);
     void addRelationshipToBatch(const Node& parent, const Node& child);
     void clearDatabase();
     void finalize();

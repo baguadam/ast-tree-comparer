@@ -86,8 +86,10 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST);
         logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST);
 
-        dbWrapper->addNodeToBatch(*firstNode, true);
-        dbWrapper->addNodeToBatch(*secondNode, true);
+        std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_SOURCE_LOCATIONS);
+
+        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -101,8 +103,10 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
         logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST);
         logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST);
 
-        dbWrapper->addNodeToBatch(*firstNode, true);
-        dbWrapper->addNodeToBatch(*secondNode, true);
+        std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_PARENT);
+
+        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -285,7 +289,7 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
         logger->logNode(currentNode, diffType, ast, depth); // log the node
-        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0); // set it as part of the subtree (at this point cannot be hightest level node)
+        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
 
         // parent-child relationships for the subtree
         if (currentNode->parent) {

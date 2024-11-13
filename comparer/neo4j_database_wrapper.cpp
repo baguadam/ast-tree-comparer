@@ -104,7 +104,7 @@ void Neo4jDatabaseWrapper::executeBatch() {
         queryStream << "{\"statement\": \"UNWIND $nodes AS node "
                     << "CREATE (n:Node {enhancedKey: node.enhancedKey, type: node.type, kind: node.kind, usr: node.usr, "
                     << "path: node.path, lineNumber: node.lineNumber, columnNumber: node.columnNumber, "
-                    << "topologicalOrder: node.topologicalOrder, isHighLevel: node.isHighLevel})\", "
+                    << "topologicalOrder: node.topologicalOrder, isHighLevel: node.isHighLevel, diffType: node.differenceType, ast: node.astOrigin})\", "
                     << "\"parameters\": {\"nodes\": [";
 
         // JSON format for nodes
