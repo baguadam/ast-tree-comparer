@@ -6,21 +6,16 @@
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
 
-class TreeBuilder : public clang::RecursiveASTVisitor<TreeBuilder>
-{
+class TreeBuilder : public clang::RecursiveASTVisitor<TreeBuilder> {
 public:
   explicit TreeBuilder(clang::ASTContext* Context)
-    : Context(Context), depth(-1)
-  {
-  }
+    : Context(Context), depth(-1) {}
 
-  bool shouldVisitImplicitCode() const
-  {
+  bool shouldVisitImplicitCode() const {
     return true;
   }
 
-  bool TraverseDecl(clang::Decl* decl)
-  {
+  bool TraverseDecl(clang::Decl* decl) {
     ++depth;
     bool result = clang::RecursiveASTVisitor<TreeBuilder>::TraverseDecl(decl);
     --depth;
@@ -28,8 +23,7 @@ public:
     return result;
   }
 
-  bool TraverseStmt(clang::Stmt* stmt)
-  {
+  bool TraverseStmt(clang::Stmt* stmt) {
     ++depth;
     bool result = clang::RecursiveASTVisitor<TreeBuilder>::TraverseStmt(stmt);
     --depth;
@@ -37,8 +31,7 @@ public:
     return result;
   }
 
-  bool VisitDecl(clang::Decl* decl)
-  {
+  bool VisitDecl(clang::Decl* decl) {
     indent();
 
     clang::SourceLocation loc = decl->getBeginLoc();
@@ -61,8 +54,7 @@ public:
     return true;
   }
 
-  bool VisitStmt(clang::Stmt* stmt)
-  {
+  bool VisitStmt(clang::Stmt* stmt) {
     indent();
 
     clang::SourceLocation loc = stmt->getBeginLoc();
@@ -85,14 +77,12 @@ public:
   }
 
 private:
-  void indent() const
-  {
+  void indent() const {
     for (int i = 0; i < depth; ++i)
       llvm::outs() << ' ';
   }
 
-  std::string getUSR(clang::Decl* decl) const
-  {
+  std::string getUSR(clang::Decl* decl) const {
     llvm::SmallVector<char> Usr;
     clang::index::generateUSRForDecl(decl, Usr);
     char* data = Usr.data();
@@ -103,15 +93,11 @@ private:
   int depth;
 };
 
-class MyASTConsumer : public clang::ASTConsumer
-{
+class MyASTConsumer : public clang::ASTConsumer {
 public:
-  explicit MyASTConsumer(clang::ASTContext* Context) : Visitor(Context)
-  {
-  }
+  explicit MyASTConsumer(clang::ASTContext* Context) : Visitor(Context) { }
 
-  virtual void HandleTranslationUnit(clang::ASTContext &Context)
-  {
+  virtual void HandleTranslationUnit(clang::ASTContext &Context) {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
@@ -119,44 +105,33 @@ private:
   TreeBuilder Visitor;
 };
 
-class MyFrontendAction : public clang::ASTFrontendAction
-{
+class MyFrontendAction : public clang::ASTFrontendAction {
 public:
-  virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-    clang::CompilerInstance& Compiler,
-    llvm::StringRef InFile) override
-  {
+  virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile) override {
     return std::make_unique<MyASTConsumer>(&Compiler.getASTContext());
   }
 };
 
-int main(int argc, const char* argv[])
-{
+int main(int argc, const char* argv[]){
   llvm::cl::OptionCategory MyToolCategory("my-tool options");
 
-  auto ExpectedParser =
-    clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory);
+  auto ExpectedParser = clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory);
 
-  if (!ExpectedParser)
-  {
+  if (!ExpectedParser) {
     llvm::errs() << ExpectedParser.takeError();
     return 1;
   }
 
   clang::tooling::CommonOptionsParser& OptionsParser = ExpectedParser.get();
-  clang::tooling::ClangTool Tool(
-    OptionsParser.getCompilations(),
-    OptionsParser.getSourcePathList());
+  clang::tooling::ClangTool Tool(OptionsParser.getCompilations(), OptionsParser.getSourcePathList());
 
-  std::vector<std::string> Args{
+  std::vector<std::string> Args {
     "-I/usr/lib/clang/14/include",
     "-I/usr/local/include",
     "-I/usr/include"
   };
 
-  Tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(
-    Args, clang::tooling::ArgumentInsertPosition::END));
+  Tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(Args, clang::tooling::ArgumentInsertPosition::END));
 
-  return Tool.run(
-    clang::tooling::newFrontendActionFactory<MyFrontendAction>().get());
+  return Tool.run(clang::tooling::newFrontendActionFactory<MyFrontendAction>().get());
 }

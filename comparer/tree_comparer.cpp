@@ -83,8 +83,8 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
 
-        logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST);
-        logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST);
+        // logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST);
+        // logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST);
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_SOURCE_LOCATIONS);
 
@@ -100,8 +100,8 @@ Description:
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
 
-        logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST);
-        logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST);
+        // logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST);
+        // logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST);
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_PARENT);
 
@@ -288,7 +288,7 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         currentNode->isProcessed = true;
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
-        logger->logNode(currentNode, diffType, ast, depth); // log the node
+        // logger->logNode(currentNode, diffType, ast, depth); // log the node
         this->dbWrapper->addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
 
         // parent-child relationships for the subtree
