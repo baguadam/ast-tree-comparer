@@ -1,40 +1,22 @@
 #include "./headers/neo4j_database_wrapper.h"
 #include <iostream>
 #include <sstream>
+#include "./headers/utils.h"
 #include <curl/curl.h>
 #include <iomanip>
 
-static std::string base64_encode(const std::string &in) {
-    static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                            "abcdefghijklmnopqrstuvwxyz"
-                                            "0123456789+/";
-    std::string out;
-    int val = 0, valb = -6;
-    for (unsigned char c : in) {
-        val = (val << 8) + c;
-        valb += 8;
-        while (valb >= 0) {
-            out.push_back(base64_chars[(val >> valb) & 0x3F]);
-            valb -= 6;
-        }
-    }
-    if (valb > -6) out.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
-    while (out.size() % 4) out.push_back('=');
-    return out;
-}
-
 Neo4jDatabaseWrapper::Neo4jDatabaseWrapper(const std::string& uri, const std::string& username, const std::string& password)
     : dbUri(uri + "/db/neo4j/tx/commit") {
-    // Initialize curl
+    // initialize curl
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
 
-    // Create authentication header (Basic Auth)
+    // create authentication header (Basic Auth)
     std::string credentials = username + ":" + password;
-    std::string encoded_credentials = base64_encode(credentials);
+    std::string encoded_credentials = Utils::base64Encode(credentials);
     authHeader = "Authorization: Basic " + encoded_credentials;
 
-    // Create indices for enhancedKey for faster lookup
+    // create indices for enhancedKey for faster lookup
     createIndices();
 }
 
@@ -45,12 +27,17 @@ Neo4jDatabaseWrapper::~Neo4jDatabaseWrapper() {
     curl_global_cleanup();
 }
 
+/*
+Description:
+    Adds a node to the batch for creation in the database, if the batch size exceeds 5000, the batch is executed, also \ characters are properly escaped
+    for valid JSON syntax
+*/
 void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel) {
-    // Properly escape backslashes in the path and enhancedKey
+    // properly escape backslashes in the path and enhancedKey
     std::string escapedPath = node.path;
     std::string escapedEnhancedKey = node.enhancedKey;
 
-    // Replace backslash with double backslash
+    // replace backslash with double backslash
     std::string::size_type pos = 0;
     while ((pos = escapedPath.find("\\", pos)) != std::string::npos) {
         escapedPath.replace(pos, 1, "\\\\");
@@ -76,12 +63,17 @@ void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel) {
 
     nodeBatch.push_back(nodeStream.str());
 
-    // If the batch size exceeds 5000, execute the batch
+    // if the batch size exceeds 5000, execute the batch
     if (nodeBatch.size() >= 5000) {
         executeBatch();
     }
 }
 
+/*
+Description:
+    Adds a relationship to the batch for creation in the database, if the batch size exceeds 5000, the batch is executed, also \ characters are properly escaped
+    for valid JSON syntax
+*/
 void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node& child) {
     // Properly escape backslashes in the parent and child keys
     std::string escapedParentKey = parent.enhancedKey;
@@ -107,15 +99,19 @@ void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node
 
     relationshipBatch.push_back(relStream.str());
 
-    // If the batch size exceeds 5000, execute the batch
+    // if the batch size exceeds 5000, execute the batch
     if (relationshipBatch.size() >= 5000) {
         executeBatch();
     }
 }
 
+/*
+Description:
+    Executes the batch of nodes and relationships in the database
+*/
 void Neo4jDatabaseWrapper::executeBatch() {
     if (nodeBatch.empty() && relationshipBatch.empty()) {
-        return;  // Nothing to execute
+        return;  // nothing to execute
     }
 
     std::ostringstream queryStream;
@@ -124,7 +120,7 @@ void Neo4jDatabaseWrapper::executeBatch() {
     bool hasNodes = !nodeBatch.empty();
     bool hasRelationships = !relationshipBatch.empty();
 
-    // If there are nodes to be created, add the node creation query.
+    // if there are nodes to be created, add the node creation query.
     if (hasNodes) {
         queryStream << "{\"statement\": \"UNWIND $nodes AS node "
                     << "CREATE (n:Node {enhancedKey: node.enhancedKey, type: node.type, kind: node.kind, usr: node.usr, "
@@ -141,10 +137,10 @@ void Neo4jDatabaseWrapper::executeBatch() {
         queryStream << "]}}";
     }
 
-    // If there are relationships to be created, add the relationship creation query.
+    // if there are relationships to be created, add the relationship creation query.
     if (hasRelationships) {
         if (hasNodes) {
-            queryStream << ",";  // Add a comma to separate the two queries
+            queryStream << ",";  // add a comma to separate the two queries
         }
 
         queryStream << "{\"statement\": \"UNWIND $relationships AS rel "
@@ -167,11 +163,15 @@ void Neo4jDatabaseWrapper::executeBatch() {
 
     sendRequest(queryStream.str());
 
-    // Clear the buffers
+    // clear the buffers
     nodeBatch.clear();
     relationshipBatch.clear();
 }
 
+/*
+Description:
+    Sends a request to the Neo4j database with the given query JSON
+*/
 void Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     if (!curl) {
         std::cerr << "CURL initialization failed" << std::endl;
@@ -207,16 +207,28 @@ void Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     curl_slist_free_all(headers);
 }
 
+/*
+Description:
+    Clears the database by deleting all nodes and relationships
+*/
 void Neo4jDatabaseWrapper::clearDatabase() {
     std::string query = "{\"statements\": [{\"statement\": \"MATCH (n) DETACH DELETE n\"}]}";
     sendRequest(query);
 }
 
+/*
+Description:
+    Creates the necessary indices for the database, in our case so far it's enough to create an index for the enhancedKey property of the Node
+*/
 void Neo4jDatabaseWrapper::createIndices() {
     std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}";
     sendRequest(query);
 }
 
+/*
+Description:
+    Finalizes the batch by executing any remaining nodes and relationships
+*/
 void Neo4jDatabaseWrapper::finalize() {
     // execute any remaining bathec
     if (!nodeBatch.empty() || !relationshipBatch.empty()) {

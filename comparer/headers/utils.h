@@ -23,6 +23,7 @@ public:
     static std::vector<std::string> splitString(const std::string&, const char delimiter = '\t');
     static void ltrim(std::string&);
 
+    static std::string base64Encode(const std::string&);
 private:
     static size_t hashString(const std::string&);
 };
