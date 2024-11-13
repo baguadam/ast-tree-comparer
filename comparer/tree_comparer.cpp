@@ -4,10 +4,11 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree) 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) 
     : firstASTTree(firstTree), 
       secondASTTree(secondTree), 
       dbWrapper(std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005")),
+      logger(std::move(logger)),
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
@@ -82,6 +83,9 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
         firstNode->lineNumber != secondNode->lineNumber || 
         firstNode->columnNumber != secondNode->columnNumber) {
 
+        logger->logNode(firstNode, DIFFERENT_SOURCE_LOCATIONS, FIRST_AST);
+        logger->logNode(secondNode, DIFFERENT_SOURCE_LOCATIONS, SECOND_AST);
+
         dbWrapper->addNodeToBatch(*firstNode, true);
         dbWrapper->addNodeToBatch(*secondNode, true);
     }
@@ -93,6 +97,9 @@ Description:
 */
 void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode) {
     if (firstNode->parent && (!secondNode->parent || firstNode->parent->usr != secondNode->parent->usr)) {
+
+        logger->logNode(firstNode->parent, DIFFERENT_PARENT, FIRST_AST);
+        logger->logNode(secondNode->parent, DIFFERENT_PARENT, SECOND_AST);
 
         dbWrapper->addNodeToBatch(*firstNode, true);
         dbWrapper->addNodeToBatch(*secondNode, true);
@@ -260,6 +267,7 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         return;  // skip
     }
 
+    // curresponsing AST for node checking in the lambda
     Tree& correspondingASTTree = (ast == FIRST_AST) ? secondASTTree : firstASTTree;
 
     // Lambda for processing the node
@@ -268,14 +276,16 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         bool existsInCorrespondingAST = correspondingASTTree.isDeclNodeInAST(currentNodeKey);
 
         // don't mark and print nodes in the subtree that exists in both AST, leave them for further comparison
-        if (existsInCorrespondingAST) {
+        if (existsInCorrespondingAST && currentNode->isProcessed) {
             return;  // skip
         } 
 
         // if the node does not exist in the other AST, log it and mark it as processed as part of the subtree
         currentNode->isProcessed = true;
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
-        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0);
+
+        logger->logNode(currentNode, diffType, ast, depth); // log the nodeó
+        this->dbWrapper->addNodeToBatch(*currentNode, false); // set it as part of the subtree (at this point cannot be hightest level node)
 
         // parent-child relationships for the subtree
         if (currentNode->parent) {
