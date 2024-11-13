@@ -34,20 +34,8 @@ Description:
 */
 void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel) {
     // properly escape backslashes in the path and enhancedKey
-    std::string escapedPath = node.path;
-    std::string escapedEnhancedKey = node.enhancedKey;
-
-    // replace backslash with double backslash
-    std::string::size_type pos = 0;
-    while ((pos = escapedPath.find("\\", pos)) != std::string::npos) {
-        escapedPath.replace(pos, 1, "\\\\");
-        pos += 2;
-    }
-    pos = 0;
-    while ((pos = escapedEnhancedKey.find("\\", pos)) != std::string::npos) {
-        escapedEnhancedKey.replace(pos, 1, "\\\\");
-        pos += 2;
-    }
+    std::string escapedPath = Utils::escapeString(node.path);
+    std::string escapedEnhancedKey = Utils::escapeString(node.enhancedKey);
 
     std::ostringstream nodeStream;
     nodeStream << "{\"enhancedKey\": \"" << escapedEnhancedKey

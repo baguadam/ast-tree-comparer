@@ -159,6 +159,10 @@ size_t Utils::hashString(const std::string& str) {
     return hasher(str);
 }
 
+/*
+Description:
+    Base64 encodes a given string, used for encoding the credentials for the Neo4j database
+*/
 std::string Utils::base64Encode(const std::string& in) {
     static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                             "abcdefghijklmnopqrstuvwxyz"
@@ -176,4 +180,18 @@ std::string Utils::base64Encode(const std::string& in) {
     if (valb > -6) out.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
     while (out.size() % 4) out.push_back('=');
     return out;
+}
+
+/*
+Description:
+    Escapes the backslashes in a string for valid JSON syntax
+*/
+std::string Utils::escapeString(const std::string& str) {
+    std::string escaped = str;
+    std::string::size_type pos = 0;
+    while ((pos = escaped.find("\\", pos)) != std::string::npos) {
+        escaped.replace(pos, 1, "\\\\");
+        pos += 2;
+    }
+    return escaped;
 }
