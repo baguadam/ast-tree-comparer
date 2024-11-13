@@ -5,11 +5,12 @@
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #include <llvm/Support/CommandLine.h>
+#include <fstream>
 
 class TreeBuilder : public clang::RecursiveASTVisitor<TreeBuilder> {
 public:
-  explicit TreeBuilder(clang::ASTContext* Context)
-    : Context(Context), depth(-1) {}
+  explicit TreeBuilder(clang::ASTContext* Context, std::ofstream& outFile)
+    : Context(Context), depth(-1), outFile(outFile) {}
 
   bool shouldVisitImplicitCode() const {
     return true;
@@ -36,13 +37,12 @@ public:
 
     clang::SourceLocation loc = decl->getBeginLoc();
     clang::SourceManager& sm = Context->getSourceManager();
-    // handling empty file path
     std::string filePath = sm.getFilename(loc).str();
     if (filePath.empty()) {
       filePath = "N/A";
     }
 
-    llvm::outs()
+    outFile
       << "Declaration\t"
       << decl->getDeclKindName() << '\t'
       << getUSR(decl) << '\t'
@@ -59,16 +59,15 @@ public:
 
     clang::SourceLocation loc = stmt->getBeginLoc();
     clang::SourceManager& sm = Context->getSourceManager();
-    // handling empty file path
     std::string filePath = sm.getFilename(loc).str();
     if (filePath.empty()) {
       filePath = "N/A";
     }
 
-    llvm::outs()
+    outFile
       << "Statement\t"
       << stmt->getStmtClassName() << '\t'
-      << "N/A" << '\t' // no USR for statements
+      << "N/A" << '\t'
       << filePath << '\t'
       << sm.getSpellingLineNumber(loc) << '\t'
       << sm.getSpellingColumnNumber(loc) << '\n';
@@ -79,23 +78,24 @@ public:
 private:
   void indent() const {
     for (int i = 0; i < depth; ++i)
-      llvm::outs() << ' ';
+      outFile << ' ';
   }
 
   std::string getUSR(clang::Decl* decl) const {
     llvm::SmallVector<char> Usr;
     clang::index::generateUSRForDecl(decl, Usr);
-    char* data = Usr.data();
-    return std::string(data, data + Usr.size());
+    return std::string(Usr.begin(), Usr.end());
   }
 
   clang::ASTContext* Context;
   int depth;
+  std::ofstream& outFile;
 };
 
 class MyASTConsumer : public clang::ASTConsumer {
 public:
-  explicit MyASTConsumer(clang::ASTContext* Context) : Visitor(Context) { }
+  explicit MyASTConsumer(clang::ASTContext* Context, std::ofstream& outFile) 
+    : Visitor(Context, outFile) { }
 
   virtual void HandleTranslationUnit(clang::ASTContext &Context) {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
@@ -107,13 +107,39 @@ private:
 
 class MyFrontendAction : public clang::ASTFrontendAction {
 public:
+  MyFrontendAction(std::ofstream& outFile) : outFile(outFile) {}
+
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile) override {
-    return std::make_unique<MyASTConsumer>(&Compiler.getASTContext());
+    return std::make_unique<MyASTConsumer>(&Compiler.getASTContext(), outFile);
   }
+
+private:
+  std::ofstream& outFile;
 };
 
-int main(int argc, const char* argv[]){
+// Custom FrontendActionFactory to allow passing parameters
+class MyFrontendActionFactory : public clang::tooling::FrontendActionFactory {
+public:
+  MyFrontendActionFactory(std::ofstream& outFile) : outFile(outFile) {}
+
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::make_unique<MyFrontendAction>(outFile);
+  }
+
+private:
+  std::ofstream& outFile;
+};
+
+int main(int argc, const char* argv[]) {
   llvm::cl::OptionCategory MyToolCategory("my-tool options");
+  
+  llvm::cl::opt<std::string> OutputFileName(
+    "o",
+    llvm::cl::desc("Specify output file name"),
+    llvm::cl::value_desc("filename"),
+    llvm::cl::init("output_ast.txt"),
+    llvm::cl::cat(MyToolCategory)
+  );
 
   auto ExpectedParser = clang::tooling::CommonOptionsParser::create(argc, argv, MyToolCategory);
 
@@ -125,13 +151,25 @@ int main(int argc, const char* argv[]){
   clang::tooling::CommonOptionsParser& OptionsParser = ExpectedParser.get();
   clang::tooling::ClangTool Tool(OptionsParser.getCompilations(), OptionsParser.getSourcePathList());
 
-  std::vector<std::string> Args {
-    "-I/usr/lib/clang/14/include",
-    "-I/usr/local/include",
-    "-I/usr/include"
+  std::vector<std::string> Args = {
+    "-IC:/msys64/mingw64/include",
+    "-IC:/msys64/mingw64/lib/clang/18/include", // adjust version if needed
+    "-IC:/msys64/mingw64/include/c++/14.2.0",
   };
 
   Tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(Args, clang::tooling::ArgumentInsertPosition::END));
 
-  return Tool.run(clang::tooling::newFrontendActionFactory<MyFrontendAction>().get());
+  std::ofstream outFile(OutputFileName);
+  if (!outFile.is_open()) {
+    llvm::errs() << "Error: Could not open output file " << OutputFileName << " for writing.\n";
+    return 1;
+  }
+
+  // Use the custom factory to create actions
+  MyFrontendActionFactory factory(outFile);
+  int result = Tool.run(&factory);
+
+  outFile.close();
+
+  return result;
 }

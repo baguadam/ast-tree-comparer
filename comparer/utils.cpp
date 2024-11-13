@@ -152,6 +152,16 @@ void Utils::ltrim(std::string &s) {
 
 /*
 Description:
+    Trims the trailing whitespace of a string
+*/
+void Utils::rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+/*
+Description:
     Hashes a string using the std::hash function
 */
 size_t Utils::hashString(const std::string& str) {
