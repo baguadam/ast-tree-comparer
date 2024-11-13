@@ -284,8 +284,8 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         currentNode->isProcessed = true;
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
-        logger->logNode(currentNode, diffType, ast, depth); // log the nodeó
-        this->dbWrapper->addNodeToBatch(*currentNode, false); // set it as part of the subtree (at this point cannot be hightest level node)
+        logger->logNode(currentNode, diffType, ast, depth); // log the node
+        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0); // set it as part of the subtree (at this point cannot be hightest level node)
 
         // parent-child relationships for the subtree
         if (currentNode->parent) {
