@@ -12,8 +12,9 @@ public:
     Neo4jDatabaseWrapper(const std::string& uri, const std::string& username, const std::string& password);
     ~Neo4jDatabaseWrapper();
 
-    void addNodeToBatch(const Node& node);
+    void addNodeToBatch(const Node& node, bool isHighLevel);
     void addRelationshipToBatch(const Node& parent, const Node& child);
+    void finalize();
     void executeBatch();
 
 private:
@@ -25,7 +26,8 @@ private:
     std::vector<std::string> nodeBatch;
     std::vector<std::string> relationshipBatch;
 
+    void createIndices();
     void sendRequest(const std::string& queryJson);
 };
 
-#endif // NEO4J_DATABASE_WRAPPER_H
+#endif
