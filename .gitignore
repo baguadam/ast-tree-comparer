@@ -40,6 +40,7 @@ comparer/comparer
 # Exclude the build directory
 comparer/build/
 comparer/ms
+comparer/tests/build/
 
 # Exclude executables and libraries in any subdirectory
 **/*.exe
