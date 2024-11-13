@@ -16,7 +16,6 @@ public:
     void addRelationshipToBatch(const Node& parent, const Node& child);
     void clearDatabase();
     void finalize();
-    void executeBatch();
 
 private:
     std::string dbUri;
@@ -28,6 +27,7 @@ private:
     std::vector<std::string> relationshipBatch;
 
     void createIndices();
+    void executeBatch();
     void sendRequest(const std::string& queryJson);
 };
 
