@@ -15,13 +15,12 @@
 
 class TreeComparer {
 public:
-    TreeComparer(Tree&, Tree&, std::unique_ptr<TreeComparerLogger>);
+    TreeComparer(Tree&, Tree&);
     void printDifferences();
 
 private:
     Tree& firstASTTree;
     Tree& secondASTTree;
-    std::unique_ptr<TreeComparerLogger> logger;
     std::unique_ptr<Neo4jDatabaseWrapper> dbWrapper;
     std::function<bool(const Node*, const Node*)> topologicalComparer;
 

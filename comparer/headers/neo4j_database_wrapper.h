@@ -14,6 +14,7 @@ public:
 
     void addNodeToBatch(const Node& node, bool isHighLevel);
     void addRelationshipToBatch(const Node& parent, const Node& child);
+    void clearDatabase();
     void finalize();
     void executeBatch();
 

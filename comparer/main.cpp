@@ -7,15 +7,14 @@
 
 int main() {
     try {
-        Tree firstStandardAST("../../asts/vector_98.txt");
-        Tree secondStandardAST("../../asts/vector_11.txt");
-
+        Tree firstStandardAST("../../asts/first_standard_ast.txt");
+        Tree secondStandardAST("../../asts/second_standard_ast.txt");
         
         // logger
-        ConsoleLoggerCreator loggerCreator;
-        std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
+        // ConsoleLoggerCreator loggerCreator;
+        // std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
 
-        TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger));
+        TreeComparer comparer(firstStandardAST, secondStandardAST);
         comparer.printDifferences();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
