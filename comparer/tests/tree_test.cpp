@@ -31,7 +31,6 @@ protected:
         ASSERT_TRUE(std::filesystem::exists("empty_ast.txt"));
     }
 
-
     void TearDown() override {
         if (std::filesystem::exists("test_ast_1.txt")) {
             std::filesystem::remove("test_ast_1.txt");
@@ -46,7 +45,7 @@ protected:
 };
 
 // **********************************************
-// CONSTRUCTOR TESTS
+// Constructor tests
 // **********************************************
 // Test if constructing the tree with a nonexistent file throws an exception
 TEST_F(TreeTest, TreeThrowsExceptionOnFileNotFound) {
@@ -151,7 +150,7 @@ TEST_F(TreeTest, CaptureStderrForInvalidLineOrColumn) {
 }
 
 // **********************************************
-// node creation and storing tests
+// Node creation, storing, retrieving from maps tests
 // **********************************************
 // Test root node existence and properties after successful construction
 TEST_F(TreeTest, CheckRootNodeAfterConstruction) {
@@ -219,4 +218,26 @@ TEST_F(TreeTest, IterateOverDeclarationNodes) {
     }
 
     EXPECT_TRUE(found);
+}
+
+// Test if in case if no statement nodes are present, the map is empty
+TEST_F(TreeTest, NoStatementNodes) {
+    Tree testTree("test_ast_1.txt");
+
+    const auto& stmtMultiMap = testTree.getStmtNodeMultiMap();
+    EXPECT_TRUE(stmtMultiMap.empty());
+}
+
+// Test the `getStmtNodes` method when there are no statement nodes
+TEST_F(TreeTest, NoStatementNodesForGivenKey) {
+    Tree testTree("test_ast_1.txt");
+
+    std::string kind = "Typedef";
+    std::string usr = "c:@N@std@T@size_t";
+    std::string path = "C:\\include\\bits\\c++config.h";
+    std::string enhancedKey = kind + "|" + usr + "|" + path + "|";
+
+    auto stmtNodes = testTree.getStmtNodes(enhancedKey);
+
+    EXPECT_EQ(stmtNodes.first, stmtNodes.second);
 }
