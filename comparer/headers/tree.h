@@ -29,7 +29,7 @@ private:
     std::unordered_map<std::string, std::vector<Node*>> stmtNodeMultiMap;
 
     Node* buildTree(std::ifstream&);
-    void addStmtNodeToNodeMap(Node*, const std::string&);
+    void addStmtNodeToNodeMap(Node*, const Node*);
     void addDeclNodeToNodeMap(Node*);
     void deleteTree(Node*);
 };

@@ -194,7 +194,7 @@ Node* Tree::buildTree(std::ifstream& file) {
             const Node* lastDeclarationNode = Utils::findDeclarationParent(node);
             if (lastDeclarationNode) {
                 node->enhancedKey = Utils::getStmtKey(node, lastDeclarationNode->enhancedKey);
-                addStmtNodeToNodeMap(node, lastDeclarationNode->enhancedKey);
+                addStmtNodeToNodeMap(node, lastDeclarationNode);
             } else {
                 // if no declaration parent found, delete the node to prevent a memory leak
                 std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind
@@ -213,12 +213,9 @@ Node* Tree::buildTree(std::ifstream& file) {
 Description:
     Adds the statement node with its key to the stmtNodeMultiMap.
 */
-void Tree::addStmtNodeToNodeMap(Node* node, const std::string& declarationParentKey) {
-    if (!declarationParentKey.empty()) {
-        stmtNodeMultiMap[declarationParentKey].emplace_back(node);
-    } else {
-        std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind << '\n';
-    }
+void Tree::addStmtNodeToNodeMap(Node* node, const Node* declarationParent) {
+    std::string key = declarationParent->enhancedKey + "|" + std::to_string(declarationParent->topologicalOrder);
+    stmtNodeMultiMap[key].emplace_back(node);
 }
 
 /*

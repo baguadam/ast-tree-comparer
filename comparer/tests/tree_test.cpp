@@ -14,6 +14,25 @@ protected:
         testFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";     
         testFile.close();
 
+        // large valid AST file with statements and multiple nodes
+        std::ofstream testFile2("test_ast_2.txt");
+        ASSERT_TRUE(testFile2.is_open());
+        testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+        testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+        testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
+        testFile2 << "    Declaration\tVar\tc:@F@doSomething@x\tC:\\include\\bits\\c++config.h\t352\t7\n";
+        testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
+        testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t354\t7\n";
+        testFile2 << "  Declaration\tFunction\tc:@F@doSomethingElse\tC:\\include\\bits\\c++config.h\t400\t5\n";
+        testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t401\t6\n";
+        testFile2 << "    Declaration\tVar\tc:@F@doSomething@x\tC:\\include\\bits\\c++config.h\t402\t7\n";
+        testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t403\t7\n";
+        testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t404\t7\n";
+        testFile2.close();
+
         // small invalid AST file
         std::ofstream invalidFile("invalid_ast.txt");
         ASSERT_TRUE(invalidFile.is_open());
@@ -40,6 +59,9 @@ protected:
         }
         if (std::filesystem::exists("empty_ast.txt")) {
             std::filesystem::remove("empty_ast.txt");
+        }
+        if (std::filesystem::exists("test_ast_2.txt")) {
+            std::filesystem::remove("test_ast_2.txt");
         }
     }
 };
@@ -150,7 +172,7 @@ TEST_F(TreeTest, CaptureStderrForInvalidLineOrColumn) {
 }
 
 // **********************************************
-// Node creation, storing, retrieving from maps tests
+// Node creation, storing, retrieving from maps tests - WITH SMALL DATASET
 // **********************************************
 // Test root node existence and properties after successful construction
 TEST_F(TreeTest, CheckRootNodeAfterConstruction) {
@@ -237,7 +259,57 @@ TEST_F(TreeTest, NoStatementNodesForGivenKey) {
     std::string path = "C:\\include\\bits\\c++config.h";
     std::string enhancedKey = kind + "|" + usr + "|" + path + "|";
 
-    auto stmtNodes = testTree.getStmtNodes(enhancedKey);
+    auto declNode = testTree.getDeclNodes(enhancedKey);
+    ASSERT_NE(declNode.first, declNode.second);
+
+    std::string stmtKey = enhancedKey + "|" + std::to_string(declNode.first->second->topologicalOrder);
+    auto stmtNodes = testTree.getStmtNodes(stmtKey);
 
     EXPECT_EQ(stmtNodes.first, stmtNodes.second);
+}
+
+// **********************************************
+// Node storing and retrieving from maps tests - WITH LARGE DATASET
+// **********************************************
+TEST_F(TreeTest, CheckDeclarationNodesInAST) {
+    Tree testTree("test_ast_2.txt");
+    // ensure the number of unique declaration keys is correct., in `test_ast_2.txt`, the declarations are:
+    // - TranslationUnit
+    // - Namespace: std
+    // - Typedef: size_t (repeated twice, so only one unique key)
+    // - Function: doSomething
+    // - Function: doSomethingElse
+    // - Variable: x (inside both functions, treated as two separate declarations)
+    auto declMap = testTree.getDeclNodeMultiMap();
+    EXPECT_EQ(declMap.size(), 8); // all 8 nodes get added
+
+    std::string typedefKey = "Typedef|c:@N@std@T@size_t|C:\\include\\bits\\c++config.h|";
+    auto typedefRange = testTree.getDeclNodes(typedefKey);
+    size_t typedefCount = std::distance(typedefRange.first, typedefRange.second);
+    EXPECT_EQ(typedefCount, 2);  // expect two entries for typedef `size_t` with identical key
+
+    std::string functionKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto functionRange = declMap.equal_range(functionKey);
+    size_t functionCount = std::distance(functionRange.first, functionRange.second);
+    EXPECT_EQ(functionCount, 1);  // expect one entry for `doSomething`
+
+    std::string functionElseKey = "Function|c:@F@doSomethingElse|C:\\include\\bits\\c++config.h|";
+    auto functionElseRange = declMap.equal_range(functionElseKey);
+    size_t functionElseCount = std::distance(functionElseRange.first, functionElseRange.second);
+    EXPECT_EQ(functionElseCount, 1);  // expect one entry for `doSomethingElse`
+
+    std::string varKey = "Var|c:@F@doSomething@x|C:\\include\\bits\\c++config.h|";
+    auto varRange = declMap.equal_range(varKey);
+    size_t varCount = std::distance(varRange.first, varRange.second);
+    EXPECT_EQ(varCount, 2);  // expect two entries for `x` due to repeated declaration
+
+    std::string namespaceKey = "Namespace|c:@N@std|C:\\include\\bits\\c++config.h|";
+    auto namespaceRange = declMap.equal_range(namespaceKey);
+    size_t namespaceCount = std::distance(namespaceRange.first, namespaceRange.second);
+    EXPECT_EQ(namespaceCount, 1);  // expect one entry for namespace `std`
+
+    std::string translationUnitKey = "TranslationUnit|c:|N/A|";
+    auto translationUnitRange = declMap.equal_range(translationUnitKey);
+    size_t translationUnitCount = std::distance(translationUnitRange.first, translationUnitRange.second);
+    EXPECT_EQ(translationUnitCount, 1);  // expect one entry for `TranslationUnit`
 }

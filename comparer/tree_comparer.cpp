@@ -114,7 +114,7 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
 Description:
     Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
-void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
+void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode) {
     // checking for parents
     compareParents(firstNode, secondNode);
 
@@ -122,6 +122,7 @@ void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode, co
     compareSourceLocations(firstNode, secondNode);
 
     // compare their statement nodes
+    std::string nodeKey = firstNode->enhancedKey + "|" + std::to_string(firstNode->topologicalOrder); // could be with secondNode as well
     compareStmtNodes(nodeKey);
 
     // mark nodes as processed
@@ -210,7 +211,7 @@ void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
         Node* firstNode = firstASTRange.first->second;
         Node* secondNode = secondASTRange.first->second;
 
-        checkNodeFingerprints(firstNode, secondNode, nodeKey);
+        checkNodeFingerprints(firstNode, secondNode);
         return; // no need for further processing
     } else {
         // RARE CASE: multiple nodes with the same key
@@ -253,7 +254,7 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
             continue;  // Skip already processed nodes
         }
 
-        checkNodeFingerprints(firstNode, secondNode, nodeKey);
+        checkNodeFingerprints(firstNode, secondNode);
     }
 
 
@@ -305,7 +306,7 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
 Description:
     Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
 */
-void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
+void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode) {
     if (firstNode->fingerprint == secondNode->fingerprint) {
         // additional checks in case of fingerprint collision
         if (firstNode->kind == secondNode->kind && firstNode->children.size() == secondNode->children.size()) {
@@ -315,7 +316,7 @@ void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode, cons
         }
     }
     // fallback to detailed node comparison
-    compareSimilarDeclNodes(firstNode, secondNode, nodeKey);
+    compareSimilarDeclNodes(firstNode, secondNode);
 }
 
 /*

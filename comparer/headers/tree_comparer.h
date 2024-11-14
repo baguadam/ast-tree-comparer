@@ -27,7 +27,7 @@ private:
 
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);
-    void compareSimilarDeclNodes(Node*, Node*, const std::string&);
+    void compareSimilarDeclNodes(Node*, Node*);
     void compareStmtNodes(const std::string&);
     void compareSimilarStmtNodes(Node*, Node*);
     void processDeclNodes(Node*);
@@ -39,7 +39,7 @@ private:
                                const std::string&);
     void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
     void processRemainingNodes(std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator, Tree&, const ASTId);
-    void checkNodeFingerprints(Node*, Node*, const std::string&);
+    void checkNodeFingerprints(Node*, Node*);
     
     void enqueueChildren(Node*, std::queue<Node*>&);
 };
