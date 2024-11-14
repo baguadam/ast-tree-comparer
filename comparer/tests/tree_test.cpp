@@ -271,6 +271,7 @@ TEST_F(TreeTest, NoStatementNodesForGivenKey) {
 // **********************************************
 // Node storing and retrieving from maps tests - WITH LARGE DATASET
 // **********************************************
+// Test if multiple declaration nodes with the same key are stored correctly
 TEST_F(TreeTest, CheckDeclarationNodesInAST) {
     Tree testTree("test_ast_2.txt");
     // ensure the number of unique declaration keys is correct., in `test_ast_2.txt`, the declarations are:
@@ -312,4 +313,56 @@ TEST_F(TreeTest, CheckDeclarationNodesInAST) {
     auto translationUnitRange = declMap.equal_range(translationUnitKey);
     size_t translationUnitCount = std::distance(translationUnitRange.first, translationUnitRange.second);
     EXPECT_EQ(translationUnitCount, 1);  // expect one entry for `TranslationUnit`
+}
+
+// Test if the statement nodes are stored correctly 
+TEST_F(TreeTest, CheckStatementMultiMapSize) {
+    Tree testTree("test_ast_2.txt");
+
+    auto stmtMultiMap = testTree.getStmtNodeMultiMap();
+    EXPECT_EQ(stmtMultiMap.size(), 2); // only two functions have statements
+}
+
+// helper fundtion
+void CheckStatementsForFunction(Tree& testTree, const std::string& functionKey, 
+                                const std::vector<std::string>& expectedStmtKinds, 
+                                const std::vector<std::pair<int, int>>& expectedLineCols) {
+    auto declNodeRange = testTree.getDeclNodes(functionKey);
+    ASSERT_NE(declNodeRange.first, declNodeRange.second) << "Function with key " << functionKey << " not found in AST";
+
+    Node* declNode = declNodeRange.first->second;
+
+    // key for stmt statements
+    std::string stmtKey = declNode->enhancedKey + "|" + std::to_string(declNode->topologicalOrder);
+    auto stmtNodes = testTree.getStmtNodes(stmtKey);
+
+    size_t stmtCount = std::distance(stmtNodes.first, stmtNodes.second);
+    EXPECT_EQ(stmtCount, expectedStmtKinds.size()) << "Statement count mismatch for function: " << functionKey;
+
+    auto stmtIt = stmtNodes.first;
+    for (size_t i = 0; i < expectedStmtKinds.size() && stmtIt != stmtNodes.second; ++i, ++stmtIt) {
+        Node* stmtNode = *stmtIt;
+
+        EXPECT_EQ(stmtNode->kind, expectedStmtKinds[i]) << "Statement kind mismatch at index " << i << " for function " << functionKey;
+
+        EXPECT_EQ(stmtNode->lineNumber, expectedLineCols[i].first) << "Line number mismatch for statement kind " << expectedStmtKinds[i] << " at index " << i;
+        EXPECT_EQ(stmtNode->columnNumber, expectedLineCols[i].second) << "Column number mismatch for statement kind " << expectedStmtKinds[i] << " at index " << i;
+    }
+}
+
+// Test if the statement nodes are stored correctly for each function
+TEST_F(TreeTest, CheckStatementsForFunctions) {
+    Tree testTree("test_ast_2.txt");
+
+    // test for `doSomething` function
+    std::string funcDoSomethingKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    std::vector<std::string> expectedStmtKindsDoSomething = {"CompoundStmt", "ExprStmt", "ReturnStmt"};
+    std::vector<std::pair<int, int>> expectedLineColsDoSomething = {{351, 6}, {353, 7}, {354, 7}};
+    CheckStatementsForFunction(testTree, funcDoSomethingKey, expectedStmtKindsDoSomething, expectedLineColsDoSomething);
+
+    // test for `doSomethingElse` function
+    std::string funcDoSomethingElseKey = "Function|c:@F@doSomethingElse|C:\\include\\bits\\c++config.h|";
+    std::vector<std::string> expectedStmtKindsDoSomethingElse = {"CompoundStmt", "ExprStmt", "ReturnStmt"};
+    std::vector<std::pair<int, int>> expectedLineColsDoSomethingElse = {{401, 6}, {403, 7}, {404, 7}};
+    CheckStatementsForFunction(testTree, funcDoSomethingElseKey, expectedStmtKindsDoSomethingElse, expectedLineColsDoSomethingElse);
 }
