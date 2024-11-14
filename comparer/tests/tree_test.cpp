@@ -163,3 +163,60 @@ TEST_F(TreeTest, CheckRootNodeAfterConstruction) {
     EXPECT_EQ(root->lineNumber, 0);
     EXPECT_EQ(root->columnNumber, 0);
 }
+
+// Test if declaration node return is empty when no declaration nodes are present
+TEST_F(TreeTest, AccessDeclarationNodeByNotExistingEnhancedKey) {
+    Tree testTree("test_ast_1.txt");
+
+    auto declRange = testTree.getDeclNodes("c:@N@std@T@size_t");
+    ASSERT_EQ(declRange.first, declRange.second); // no declaration node with the enhanced key
+}
+
+// Test accessing a declaration node by its enhanced key
+TEST_F(TreeTest, AccessDeclarationNodeByEnhancedKey) {
+    Tree testTree("test_ast_1.txt");
+
+    // generate the enhanced key for the declaration node we want to access
+    std::string kind = "Namespace";
+    std::string usr = "c:@N@std";
+    std::string path = "C:\\include\\bits\\c++config.h";
+    std::string enhancedKey = kind + "|" + usr + "|" + path + "|";
+
+    // retrieve declaration nodes using the generated enhanced key
+    auto declNodes = testTree.getDeclNodes(enhancedKey);
+
+    // ensure the iterator range is valid and points to the correct node
+    ASSERT_NE(declNodes.first, declNodes.second); // there should be at least one node with this key
+    const Node* node = declNodes.first->second;
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->kind, kind);
+    EXPECT_EQ(node->usr, usr);
+    EXPECT_EQ(node->path, path);
+}
+
+// Test if we can iterate over all declaration nodes and find specific keys
+TEST_F(TreeTest, IterateOverDeclarationNodes) {
+    Tree testTree("test_ast_1.txt");
+
+    // retrieve the entire declaration map
+    const auto& declMap = testTree.getDeclNodeMultiMap();
+
+    // ensure the map is not empty
+    ASSERT_FALSE(declMap.empty());
+    ASSERT_TRUE(declMap.size() == 3);
+
+    // check if we can find a specific node by iterating over the map
+    bool found = false;
+    std::string targetKey = "Typedef|c:@N@std@T@size_t|C:\\include\\bits\\c++config.h|";
+    for (const auto& pair : declMap) {
+        if (pair.first == targetKey) {
+            found = true;
+            EXPECT_EQ(pair.second->kind, "Typedef");
+            EXPECT_EQ(pair.second->usr, "c:@N@std@T@size_t");
+            EXPECT_EQ(pair.second->path, "C:\\include\\bits\\c++config.h");
+            break;
+        }
+    }
+
+    EXPECT_TRUE(found);
+}
