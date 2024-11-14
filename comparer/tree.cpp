@@ -160,7 +160,7 @@ Node* Tree::buildTree(std::ifstream& file) {
             columnNumber = std::stoi(tokens[5]);
         } catch (const std::exception& e) {
             std::cerr << "ERROR: Failed to parse line or column number from line: " << line << " - " << e.what() << '\n';
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("Failed to parse line or column number.");
         }
 
         // new node
@@ -200,7 +200,6 @@ Node* Tree::buildTree(std::ifstream& file) {
                 std::cerr << "Warning: Could not find declaration parent for statement node: " << node->kind
                           << " at path: " << node->path << " (line: " << node->lineNumber
                           << ", column: " << node->columnNumber << ")\n";
-                delete node;
                 continue;
             }
         }
