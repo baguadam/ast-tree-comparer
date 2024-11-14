@@ -33,6 +33,25 @@ protected:
         testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t404\t7\n";
         testFile2.close();
 
+        // nestes AST file
+        std::ofstream nestedAstFile("test_ast_nested.txt");
+        ASSERT_TRUE(nestedAstFile.is_open());
+        nestedAstFile << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        nestedAstFile << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t10\t1\n";
+        nestedAstFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        nestedAstFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        nestedAstFile << "  Declaration\tClass\tc:@N@std@C@Vector\tC:\\include\\bits\\c++config.h\t15\t3\n";
+        nestedAstFile << "   Declaration\tFunction\tc:@N@std@C@Vector@F@push_back\tC:\\include\\bits\\c++config.h\t20\t5\n";
+        nestedAstFile << "    Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t21\t6\n";
+        nestedAstFile << "     Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t22\t7\n";
+        nestedAstFile << "      Declaration\tVar\tc:@N@std@C@Vector@F@push_back@x\tC:\\include\\bits\\c++config.h\t23\t8\n";
+        nestedAstFile << " Declaration\tNamespace\tc:@N@other\tC:\\include\\bits\\c++config_other.h\t30\t1\n";
+        nestedAstFile << "  Declaration\tClass\tc:@N@other@C@List\tC:\\include\\bits\\c++config_other.h\t35\t3\n";
+        nestedAstFile << "   Declaration\tFunction\tc:@N@other@C@List@F@add\tC:\\include\\bits\\c++config_other.h\t40\t5\n";
+        nestedAstFile << "    Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config_other.h\t41\t6\n";
+        nestedAstFile << "     Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config_other.h\t42\t7\n";
+        nestedAstFile.close();
+
         // small invalid AST file
         std::ofstream invalidFile("invalid_ast.txt");
         ASSERT_TRUE(invalidFile.is_open());
@@ -46,6 +65,8 @@ protected:
 
         // check proper test writing
         ASSERT_TRUE(std::filesystem::exists("test_ast_1.txt"));
+        ASSERT_TRUE(std::filesystem::exists("test_ast_2.txt"));
+        ASSERT_TRUE(std::filesystem::exists("test_ast_nested.txt"));
         ASSERT_TRUE(std::filesystem::exists("invalid_ast.txt"));
         ASSERT_TRUE(std::filesystem::exists("empty_ast.txt"));
     }
@@ -365,4 +386,104 @@ TEST_F(TreeTest, CheckStatementsForFunctions) {
     std::vector<std::string> expectedStmtKindsDoSomethingElse = {"CompoundStmt", "ExprStmt", "ReturnStmt"};
     std::vector<std::pair<int, int>> expectedLineColsDoSomethingElse = {{401, 6}, {403, 7}, {404, 7}};
     CheckStatementsForFunction(testTree, funcDoSomethingElseKey, expectedStmtKindsDoSomethingElse, expectedLineColsDoSomethingElse);
+}
+
+// Test for retrieving statements for a non-existent function
+TEST_F(TreeTest, RetrieveStatementsForNonexistentFunction) {
+    Tree testTree("test_ast_2.txt");
+
+    std::string nonExistentFunctionKey = "Function|c:@F@nonExistent|C:\\include\\bits\\c++config.h|";
+    auto stmtNodesRange = testTree.getStmtNodes(nonExistentFunctionKey);
+
+    EXPECT_EQ(stmtNodesRange.first, stmtNodesRange.second); // Should be empty
+}
+
+// **********************************************
+// Parent-child relationships tests
+// **********************************************
+// Test to verify parent-child relationships in the nested AST
+TEST_F(TreeTest, VerifyParentChildRelationships) {
+    Tree testTree("test_ast_nested.txt");
+
+    Node* root = testTree.getRoot();
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(root->kind, "TranslationUnit");
+
+    ASSERT_EQ(root->children.size(), 2);
+    Node* namespaceStd = root->children[0];
+    Node* namespaceOther = root->children[1];
+
+    ASSERT_NE(namespaceStd, nullptr);
+    EXPECT_EQ(namespaceStd->kind, "Namespace");
+    EXPECT_EQ(namespaceStd->usr, "c:@N@std");
+
+    ASSERT_NE(namespaceOther, nullptr);
+    EXPECT_EQ(namespaceOther->kind, "Namespace");
+    EXPECT_EQ(namespaceOther->usr, "c:@N@other");
+
+    ASSERT_EQ(namespaceStd->children.size(), 3);
+    Node* classVector = namespaceStd->children[2];
+    Node* typeDefFirst = namespaceStd->children[1];
+    Node* typeDefSecond = namespaceStd->children[0];
+    ASSERT_NE(classVector, nullptr);
+    EXPECT_EQ(classVector->kind, "Class");
+    EXPECT_EQ(classVector->usr, "c:@N@std@C@Vector");
+
+    ASSERT_NE(typeDefFirst, nullptr);
+    EXPECT_EQ(typeDefFirst->kind, "Typedef");
+    EXPECT_EQ(typeDefFirst->usr, "c:@N@std@T@size_t");
+    ASSERT_EQ(typeDefFirst->children.size(), 0);
+
+    ASSERT_NE(typeDefSecond, nullptr);
+    EXPECT_EQ(typeDefSecond->kind, "Typedef");
+    EXPECT_EQ(typeDefSecond->usr, "c:@N@std@T@size_t");
+    ASSERT_EQ(typeDefSecond->children.size(), 0);
+
+    ASSERT_EQ(classVector->children.size(), 1);
+    Node* funcPushBack = classVector->children[0];
+    ASSERT_NE(funcPushBack, nullptr);
+    EXPECT_EQ(funcPushBack->kind, "Function");
+    EXPECT_EQ(funcPushBack->usr, "c:@N@std@C@Vector@F@push_back");
+
+    ASSERT_EQ(funcPushBack->children.size(), 1);
+    Node* compoundStmtPushBack = funcPushBack->children[0];
+    ASSERT_NE(compoundStmtPushBack, nullptr);
+    EXPECT_EQ(compoundStmtPushBack->kind, "CompoundStmt");
+
+    ASSERT_EQ(compoundStmtPushBack->children.size(), 1);
+    Node* exprStmt = compoundStmtPushBack->children[0];
+
+    ASSERT_NE(exprStmt, nullptr);
+    EXPECT_EQ(exprStmt->kind, "ExprStmt");
+
+    ASSERT_EQ(exprStmt->children.size(), 1);
+    Node* varX = exprStmt->children[0];
+
+    ASSERT_NE(varX, nullptr);
+    EXPECT_EQ(varX->kind, "Var");
+    EXPECT_EQ(varX->usr, "c:@N@std@C@Vector@F@push_back@x");
+    ASSERT_EQ(varX->children.size(), 0);
+
+    ASSERT_EQ(namespaceOther->children.size(), 1);
+    Node* classList = namespaceOther->children[0];
+    ASSERT_NE(classList, nullptr);
+    EXPECT_EQ(classList->kind, "Class");
+    EXPECT_EQ(classList->usr, "c:@N@other@C@List");
+
+    ASSERT_EQ(classList->children.size(), 1);
+    Node* funcAdd = classList->children[0];
+    ASSERT_NE(funcAdd, nullptr);
+    EXPECT_EQ(funcAdd->kind, "Function");
+    EXPECT_EQ(funcAdd->usr, "c:@N@other@C@List@F@add");
+
+    ASSERT_EQ(funcAdd->children.size(), 1);
+    Node* compoundStmtAdd = funcAdd->children[0];
+    ASSERT_NE(compoundStmtAdd, nullptr);
+    EXPECT_EQ(compoundStmtAdd->kind, "CompoundStmt");
+
+    ASSERT_EQ(compoundStmtAdd->children.size(), 1);
+    Node* returnStmt = compoundStmtAdd->children[0];
+    ASSERT_NE(returnStmt, nullptr);
+    EXPECT_EQ(returnStmt->kind, "ReturnStmt");
+    ASSERT_EQ(returnStmt->children.size(), 0);
 }
