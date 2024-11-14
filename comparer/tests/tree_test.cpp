@@ -323,7 +323,7 @@ TEST_F(TreeTest, CheckStatementMultiMapSize) {
     EXPECT_EQ(stmtMultiMap.size(), 2); // only two functions have statements
 }
 
-// helper fundtion
+// helper function
 void CheckStatementsForFunction(Tree& testTree, const std::string& functionKey, 
                                 const std::vector<std::string>& expectedStmtKinds, 
                                 const std::vector<std::pair<int, int>>& expectedLineCols) {
