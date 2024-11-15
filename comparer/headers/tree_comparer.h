@@ -29,8 +29,8 @@ protected:
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);
     void compareSimilarDeclNodes(Node*, Node*);
-    void compareStmtNodes(const std::string&);
     void compareSimilarStmtNodes(Node*, Node*);
+    void compareStmtNodes(const Node*, const Node*);
     void processDeclNodes(Node*);
     void processDeclNodesInBothASTs(const std::string&);
     void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,

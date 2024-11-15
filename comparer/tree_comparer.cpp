@@ -121,8 +121,7 @@ void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode) {
     compareSourceLocations(firstNode, secondNode);
 
     // compare their statement nodes
-    std::string nodeKey = firstNode->enhancedKey + "|" + std::to_string(firstNode->topologicalOrder); // could be with secondNode as well
-    compareStmtNodes(nodeKey);
+    compareStmtNodes(firstNode, secondNode);
 
     // mark nodes as processed
     firstNode->isProcessed = true;
@@ -134,9 +133,11 @@ Description:
     Compares the statement nodes of two declaration nodes, creates a set of nodes for each AST using unique hash and equal functions,
     then compares the nodes in the first AST with the nodes in the second AST, printing the differences.
 */
-void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    auto firstASTStmtRange = firstASTTree.getStmtNodes(nodeKey);
-    auto secondASTStmtRange = secondASTTree.getStmtNodes(nodeKey);
+void TreeComparer::compareStmtNodes(const Node* firstNode, const Node* secondNode) {
+    std::string firstNodeStmtKey = firstNode->enhancedKey + "|" + std::to_string(firstNode->topologicalOrder);
+    std::string secondNodeStmtKey = secondNode->enhancedKey + "|" + std::to_string(secondNode->topologicalOrder);
+    auto firstASTStmtRange = firstASTTree.getStmtNodes(firstNodeStmtKey);
+    auto secondASTStmtRange = secondASTTree.getStmtNodes(secondNodeStmtKey);
 
     // map of second AST statement nodes for lookup
     std::unordered_map<std::string, Node*> secondASTMap;
