@@ -17,12 +17,15 @@ int main(int argc, char* argv[]) {
     try {
         Tree firstStandardAST(firstFilePath);
         Tree secondStandardAST(secondFilePath);
-        
+
+        // Database
+        std::unique_ptr<IDatabaseWrapper> dbWrapper = std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005");
+
         // logger
         ConsoleLoggerCreator loggerCreator;
         std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
 
-        TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger));
+        TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger), std::move(dbWrapper));
         comparer.printDifferences();
         
     } catch (const std::exception& e) {

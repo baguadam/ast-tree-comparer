@@ -4,10 +4,10 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger, std::unique_ptr<IDatabaseWrapper> dbWrapper) 
     : firstASTTree(firstTree), 
       secondASTTree(secondTree), 
-      dbWrapper(std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005")),
+      dbWrapper(std::move(dbWrapper)),
       logger(std::move(logger)),
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
