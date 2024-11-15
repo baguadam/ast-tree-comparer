@@ -426,3 +426,105 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_SingleNodeInFirstAST_ThreeNodesInS
     // invoke method call
     mockComparer.processMultiDeclNodes(firstASTRange, secondASTRange);
 }
+
+// **********************************************
+// processDeclNodesInBothASTs tests
+// **********************************************
+TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_SingleNodeInBothASTs) {
+    std::ofstream testFile1("test_ast_1_single_node_both_extended.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_single_node_both_extended.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_single_node_both_extended.txt");
+    Tree secondAstTree("test_ast_2_single_node_both_extended.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+
+    EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(1);
+
+    // invoke method to be tested
+    mockComparer.processDeclNodesInBothASTs(nodeKey);
+}
+
+TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_OneNodeInFirstAST_MultipleNodesInSecondAST) {
+    std::ofstream testFile1("test_ast_1_one_node.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_multiple_nodes.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n";
+    testFile2 << "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t405\t9\n";
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_one_node.txt");
+    Tree secondAstTree("test_ast_2_multiple_nodes.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_EQ(std::distance(firstASTRange.first, firstASTRange.second), 1);
+    ASSERT_EQ(std::distance(secondASTRange.first, secondASTRange.second), 2);
+
+    EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(1); // on call from the processMultiDeclNodes
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 355), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1); // remaining node
+
+    // invoke method to be tested
+    mockComparer.processDeclNodesInBothASTs(nodeKey);
+}
+
+TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
+    std::ofstream testFile1("test_ast_1_multiple_nodes_both.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; 
+    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t410\t10\n";
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_multiple_nodes_both.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n";
+    testFile2 << "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t415\t11\n";
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_multiple_nodes_both.txt");
+    Tree secondAstTree("test_ast_2_multiple_nodes_both.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+
+    EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(2); // two calls from the processMultiDeclNodes
+
+    // invoke method to be tested
+    mockComparer.processDeclNodesInBothASTs(nodeKey);
+}

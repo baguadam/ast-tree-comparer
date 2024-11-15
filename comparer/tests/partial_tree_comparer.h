@@ -12,8 +12,9 @@ public:
 
     MOCK_METHOD(void, compareSimilarDeclNodes, (Node* firstNode, Node* secondNode), (override));
     MOCK_METHOD(void, compareSimilarStmtNodes, (Node* firstNode, Node* secondNode), (override));
-    
+
     using TreeComparer::processMultiDeclNodes;
+    using TreeComparer::processDeclNodesInBothASTs;
 };
 
 

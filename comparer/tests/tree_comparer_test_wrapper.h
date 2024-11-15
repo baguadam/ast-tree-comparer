@@ -10,10 +10,10 @@ public:
     using TreeComparer::compareSimilarDeclNodes;
     using TreeComparer::compareSimilarStmtNodes;
     using TreeComparer::processNodesInSingleAST;
-    
     using TreeComparer::processMultiDeclNodes;
     
     using TreeComparer::processDeclNodesInBothASTs;
+    
     using TreeComparer::compareStmtNodes;
     using TreeComparer::processDeclNodes;
 
