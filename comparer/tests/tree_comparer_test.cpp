@@ -84,6 +84,30 @@ bool operator==(const Node& lhs, const Node& rhs) {
 }
 
 // **********************************************
+// TreeComparer unit tests - constructor
+// **********************************************
+TEST_F(TreeComparerTest, ConstructorClearsDatabase) {
+    Tree tree1("test_ast_1.txt");
+    Tree tree2("test_ast_2.txt");
+
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    TreeComparer comparer(tree1, tree2, dbWrapper);
+}
+
+// **********************************************
+// TreeComparer unit tests - printDifferences
+// **********************************************
+TEST_F(TreeComparerTest, PrintDifferencesFinalizesDatabase) {
+    Tree tree1("test_ast_1.txt");
+    Tree tree2("test_ast_2.txt");
+
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+    TreeComparer comparer(tree1, tree2, dbWrapper);
+
+    comparer.printDifferences();
+}
+
+// **********************************************
 // TreeComparer unit tests - compareSourceLocations
 // **********************************************
 // Test for comparing source locations when nodes have differing paths
@@ -258,4 +282,22 @@ TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixedStatementDeclaration
     EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_PARENTS", "SECOND_AST")).Times(Exactly(1));
 
     comparer.compareParents(&firstNode, &secondNode);
+}
+
+// **********************************************
+// TreeComparer unit tests - compareSimilarDeclNodes 
+// **********************************************
+TEST_F(TreeComparerTest, CompareSimilarDeclNodes) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node firstNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
+    Node secondNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func2", "C:\\project\\file1.cpp", 100, 10);
+
+    comparer.compareSimilarDeclNodes(&firstNode, &secondNode);
+
+    EXPECT_TRUE(firstNode.isProcessed);
+    EXPECT_TRUE(secondNode.isProcessed);
 }
