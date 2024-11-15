@@ -11,12 +11,12 @@
 class Neo4jDatabaseWrapper : public IDatabaseWrapper {
 public:
     Neo4jDatabaseWrapper(const std::string&, const std::string&, const std::string&);
-    ~Neo4jDatabaseWrapper();
+    ~Neo4jDatabaseWrapper() override;
 
-    void addNodeToBatch(const Node&, bool, const std::string&, const std::string&);
-    void addRelationshipToBatch(const Node&, const Node&);
-    void clearDatabase();
-    void finalize();
+    void addNodeToBatch(const Node&, bool, const std::string&, const std::string&) override;
+    void addRelationshipToBatch(const Node&, const Node&) override;
+    void clearDatabase() override;
+    void finalize() override;
 
 private:
     std::string dbUri;

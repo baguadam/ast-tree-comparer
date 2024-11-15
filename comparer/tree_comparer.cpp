@@ -4,18 +4,17 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger, std::unique_ptr<IDatabaseWrapper> dbWrapper) 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, IDatabaseWrapper& db) 
     : firstASTTree(firstTree), 
       secondASTTree(secondTree), 
-      dbWrapper(std::move(dbWrapper)),
-      logger(std::move(logger)),
+      dbWrapper(db),
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
     }
 
     // clear the database before starting the comparison
-    dbWrapper->clearDatabase();
+    dbWrapper.clearDatabase();
 } 
 
 /*
@@ -47,7 +46,7 @@ void TreeComparer::printDifferences() {
     }
 
     // send the remaining nodes from the batch
-    dbWrapper->finalize();
+    dbWrapper.finalize();
 }
 
 /*
@@ -88,8 +87,8 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_SOURCE_LOCATIONS);
 
-        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
-        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
+        dbWrapper.addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper.addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -105,8 +104,8 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_PARENT);
 
-        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
-        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
+        dbWrapper.addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper.addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -290,11 +289,11 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
         // logger->logNode(currentNode, diffType, ast, depth); // log the node
-        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
+        this->dbWrapper.addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
 
         // parent-child relationships for the subtree
         if (currentNode->parent) {
-            dbWrapper->addRelationshipToBatch(*currentNode->parent, *currentNode);
+            dbWrapper.addRelationshipToBatch(*currentNode->parent, *currentNode);
         }
     };
 

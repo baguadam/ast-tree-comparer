@@ -1,8 +1,8 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/tree.h"
-#include "./headers/loggers/tree_comparer_logger.h"
-#include "./headers/loggers/console_logger.h"
-#include "./headers/factories/console_logger_creator.h"
+// #include "./headers/loggers/tree_comparer_logger.h"
+// #include "./headers/loggers/console_logger.h"
+// #include "./headers/factories/console_logger_creator.h"
 #include <iostream>
 
 int main(int argc, char* argv[]) {
@@ -18,14 +18,10 @@ int main(int argc, char* argv[]) {
         Tree firstStandardAST(firstFilePath);
         Tree secondStandardAST(secondFilePath);
 
-        // Database
-        std::unique_ptr<IDatabaseWrapper> dbWrapper = std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005");
+        // db wrapper
+        Neo4jDatabaseWrapper dbWrapper("http://localhost:7474", "neo4j", "eszter2005");
 
-        // logger
-        ConsoleLoggerCreator loggerCreator;
-        std::unique_ptr<TreeComparerLogger> logger = loggerCreator.createLogger();
-
-        TreeComparer comparer(firstStandardAST, secondStandardAST, std::move(logger), std::move(dbWrapper));
+        TreeComparer comparer(firstStandardAST, secondStandardAST, dbWrapper);
         comparer.printDifferences();
         
     } catch (const std::exception& e) {

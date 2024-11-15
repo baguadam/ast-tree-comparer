@@ -1,6 +1,7 @@
 #ifndef _IDATABASE_WRAPPER_H_
 
 #define _IDATABASE_WRAPPER_H_
+#include "node.h"
 
 class IDatabaseWrapper {
 public:
