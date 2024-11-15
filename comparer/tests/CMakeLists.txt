@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(googletest)
 set(TEST_SOURCES
     tree_comparer_test.cpp
     tree_test.cpp
+    integration_test.cpp
 )
 
 add_executable(test_all ${TEST_SOURCES})

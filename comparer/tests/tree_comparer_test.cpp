@@ -3,6 +3,7 @@
 #include "../headers/tree.h"
 #include "../headers/tree_comparer.h"
 #include "mock_database_wrapper.h"
+#include "tree_comparer_test_wrapper.h"
 #include <fstream>
 #include <filesystem>
 
@@ -45,35 +46,125 @@ protected:
             std::filesystem::remove("test_ast_2.txt");
         }
     }
+
+    // accessible for all tests
+    MockDatabaseWrapper dbWrapper;
 };
-
 // **********************************************
-// Database operation calls tests
+// HELPERS
 // **********************************************
-// helper function to check database calls:
-void checkDatabaseCalls(const char* firstAst, const char* secondAst, int addNodeCalls, int addRelationshipCalls) {
-    Tree firstTree(firstAst);
-    Tree secondTree(secondAst);
-
-    MockDatabaseWrapper dbWrapper; // mock database wrapper
-
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(addNodeCalls));
-    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(addRelationshipCalls)); 
-
-    TreeComparer comparer(firstTree, secondTree, dbWrapper);
-
-    // run comparison
-    comparer.printDifferences(); 
+// helper function to create a node
+Node createNode(NodeType type, const std::string& kind, const std::string& usr,
+                const std::string& path, int lineNumber, int columnNumber,
+                Node* parent = nullptr) {
+    Node node;
+    node.type = type;
+    node.kind = kind;
+    node.usr = usr;
+    node.path = path;
+    node.lineNumber = lineNumber;
+    node.columnNumber = columnNumber;
+    node.parent = parent;
+    node.enhancedKey = kind + "|" + usr + "|" + path + "|";
+    return node;
 }
 
-// Test for database operation calls with differing ASTs
-TEST_F(TreeComparerTest, TestDatabaseOperationCallsWithDifferingASTs) {
-    checkDatabaseCalls("test_ast_1.txt", "test_ast_2.txt", 4, 2);
+// equality operator for Node
+bool operator==(const Node& lhs, const Node& rhs) {
+    return lhs.type == rhs.type &&
+           lhs.kind == rhs.kind &&
+           lhs.usr == rhs.usr &&
+           lhs.path == rhs.path &&
+           lhs.lineNumber == rhs.lineNumber &&
+           lhs.columnNumber == rhs.columnNumber &&
+           lhs.topologicalOrder == rhs.topologicalOrder &&
+           lhs.enhancedKey == rhs.enhancedKey &&
+           lhs.isProcessed == rhs.isProcessed &&
+           lhs.children.size() == rhs.children.size();
 }
 
-// Test for database operation calls with the same ASTs
-TEST_F(TreeComparerTest, TestDatabaseOperationCallsWithSameASTs) {
-    checkDatabaseCalls("test_ast_1.txt", "test_ast_1.txt", 0, 0);
+// **********************************************
+// TreeComparer unit tests - compareSourceLocations
+// **********************************************
+// Test for comparing source locations when nodes have differing paths
+TEST_F(TreeComparerTest, CompareDeclSourceLocationSame) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    // nodes with the same source
+    Node firstNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 1);
+    Node secondNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 1);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+
+    comparer.compareSourceLocations(&firstNode, &secondNode);
+}
+
+TEST_F(TreeComparerTest, CompareSourceLocationDifferingPaths) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    // nodes with differing paths
+    Node firstNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\c++config.h", 308, 1);
+    Node secondNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 1);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareSourceLocations(&firstNode, &secondNode);
+}
+
+// Test for comparing source locations when nodes have differing paths
+TEST_F(TreeComparerTest, CompareSourceLocationDifferingLineNumbers) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    // nodes with differing line numbers
+    Node firstNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 310, 1);
+    Node secondNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 1);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareSourceLocations(&firstNode, &secondNode);
+}
+
+// Test for comparing source locations when nodes have differing paths
+TEST_F(TreeComparerTest, CompareSourceLocationDifferingColumnNumbers) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    // nodes with differing column numbers
+    Node firstNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 1);
+    Node secondNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\other_config.h", 308, 2);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareSourceLocations(&firstNode, &secondNode);
+}
+
+// Test for comparing source locations when nodes have differing paths
+TEST_F(TreeComparerTest, CompareSourceLocationDifferingEverything) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    // nodes with differing path, line number and column number
+    Node firstNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\first.h", 10, 1);
+    Node secondNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\other_config.h", 308, 2);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareSourceLocations(&firstNode, &secondNode);
 }
