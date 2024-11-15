@@ -10,10 +10,12 @@ public:
     using TreeComparer::compareSimilarDeclNodes;
     using TreeComparer::compareSimilarStmtNodes;
     using TreeComparer::processNodesInSingleAST;
-
+    
+    using TreeComparer::processMultiDeclNodes;
+    
+    using TreeComparer::processDeclNodesInBothASTs;
     using TreeComparer::compareStmtNodes;
     using TreeComparer::processDeclNodes;
-    using TreeComparer::processDeclNodesInBothASTs;
 
     TreeComparerTestWrapper(Tree& t1, Tree& t2, IDatabaseWrapper& dbWrapper)
         : TreeComparer(t1, t2, dbWrapper) { }

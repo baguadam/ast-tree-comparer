@@ -5,6 +5,7 @@
 #include "../headers/node_utilities.h"
 #include "mock_database_wrapper.h"
 #include "tree_comparer_test_wrapper.h"
+#include "partial_tree_comparer.h"
 #include <fstream>
 #include <filesystem>
 #include <iostream>
@@ -241,4 +242,31 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
     ASSERT_TRUE(firstChildNode->isProcessed);
     ASSERT_TRUE(secondChildNode->isProcessed);
     ASSERT_TRUE(firstChildNodeChildNode->isProcessed);
+}
+
+// **********************************************
+// processMultiDeclNodes tests
+// **********************************************
+TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
+    std::ofstream testFile1("test_ast_1_multi_decl.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; // two duplicate keys
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_multi_decl.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n"; // 
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t365\t8\n"; // three duplicate keys
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_multi_decl.txt");
+    Tree secondAstTree("test_ast_2_multi_decl.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
 }

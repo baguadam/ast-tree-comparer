@@ -28,8 +28,8 @@ protected:
 
     void compareSourceLocations(const Node*, const Node*);
     void compareParents(const Node*, const Node*);
-    void compareSimilarDeclNodes(Node*, Node*);
-    void compareSimilarStmtNodes(Node*, Node*);
+    virtual void compareSimilarDeclNodes(Node*, Node*);
+    virtual void compareSimilarStmtNodes(Node*, Node*);
     void compareStmtNodes(const Node*, const Node*);
     void processDeclNodes(Node*);
     void processDeclNodesInBothASTs(const std::string&);
