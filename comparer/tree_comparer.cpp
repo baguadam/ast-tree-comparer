@@ -210,7 +210,7 @@ void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
         Node* firstNode = firstASTRange.first->second;
         Node* secondNode = secondASTRange.first->second;
 
-        checkNodeFingerprints(firstNode, secondNode);
+        compareSimilarDeclNodes(firstNode, secondNode);      
         return; // no need for further processing
     } else {
         // RARE CASE: multiple nodes with the same key
@@ -253,7 +253,7 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
             continue;  // Skip already processed nodes
         }
 
-        checkNodeFingerprints(firstNode, secondNode);
+        compareSimilarDeclNodes(firstNode, secondNode);
     }
 
 
@@ -299,23 +299,6 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
 
     // traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
-}
-
-/*
-Description:
-    Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
-*/
-void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode) {
-    if (firstNode->fingerprint == secondNode->fingerprint) {
-        // additional checks in case of fingerprint collision
-        if (firstNode->kind == secondNode->kind && firstNode->children.size() == secondNode->children.size()) {
-            firstNode->isProcessed = true;
-            secondNode->isProcessed = true;
-            return;  // nodes considered identical, no further processing needed
-        }
-    }
-    // fallback to detailed node comparison
-    compareSimilarDeclNodes(firstNode, secondNode);
 }
 
 /*

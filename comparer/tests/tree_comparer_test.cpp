@@ -49,21 +49,20 @@ protected:
 
 // Test for database operation calls
 TEST_F(TreeComparerTest, TestDatabaseOperationCalls) {
-    // Construct the trees using test AST files.
     Tree firstTree("test_ast_1.txt");
     Tree secondTree("test_ast_2.txt");
 
-    // Ensure that both trees are properly loaded and have valid roots.
-    ASSERT_NE(firstTree.getRoot(), nullptr) << "First tree root is null.";
-    ASSERT_NE(secondTree.getRoot(), nullptr) << "Second tree root is null.";
+    MockDatabaseWrapper dbWrapper; // mock database wrapper
 
-    // Create the mock database wrapper directly as a unique_ptr.
-    MockDatabaseWrapper dbWrapper;
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(AtLeast(1));
+    // EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(AtLeast(0));
 
-    // Construct the TreeComparer instance with the mock database wrapper.
     TreeComparer comparer(firstTree, secondTree, dbWrapper);
 
-    // Run the comparison.
+    // run comparison
     comparer.printDifferences();
+    
 }
 
