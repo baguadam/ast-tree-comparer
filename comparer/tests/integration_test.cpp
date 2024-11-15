@@ -7,6 +7,7 @@
 #include "tree_comparer_test_wrapper.h"
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 
 using ::testing::_;
 using ::testing::Exactly;
@@ -98,7 +99,7 @@ TEST_F(IntegrationTest, TestDatabaseOperation_CallsWithSameASTs) {
 // **********************************************
 // processNodesInSingleAST tests
 // **********************************************
-TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstAST) {
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstASTWithStmtChildren) {
     Tree firstAstTree("test_ast_1.txt");
     Tree secondAstTree("test_ast_3_shorter.txt");
 
@@ -113,13 +114,131 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstAST) {
 
     ASSERT_FALSE(functionNode->isProcessed);  // Ensure the node is not processed
 
-    // We expect the function node and its subtree to be processed
+    // NODES
     EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, functionNode->usr), _, "ONLY_IN_FIRST_AST", "FIRST_AST")).Times(1); // once for the function node
     EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, "N/A"), _, "ONLY_IN_FIRST_AST", "FIRST_AST")).Times(2); // twice for the statement nodes
 
-    // // Call the function to test
+    // RELATISONSHIPS
+    Node* firstChildNode = functionNode->children[0];
+    Node* secondChildNode = firstChildNode->children[0];
+    
+    ASSERT_NE(firstChildNode, nullptr);
+    ASSERT_NE(secondChildNode, nullptr);
+
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(*functionNode, *firstChildNode)).Times(1);
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(*firstChildNode, *secondChildNode)).Times(1);
+
     comparer.processNodesInSingleAST(functionNode, firstAstTree, FIRST_AST, true);
 
     // Verify that nodes are marked as processed
     ASSERT_TRUE(functionNode->isProcessed);
+    ASSERT_TRUE(firstChildNode->isProcessed);
+    ASSERT_TRUE(secondChildNode->isProcessed);
+}
+
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInSecondASTSingle) {
+    std::ofstream testFile2("test_ast_2_more_complex.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++configother.h\t310\t3\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
+    testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1.txt");
+    Tree secondAstTree("test_ast_2_more_complex.txt");
+
+    TreeComparerTestWrapper comparer(firstAstTree, secondAstTree, dbWrapper);
+    std::string nodeKey = "Typedef|c:@N@std@T@size_t|C:\\include\\bits\\c++configother.h|";
+    auto declNodeFirst = secondAstTree.getDeclNodes(nodeKey);
+    ASSERT_NE(declNodeFirst.first, declNodeFirst.second);
+
+    Node* typedefNode = declNodeFirst.first->second;
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, typedefNode->usr), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1); // once for the function node
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+
+    comparer.processNodesInSingleAST(typedefNode, secondAstTree, SECOND_AST, true);
+
+    ASSERT_TRUE(typedefNode->isProcessed);
+}
+
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeIsProcessed) {
+    Tree firstAstTree("test_ast_1.txt");
+    Tree secondAstTree("test_ast_3_shorter.txt");
+
+    TreeComparerTestWrapper comparer(firstAstTree, secondAstTree, dbWrapper);
+
+    // Key for the Function declaration node
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto declNodeFirst = firstAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_NE(declNodeFirst.first, declNodeFirst.second);
+    Node* functionNode = declNodeFirst.first->second;
+
+    ASSERT_FALSE(functionNode->isProcessed);
+
+    // mark the node as processed, nothing should happen
+    functionNode->isProcessed = true;
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+
+    comparer.processNodesInSingleAST(functionNode, firstAstTree, FIRST_AST, true);
+}
+
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
+    std::ofstream testFile2("test_ast_2_more_complex.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "   Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+    testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
+    testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1.txt");
+    Tree secondAstTree("test_ast_2_more_complex.txt");
+
+    TreeComparerTestWrapper comparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto declNodeFirst = secondAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_NE(declNodeFirst.first, declNodeFirst.second);
+    Node* functionNode = declNodeFirst.first->second; 
+    Node* firstChildNode = functionNode->children[1];               // CompoundStmt
+    Node* secondChildNode = functionNode->children[0];              // Typedef
+    Node* firstChildNodeChildNode = firstChildNode->children[0];    // ExprStmt
+
+    std::cout << "Function node: " << functionNode->kind << std::endl;
+    std::cout << "First child node: " << firstChildNode->kind << std::endl;
+    std::cout << "Second child node: " << secondChildNode->kind << std::endl;
+    std::cout << "First child node child node: " << firstChildNodeChildNode->kind << std::endl;
+
+    ASSERT_NE(firstChildNode, nullptr);
+    ASSERT_NE(secondChildNode, nullptr);
+    ASSERT_NE(firstChildNodeChildNode, nullptr);
+
+    secondChildNode->isProcessed = true; // set Typedef as processed, also exists in first ast, should be skipped
+
+    // NODES and RELATIONSHIPS
+    // EXPECT:
+    // - Function node + two statement nodes with their relationships
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, functionNode->usr), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1); // once for the function node
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, "N/A"), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(2); // twice for the statement nodes
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(*functionNode, *firstChildNode)).Times(1);
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(*firstChildNode, *firstChildNodeChildNode)).Times(1);
+
+    comparer.processNodesInSingleAST(functionNode, secondAstTree, SECOND_AST, true);
+
+    // Verify that nodes are marked as processed
+    ASSERT_TRUE(functionNode->isProcessed);
+    ASSERT_TRUE(firstChildNode->isProcessed);
+    ASSERT_TRUE(secondChildNode->isProcessed);
+    ASSERT_TRUE(firstChildNodeChildNode->isProcessed);
 }
