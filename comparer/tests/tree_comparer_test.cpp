@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include "../headers/tree.h"
 #include "../headers/tree_comparer.h"
+#include "../headers/node_utilities.h"
 #include "mock_database_wrapper.h"
 #include "tree_comparer_test_wrapper.h"
 #include <fstream>
@@ -46,7 +47,7 @@ protected:
             std::filesystem::remove("test_ast_2.txt");
         }
     }
-
+  
     // accessible for all tests
     MockDatabaseWrapper dbWrapper;
 };
@@ -67,20 +68,6 @@ Node createNode(NodeType type, const std::string& kind, const std::string& usr,
     node.parent = parent;
     node.enhancedKey = kind + "|" + usr + "|" + path + "|";
     return node;
-}
-
-// equality operator for Node
-bool operator==(const Node& lhs, const Node& rhs) {
-    return lhs.type == rhs.type &&
-           lhs.kind == rhs.kind &&
-           lhs.usr == rhs.usr &&
-           lhs.path == rhs.path &&
-           lhs.lineNumber == rhs.lineNumber &&
-           lhs.columnNumber == rhs.columnNumber &&
-           lhs.topologicalOrder == rhs.topologicalOrder &&
-           lhs.enhancedKey == rhs.enhancedKey &&
-           lhs.isProcessed == rhs.isProcessed &&
-           lhs.children.size() == rhs.children.size();
 }
 
 // **********************************************

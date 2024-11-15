@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include "../headers/tree.h"
 #include "../headers/tree_comparer.h"
+#include "../headers/node_utilities.h"
 #include "mock_database_wrapper.h"
 #include "tree_comparer_test_wrapper.h"
 #include <fstream>
@@ -10,6 +11,8 @@
 using ::testing::_;
 using ::testing::Exactly;
 using ::testing::AtLeast;
+using ::testing::Matcher;
+using ::testing::Field;
 
 class IntegrationTest : public ::testing::Test {
 protected:
@@ -34,8 +37,16 @@ protected:
         testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t404\t7\n";
         testFile2.close();
 
+        std::ofstream testFile3("test_ast_3_shorter.txt");
+        ASSERT_TRUE(testFile3.is_open());
+        testFile3 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        testFile3 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+        testFile3 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        testFile3.close();
+
         ASSERT_TRUE(std::filesystem::exists("test_ast_1.txt"));
         ASSERT_TRUE(std::filesystem::exists("test_ast_2.txt"));
+        ASSERT_TRUE(std::filesystem::exists("test_ast_3_shorter.txt"));
     }
 
     void TearDown() override {
@@ -44,6 +55,9 @@ protected:
         }
         if (std::filesystem::exists("test_ast_2.txt")) {
             std::filesystem::remove("test_ast_2.txt");
+        }
+        if (std::filesystem::exists("test_ast_3_shorter.txt")) {
+            std::filesystem::remove("test_ast_3_shorter.txt");
         }
     }
 
@@ -70,110 +84,42 @@ protected:
 };
 
 // **********************************************
-// HELPERS
-// **********************************************
-// equality operator for Node
-bool operator==(const Node& lhs, const Node& rhs) {
-    return lhs.type == rhs.type &&
-           lhs.kind == rhs.kind &&
-           lhs.usr == rhs.usr &&
-           lhs.path == rhs.path &&
-           lhs.lineNumber == rhs.lineNumber &&
-           lhs.columnNumber == rhs.columnNumber &&
-           lhs.topologicalOrder == rhs.topologicalOrder &&
-           lhs.enhancedKey == rhs.enhancedKey &&
-           lhs.isProcessed == rhs.isProcessed &&
-           lhs.children.size() == rhs.children.size();
-}
-
-// **********************************************
 // DATABASE OPERATIONS
 // **********************************************
-TEST_F(IntegrationTest, TestDatabaseOperationCallsWithDifferingASTs) {
+TEST_F(IntegrationTest, TestDatabaseOperation_CallsWithDifferingASTs) {
     checkDatabaseCalls("test_ast_1.txt", "test_ast_2.txt", 4, 2);
 }
 
 // Test for database operation calls with the same ASTs
-TEST_F(IntegrationTest, TestDatabaseOperationCallsWithSameASTs) {
+TEST_F(IntegrationTest, TestDatabaseOperation_CallsWithSameASTs) {
     checkDatabaseCalls("test_ast_1.txt", "test_ast_1.txt", 0, 0);
 }
 
 // **********************************************
-// compareStmtNodes
+// processNodesInSingleAST tests
 // **********************************************
-// **********************************************
-// Integration Test for compareStmtNodes
-// **********************************************
-TEST_F(IntegrationTest, CompareStmtNodesDifferentTrees) {
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstAST) {
     Tree firstAstTree("test_ast_1.txt");
-    Tree secondAstTree("test_ast_2.txt");
+    Tree secondAstTree("test_ast_3_shorter.txt");
 
     TreeComparerTestWrapper comparer(firstAstTree, secondAstTree, dbWrapper);
 
-    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|350|5";
-    auto declNodeFirst = firstAstTree.getDeclNodes(enhancedKey); // get the decl node related to the key
-    auto declNodeSecond = secondAstTree.getDeclNodes(enhancedKey); // get the decl node related to the key
-    ASSERT_NE(declNodeFirst.first, declNodeSecond.second);
-    
+    // Key for the Function declaration node
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto declNodeFirst = firstAstTree.getDeclNodes(nodeKey);
 
-    std::string stmtKey = enhancedKey + "|" + std::to_string(declNode.first->second->topologicalOrder);
-    auto stmtNodes = testTree.getStmtNodes(stmtKey);
+    ASSERT_NE(declNodeFirst.first, declNodeFirst.second);
+    Node* functionNode = declNodeFirst.first->second;  // Get the declaration node (Function)
 
-    // Get nodes from the first AST and second AST for the given key.
-    auto firstASTStmtRange = firstAstTree.getStmtNodes(nodeKey);
-    auto secondASTStmtRange = secondAstTree.getStmtNodes(nodeKey);
+    ASSERT_FALSE(functionNode->isProcessed);  // Ensure the node is not processed
 
-    // Find nodes from each tree that we are expecting to match or be different.
-    // Node 1 - CompoundStmt node in both ASTs, but located at different line numbers (351 vs 401).
-    Node* firstNode1 = nullptr;
-    Node* secondNode1 = nullptr;
-    if (firstASTStmtRange.first != firstASTStmtRange.second) {
-        firstNode1 = *firstASTStmtRange.first;
-    }
-    if (secondASTStmtRange.first != secondASTStmtRange.second) {
-        secondNode1 = *secondASTStmtRange.first;
-    }
+    // We expect the function node and its subtree to be processed
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, functionNode->usr), _, "ONLY_IN_FIRST_AST", "FIRST_AST")).Times(1); // once for the function node
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, "N/A"), _, "ONLY_IN_FIRST_AST", "FIRST_AST")).Times(2); // twice for the statement nodes
 
-    // Node 2 - ExprStmt node in the first AST, with no matching node in the second AST.
-    Node* firstNode2 = nullptr;
-    if (std::next(firstASTStmtRange.first) != firstASTStmtRange.second) {
-        firstNode2 = *std::next(firstASTStmtRange.first);
-    }
+    // // Call the function to test
+    comparer.processNodesInSingleAST(functionNode, firstAstTree, FIRST_AST, true);
 
-    // Node 3 - ReturnStmt node in the second AST, with no matching node in the first AST.
-    Node* secondNode3 = nullptr;
-    if (std::next(secondASTStmtRange.first) != secondASTStmtRange.second) {
-        secondNode3 = *std::next(secondASTStmtRange.first);
-    }
-
-    // Set up expectations for the database wrapper.
-    // First node should be found in both ASTs, thus no call to process as a single AST node.
-    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
-
-    // Second node (firstNode2) is only in the first AST, should be processed as part of FIRST_AST.
-    if (firstNode2) {
-        EXPECT_CALL(dbWrapper, addNodeToBatch(*firstNode2, false, "ONLY_IN_FIRST_AST", "FIRST_AST")).Times(Exactly(1));
-    }
-
-    // Third node (secondNode3) is only in the second AST, should be processed as part of SECOND_AST.
-    if (secondNode3) {
-        EXPECT_CALL(dbWrapper, addNodeToBatch(*secondNode3, false, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(Exactly(1));
-    }
-
-    // Invoke the method to test
-    comparer.compareStmtNodes(nodeKey);
-
-    // Assertions: Verify that nodes are marked as processed properly.
-    if (firstNode1) {
-        ASSERT_TRUE(firstNode1->isProcessed);
-    }
-    if (secondNode1) {
-        ASSERT_TRUE(secondNode1->isProcessed);
-    }
-    if (firstNode2) {
-        ASSERT_TRUE(firstNode2->isProcessed);
-    }
-    if (secondNode3) {
-        ASSERT_TRUE(secondNode3->isProcessed);
-    }
+    // Verify that nodes are marked as processed
+    ASSERT_TRUE(functionNode->isProcessed);
 }
