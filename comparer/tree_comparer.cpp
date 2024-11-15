@@ -291,8 +291,8 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         // logger->logNode(currentNode, diffType, ast, depth); // log the node
         this->dbWrapper.addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
 
-        // parent-child relationships for the subtree
-        if (currentNode->parent) {
+        // parent-child relationships for the subtree, skipping the "root" node
+        if (currentNode->parent && depth != 0) {
             dbWrapper.addRelationshipToBatch(*currentNode->parent, *currentNode);
         }
     };

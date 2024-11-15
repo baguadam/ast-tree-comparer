@@ -47,22 +47,33 @@ protected:
     }
 };
 
-// Test for database operation calls
-TEST_F(TreeComparerTest, TestDatabaseOperationCalls) {
-    Tree firstTree("test_ast_1.txt");
-    Tree secondTree("test_ast_2.txt");
+// **********************************************
+// Database operation calls tests
+// **********************************************
+// helper function to check database calls:
+void checkDatabaseCalls(const char* firstAst, const char* secondAst, int addNodeCalls, int addRelationshipCalls) {
+    Tree firstTree(firstAst);
+    Tree secondTree(secondAst);
 
     MockDatabaseWrapper dbWrapper; // mock database wrapper
 
     EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(AtLeast(1));
-    // EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(AtLeast(0));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(addNodeCalls));
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(addRelationshipCalls)); 
 
     TreeComparer comparer(firstTree, secondTree, dbWrapper);
 
     // run comparison
-    comparer.printDifferences();
-    
+    comparer.printDifferences(); 
 }
 
+// Test for database operation calls with differing ASTs
+TEST_F(TreeComparerTest, TestDatabaseOperationCallsWithDifferingASTs) {
+    checkDatabaseCalls("test_ast_1.txt", "test_ast_2.txt", 4, 2);
+}
+
+// Test for database operation calls with the same ASTs
+TEST_F(TreeComparerTest, TestDatabaseOperationCallsWithSameASTs) {
+    checkDatabaseCalls("test_ast_1.txt", "test_ast_1.txt", 0, 0);
+}
