@@ -215,7 +215,7 @@ void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
         return; // no need for further processing
     } else {
         // RARE CASE: multiple nodes with the same key
-        processMultiDeclNodes(firstASTRange, secondASTRange, nodeKey);
+        processMultiDeclNodes(firstASTRange, secondASTRange);
     }
 }
 
@@ -227,8 +227,7 @@ Description:
 void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                 std::unordered_multimap<std::string, Node*>::const_iterator>& firstASTRange,
                                          const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
-                                                std::unordered_multimap<std::string, Node*>::const_iterator>& secondASTRange,
-                                         const std::string& nodeKey) {
+                                                std::unordered_multimap<std::string, Node*>::const_iterator>& secondASTRange) {
     std::vector<Node*> firstASTDeclNodes;
     std::vector<Node*> secondASTDeclNodes;
 

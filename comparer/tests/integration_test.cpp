@@ -261,7 +261,7 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
     testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
     testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
     testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n"; // 
+    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; // 
     testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t365\t8\n"; // three duplicate keys
     testFile2.close();
 
@@ -269,4 +269,23 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
     Tree secondAstTree("test_ast_2_multi_decl.txt");
 
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    // range of the nodes
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+    // more than one node in both
+    ASSERT_EQ(std::distance(firstASTRange.first, firstASTRange.second), 2);
+    ASSERT_EQ(std::distance(secondASTRange.first, secondASTRange.second), 3);
+
+    // compare similar nodes should be compared twice
+    EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(2);
+
+    // in case of remaining node, it should be added to database
+    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 365), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+
+    // invoke method call
+    mockComparer.processMultiDeclNodes(firstASTRange, secondASTRange);
 }
