@@ -168,3 +168,94 @@ TEST_F(TreeComparerTest, CompareSourceLocationDifferingEverything) {
 
     comparer.compareSourceLocations(&firstNode, &secondNode);
 }
+
+// **********************************************
+// TreeComparer unit tests - compareParents 
+// **********************************************
+// Test for comparing parent nodes when both nodes have the same parent (using Declaration nodes)
+TEST_F(TreeComparerTest, CompareParentsSameParentDeclaration) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node parentNode = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\c++config.h", 308, 1);
+
+    Node firstNode = createNode(DECLARATION, "Typedef", "c:@N@std@T@size_t", "C:\\include\\bits\\c++config.h", 310, 3, &parentNode);
+    Node secondNode = createNode(DECLARATION, "Typedef", "c:@N@std@T@size_t", "C:\\include\\bits\\c++config.h", 310, 3, &parentNode);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+
+    comparer.compareParents(&firstNode, &secondNode);
+}
+
+// Test for comparing parent nodes when one node has no parent (using Statement nodes)
+TEST_F(TreeComparerTest, CompareParentsOneNodeHasNoParentStatement) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node parentNode = createNode(STATEMENT, "IfStmt", "N/A", "C:\\include\\bits\\c++config.h", 308, 1);
+
+    Node firstNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\c++config.h", 310, 3, &parentNode);
+    Node secondNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\c++config.h", 310, 3);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_PARENTS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_PARENTS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareParents(&firstNode, &secondNode);
+}
+
+// Test for comparing parent nodes when both nodes have different parents (using Declaration and Statement nodes)
+TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixed) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node parentNode1 = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\c++config.h", 308, 1);
+    Node parentNode2 = createNode(STATEMENT, "IfStmt", "N/A", "C:\\include\\bits\\other_config.h", 310, 1);
+
+    Node firstNode = createNode(DECLARATION, "Typedef", "c:@N@std@T@size_t", "C:\\include\\bits\\c++config.h", 310, 3, &parentNode1);
+    Node secondNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\other_config.h", 310, 3, &parentNode2);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_PARENTS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_PARENTS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareParents(&firstNode, &secondNode);
+}
+
+// Test for comparing parent nodes when both nodes have no parents (using Statement nodes)
+TEST_F(TreeComparerTest, CompareParentsNoParentsStatement) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node firstNode = createNode(STATEMENT, "ReturnStmt", "N/A", "C:\\include\\bits\\c++config.h", 310, 3);
+    Node secondNode = createNode(STATEMENT, "ReturnStmt", "N/A", "C:\\include\\bits\\c++config.h", 310, 3);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+
+    comparer.compareParents(&firstNode, &secondNode);
+}
+
+// Test for comparing parent nodes when both nodes have different parents (using mixed Statement and Declaration nodes)
+TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixedStatementDeclaration) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node parentNode1 = createNode(DECLARATION, "Namespace", "c:@N@std", "C:\\include\\bits\\first.h", 10, 1);
+    Node parentNode2 = createNode(STATEMENT, "WhileStmt", "N/A", "C:\\include\\bits\\other_config.h", 308, 1);
+
+    Node firstNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\first.h", 12, 1, &parentNode1);
+    Node secondNode = createNode(STATEMENT, "ExprStmt", "N/A", "C:\\include\\bits\\other_config.h", 310, 2, &parentNode2);
+
+    EXPECT_CALL(dbWrapper, addNodeToBatch(firstNode, true, "DIFFERENT_PARENTS", "FIRST_AST")).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(secondNode, true, "DIFFERENT_PARENTS", "SECOND_AST")).Times(Exactly(1));
+
+    comparer.compareParents(&firstNode, &secondNode);
+}
