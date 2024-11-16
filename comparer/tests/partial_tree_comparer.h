@@ -11,7 +11,7 @@ public:
         : TreeComparer(firstTree, secondTree, db) {}
 
     MOCK_METHOD(void, compareSimilarDeclNodes, (Node* firstNode, Node* secondNode), (override));
-    MOCK_METHOD(void, compareSimilarStmtNodes, (Node* firstNode, Node* secondNode), (override));
+    MOCK_METHOD(void, compareParents, (const Node* firstNode, const Node* secondNode), (override));
     MOCK_METHOD(void, processNodesInSingleAST, (Node* current, Tree& tree, const ASTId ast, bool isDeclaration), (override));
 
     using TreeComparer::compareStmtNodes;

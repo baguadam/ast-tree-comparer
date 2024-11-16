@@ -8,7 +8,6 @@ public:
     using TreeComparer::compareSourceLocations;
     using TreeComparer::compareParents;
     using TreeComparer::compareSimilarDeclNodes;
-    using TreeComparer::compareSimilarStmtNodes;
     using TreeComparer::processNodesInSingleAST;
     
     using TreeComparer::processDeclNodes;

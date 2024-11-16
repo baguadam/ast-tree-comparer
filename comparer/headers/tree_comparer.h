@@ -27,9 +27,8 @@ protected:
     std::function<bool(const Node*, const Node*)> topologicalComparer;
 
     void compareSourceLocations(const Node*, const Node*);
-    void compareParents(const Node*, const Node*);
+    virtual void compareParents(const Node*, const Node*);
     virtual void compareSimilarDeclNodes(Node*, Node*);
-    virtual void compareSimilarStmtNodes(Node*, Node*);
     void compareStmtNodes(const Node*, const Node*);
     void processDeclNodes(Node*);
     void processDeclNodesInBothASTs(const std::string&);

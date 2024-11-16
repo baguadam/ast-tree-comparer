@@ -160,30 +160,22 @@ void TreeComparer::compareStmtNodes(const Node* firstNode, const Node* secondNod
         } else {
             Node* secondNode = secondNodeIt->second;
 
-            if (!secondNode->isProcessed) { 
-                compareSimilarStmtNodes(stmtNode, secondNode);
+            if (!secondNode->isProcessed) {
+                compareParents(stmtNode, secondNode);
+                
+                stmtNode->isProcessed = true;
+                secondNode->isProcessed = true;
             }
         }
     }
 
-    // second pass: process unmatched nodes in secont AST
+    // second pass: process unmatched nodes in second AST
     for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
         Node* stmtNode = *it;
         if (!stmtNode->isProcessed) {
             processNodesInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
         }
     } 
-}
-
-/*
-Description:
-    Comparison logic of two similar statement nodes, checking for parents and source locations
-*/
-void TreeComparer::compareSimilarStmtNodes(Node* firstNode, Node* secondNode) {
-    // checking for parents
-    compareParents(firstNode, secondNode);
-    firstNode->isProcessed = true;
-    secondNode->isProcessed = true;
 }
 
 /*

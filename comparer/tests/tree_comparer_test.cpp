@@ -288,21 +288,3 @@ TEST_F(TreeComparerTest, CompareSimilarDeclNodes) {
     EXPECT_TRUE(firstNode.isProcessed);
     EXPECT_TRUE(secondNode.isProcessed);
 }
-
-// **********************************************
-// TreeComparer unit tests - compareSimilarStmtNodes
-// **********************************************
-TEST_F(TreeComparerTest, TreeComparerTest_CompareSimilarStm_Test) {
-    Tree dummyTree1("test_ast_1.txt");
-    Tree dummyTree2("test_ast_2.txt");
-
-    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
-
-    Node firstNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\first.h", 12, 1);
-    Node secondNode = createNode(STATEMENT, "CompoundStmt", "N/A", "C:\\include\\bits\\first.h", 12, 1);
-
-    comparer.compareSimilarStmtNodes(&firstNode, &secondNode);
-
-    EXPECT_TRUE(firstNode.isProcessed);
-    EXPECT_TRUE(secondNode.isProcessed);
-}

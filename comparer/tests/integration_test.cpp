@@ -323,9 +323,8 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
     // compare similar nodes should be compared twice
     EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(2);
 
-    // in case of remaining node, it should be added to database
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 365), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
-    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+    // remaining node
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(1); 
 
     // invoke method call
     mockComparer.processMultiDeclNodes(firstASTRange, secondASTRange);
@@ -402,17 +401,7 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_SingleNodeInFirstAST_ThreeNodesInS
     ASSERT_EQ(std::distance(secondASTRange.first, secondASTRange.second), 3);
 
     EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(1); // for the first appearance of the node
-
-    // remaining nodes in the second AST
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 355), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 360), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
-
-    // children of the nodes
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, "c:@V@varInSecond2"), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::usr, "c:@V@varInSecond3"), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1);
-
-    // relationships
-    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(2);
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(2); // for the children of the second and third nodes
 
     // when compareSimilarDeclodes is called, children are not set as processed
     auto firstFunctionNodeInSecond = secondASTRange.first->second;
@@ -491,7 +480,7 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_OneNodeInFirstAST_MultipleNod
     ASSERT_EQ(std::distance(secondASTRange.first, secondASTRange.second), 2);
 
     EXPECT_CALL(mockComparer, compareSimilarDeclNodes(_, _)).Times(1); // on call from the processMultiDeclNodes
-    EXPECT_CALL(dbWrapper, addNodeToBatch(Field(&Node::lineNumber, 355), _, "ONLY_IN_SECOND_AST", "SECOND_AST")).Times(1); // remaining node
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(1); // for the remaining node
 
     // invoke method to be tested
     mockComparer.processDeclNodesInBothASTs(nodeKey);
@@ -527,4 +516,124 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
 
     // invoke method to be tested
     mockComparer.processDeclNodesInBothASTs(nodeKey);
+}
+
+// **********************************************
+// compareStmtNodes tests
+// **********************************************
+TEST_F(IntegrationTest, CompareStmtNodes_MatchingNodesInBothASTs) {
+    std::ofstream testFile1("test_ast_1_stmt_match.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Statement to be matched
+    testFile1 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // Statement to be matched
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_stmt_match.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Statement to be matched
+    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // Statement to be matched
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_stmt_match.txt");
+    Tree secondAstTree("test_ast_2_stmt_match.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_NE(firstASTRange.first, firstASTRange.second);
+    ASSERT_NE(secondASTRange.first, secondASTRange.second);
+
+    Node* firstNode = firstASTRange.first->second;
+    Node* secondNode = secondASTRange.first->second;
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2); // comparing the two similar nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0); // no calls are expected here
+
+    // Call the function to test
+    mockComparer.compareStmtNodes(firstNode, secondNode);
+}
+
+TEST_F(IntegrationTest, CompareStmtNodes_NodesOnlyInOneAST) {
+    std::ofstream testFile1("test_ast_1_stmt_partial.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // only in first AST
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_stmt_partial.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // only in second AST
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_stmt_partial.txt");
+    Tree secondAstTree("test_ast_2_stmt_partial.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_NE(firstASTRange.first, firstASTRange.second);
+    ASSERT_NE(secondASTRange.first, secondASTRange.second);
+
+    Node* firstNode = firstASTRange.first->second;
+    Node* secondNode = secondASTRange.first->second;
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(0); // no similar nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
+
+    // invoke method
+    mockComparer.compareStmtNodes(firstNode, secondNode);
+}
+
+TEST_F(IntegrationTest, CompareStmtNodes_PartiallyMatchingNodes) {
+    std::ofstream testFile1("test_ast_1_stmt_mixed.txt");
+    ASSERT_TRUE(testFile1.is_open());
+    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Matches
+    testFile1 << "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t355\t7\n";   // Only in first AST
+    testFile1.close();
+
+    std::ofstream testFile2("test_ast_2_stmt_mixed.txt");
+    ASSERT_TRUE(testFile2.is_open());
+    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+    testFile2 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Matches
+    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t357\t8\n";  // Only in second AST
+    testFile2.close();
+
+    Tree firstAstTree("test_ast_1_stmt_mixed.txt");
+    Tree secondAstTree("test_ast_2_stmt_mixed.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+    ASSERT_NE(firstASTRange.first, firstASTRange.second);
+    ASSERT_NE(secondASTRange.first, secondASTRange.second);
+
+    Node* firstNode = firstASTRange.first->second;
+    Node* secondNode = secondASTRange.first->second;
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(1); // once for the matching nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
+
+    // invoke method
+    mockComparer.compareStmtNodes(firstNode, secondNode);
 }
