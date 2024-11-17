@@ -558,24 +558,22 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_SingleNodeInFirstAST_ThreeNodesInS
 // processDeclNodesInBothASTs tests
 // **********************************************
 TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_SingleNodeInBothASTs) {
-    std::ofstream testFile1("test_ast_1_single_node_both_extended.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
-    testFile1.close();
+    createASTFile("test_ast_1_single_node_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n"
+    });
 
-    std::ofstream testFile2("test_ast_2_single_node_both_extended.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
-    testFile2.close();
+    createASTFile("test_ast_2_single_node_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n"
+    });
 
-    Tree firstAstTree("test_ast_1_single_node_both_extended.txt");
-    Tree secondAstTree("test_ast_2_single_node_both_extended.txt");
+    Tree firstAstTree("test_ast_1_single_node_both.txt");
+    Tree secondAstTree("test_ast_2_single_node_both.txt");
 
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
 
@@ -588,22 +586,20 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_SingleNodeInBothASTs) {
 }
 
 TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_OneNodeInFirstAST_MultipleNodesInSecondAST) {
-    std::ofstream testFile1("test_ast_1_one_node.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n";
-    testFile1.close();
+    createASTFile("test_ast_1_one_node.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t400\t8\n"
+    });
 
-    std::ofstream testFile2("test_ast_2_multiple_nodes.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n";
-    testFile2 << "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t405\t9\n";
-    testFile2.close();
+    createASTFile("test_ast_2_multiple_nodes.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"
+        "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t405\t9\n"
+    });
 
     Tree firstAstTree("test_ast_1_one_node.txt");
     Tree secondAstTree("test_ast_2_multiple_nodes.txt");
@@ -625,23 +621,21 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_OneNodeInFirstAST_MultipleNod
 }
 
 TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
-    std::ofstream testFile1("test_ast_1_multiple_nodes_both.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; 
-    testFile1 << "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t410\t10\n";
-    testFile1.close();
+    createASTFile("test_ast_1_multiple_nodes_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"
+        "  Declaration\tVariable\tc:@V@someVar\tC:\\include\\bits\\c++config.h\t410\t10\n"
+    });
 
-    std::ofstream testFile2("test_ast_2_multiple_nodes_both.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n";
-    testFile2 << "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t415\t11\n";
-    testFile2.close();
+    createASTFile("test_ast_2_multiple_nodes_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n"
+        "  Declaration\tVariable\tc:@V@anotherVar\tC:\\include\\bits\\c++config.h\t415\t11\n"
+    });
 
     Tree firstAstTree("test_ast_1_multiple_nodes_both.txt");
     Tree secondAstTree("test_ast_2_multiple_nodes_both.txt");
