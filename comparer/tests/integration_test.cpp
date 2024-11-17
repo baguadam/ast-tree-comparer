@@ -163,18 +163,6 @@ protected:
 };
 
 // **********************************************
-// DATABASE OPERATIONS
-// **********************************************
-TEST_F(IntegrationTest, TestDatabaseOperation_CallsWithDifferingASTs) {
-    checkDatabaseCalls("test_ast_1.txt", "test_ast_2.txt", 4, 2);
-}
-
-// Test for database operation calls with the same ASTs
-TEST_F(IntegrationTest, TestDatabaseOperation_CallsWithSameASTs) {
-    checkDatabaseCalls("test_ast_1.txt", "test_ast_1.txt", 0, 0);
-}
-
-// **********************************************
 // processNodesInSingleAST tests
 // **********************************************
 TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstASTWithStmtChildren) {
@@ -758,4 +746,136 @@ TEST_F(IntegrationTest, ProcessDeclNodes_NodeExistsOnlyInSecondASTMultipleTimes)
         1,    // times processNodesInSingleAST is expected
         false // exists only in second AST
     );
+}
+
+// **************************************************************************
+// **************************************************************************
+// printDifferences tests - complex scenarios, using the entire comparer
+// **************************************************************************
+// **************************************************************************
+TEST_F(IntegrationTest, PrintDifferences_NoDifferences) {
+    createASTFile("test_ast_1_same.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",
+        "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"
+    });
+
+    createASTFile("test_ast_2_same.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",
+        "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"
+    });
+
+    checkDatabaseCalls("test_ast_1_same.txt", "test_ast_2_same.txt", 0, 0);
+}
+
+TEST_F(IntegrationTest, PrintDifferences_DiffSource_ChildOnlyInFirst_TwoSubtreesOnlyInSecond) {
+        createASTFile("test_ast_1_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5", // Declaration with different source location
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",           // Only in first AST
+        "  Declaration\tVariable\tc:@N@globalVar\tC:\\include\\bits\\c++config.h\t310\t3",   // Variable with child only in the first AST
+        "   Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t312\t3" // Child only in first AST
+    });
+
+    createASTFile("test_ast_2_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t450\t5", // Declaration with different source location
+        "  Declaration\tFunction\tc:@F@doAnotherThing\tC:\\include\\bits\\c++config.h\t460\t8",   // Declaration with three statement nodes only in second AST
+        "   Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t461\t9",
+        "   Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t462\t10",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t463\t11",
+        "  Declaration\tClass\tc:@C@SomeClass\tC:\\include\\bits\\c++config.h\t480\t12",          // Declaration with identical statement nodes only in second AST
+        "   Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t481\t13",
+        "   Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t482\t14",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t483\t15",
+        "  Declaration\tVariable\tc:@N@globalVarAnother\tC:\\include\\bits\\c++config.h\t310\t3"  // Variable without the child node present in first AST
+    });
+
+    Tree firstAstTree("test_ast_1_mixed.txt");
+    Tree secondAstTree("test_ast_2_mixed.txt");
+
+    // usual database calls 
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // source location
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));  // source location from the first AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1)); // source location from the second AST
+
+    // nodes only in second AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(9); // 1 declaration + 3 statements, 1 class + 3 statements, and 1 variable
+
+    // nodes only in first AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(3); // 1 CompountStmt, 1 Typedef, 1 Variable 
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(7)); // 3 relationships for the first declaration, 3 for the second, and 1 for the variable
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
+
+TEST_F(IntegrationTest, PrintDifferences_MultipleAppearances_DifferentParents_DifferentSourceLocations) {
+    createASTFile("test_ast_1_complex.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",         // Declaration with the same key but different source locations
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",                   // Statement only in first AST
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7",         // Second appearance of the function
+        "   Declaration\tVariable\tc:@N@var1\tC:\\include\\bits\\c++config.h\t362\t8",               // Variable child only in first AST
+        " Declaration\tClass\tc:@C@CommonClass\tC:\\include\\bits\\c++config.h\t370\t10",            // Class node with identical statements
+        "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t371\t11",
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t372\t12",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t373\t13",
+        " Declaration\tVariable\tc:@N@globalVar\tC:\\include\\bits\\c++config.h\t310\t3"             // Variable with child only in first AST
+    });
+
+    createASTFile("test_ast_2_complex.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++configother.h\t450\t5",      // Declaration with the same key but different source location
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++configother.h\t460\t7",      // Second appearance of the function, different location
+        "   Declaration\tVariable\tc:@N@var2\tC:\\include\\bits\\c++config.h\t463\t8",                 // Variable child only in second AST
+        "  Declaration\tClass\tc:@C@CommonClass\tC:\\include\\bits\\c++config.h\t480\t10",             // Class node with identical statements
+        "   Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t481\t13",
+        "   Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t482\t14",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t483\t15",
+        " Declaration\tVariable\tc:@N@globalVar\tC:\\include\\bits\\c++config.h\t310\t3"               // Variable without the child node present in first AST
+    });
+
+    Tree firstAstTree("test_ast_1_complex.txt");
+    Tree secondAstTree("test_ast_2_complex.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // source location differences
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(4));  // Class + 3 statements
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(4)); // Class + 3 statements
+
+    // parent differences
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_PARENTS", "FIRST_AST")).Times(Exactly(1));  // Class
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_PARENTS", "SECOND_AST")).Times(Exactly(1)); // Class
+
+    // nodes only in second AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(3); // 1 variable, 2 function nodes
+
+    // nodes only in first AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(4); // 1 CompoundStmt, 1 variable, 2 function nodes
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(3)); // 
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
 }

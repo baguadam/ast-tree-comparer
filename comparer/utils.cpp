@@ -9,7 +9,7 @@ Description:
     Generates a unique key for a statement node based on its parent
 */
 std::string Utils::getStmtKey(const Node* node, const std::string& declarationParentKey) {
-    std::string statementKey = node->kind + "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+    std::string statementKey = node->kind + "|" + node->usr + "|" + node->path + "|";
     return declarationParentKey + "|" + statementKey;  // concatenate parent and current node's key
 }
 

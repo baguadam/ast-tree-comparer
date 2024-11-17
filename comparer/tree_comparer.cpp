@@ -161,7 +161,8 @@ void TreeComparer::compareStmtNodes(const Node* firstNode, const Node* secondNod
 
             if (!secondNode->isProcessed) {
                 compareParents(stmtNode, secondNode);
-                
+                compareSourceLocations(stmtNode, secondNode);
+
                 stmtNode->isProcessed = true;
                 secondNode->isProcessed = true;
             }
