@@ -4,7 +4,6 @@
 #include "../include/tree_comparer.h"
 #include "../include/node_utilities.h"
 #include "mock_database_wrapper.h"
-#include "tree_comparer_test_wrapper.h"
 #include "partial_tree_comparer.h"
 #include <fstream>
 #include <filesystem>
