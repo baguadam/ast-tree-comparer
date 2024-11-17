@@ -247,7 +247,6 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
         compareSimilarDeclNodes(firstNode, secondNode);
     }
 
-
     // process any remaining nodes in both ASTs
     processRemainingNodes(firstASTDeclNodes.begin() + minSize, firstASTDeclNodes.end(), firstASTTree, FIRST_AST);
     processRemainingNodes(secondASTDeclNodes.begin() + minSize, secondASTDeclNodes.end(), secondASTTree, SECOND_AST);

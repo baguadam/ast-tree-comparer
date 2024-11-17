@@ -30,13 +30,13 @@ protected:
     virtual void compareParents(const Node*, const Node*);
     virtual void compareSimilarDeclNodes(Node*, Node*);
     virtual void compareStmtNodes(const Node*, const Node*);
-    void processDeclNodes(Node*);
-    void processDeclNodesInBothASTs(const std::string&);
+    virtual void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
     void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&,
                                const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&);
-    virtual void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
+    void processDeclNodesInBothASTs(const std::string&);
+    void processDeclNodes(Node*);
     void processRemainingNodes(std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator, Tree&, const ASTId);
     void enqueueChildren(Node*, std::queue<Node*>&);
 };

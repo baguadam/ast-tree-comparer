@@ -260,27 +260,3 @@ TEST_F(TreeComparerTest, CompareParents_DifferentParentsMixedStatementDeclaratio
 
     comparer.compareParents(&firstNode, &secondNode);
 }
-
-// **********************************************
-// TreeComparer unit tests - compareSimilarDeclNodes 
-// **********************************************
-TEST_F(TreeComparerTest, CompareSimilarDeclNodes_SameNodesNoDifference) {
-    Tree dummyTree1("test_ast_1.txt");
-    Tree dummyTree2("test_ast_2.txt");
-
-    PartialMockTreeComparerForDeclNodes comparer(dummyTree1, dummyTree2, dbWrapper);
-
-    Node firstNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
-    Node secondNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
-
-    EXPECT_CALL(comparer, compareParents(_, _)).Times(Exactly(1));
-    EXPECT_CALL(comparer, compareSourceLocations(_, _)).Times(Exactly(1));
-    EXPECT_CALL(comparer, compareStmtNodes(_, _)).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
-    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
-
-    comparer.compareSimilarDeclNodes(&firstNode, &secondNode);
-
-    EXPECT_TRUE(firstNode.isProcessed);
-    EXPECT_TRUE(secondNode.isProcessed);
-}

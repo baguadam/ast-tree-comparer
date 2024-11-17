@@ -63,6 +63,22 @@ protected:
         }
     }
 
+    // method to create a node
+    Node createNode(NodeType type, const std::string& kind, const std::string& usr,
+                    const std::string& path, int lineNumber, int columnNumber,
+                    Node* parent = nullptr) {
+        Node node;
+        node.type = type;
+        node.kind = kind;
+        node.usr = usr;
+        node.path = path;
+        node.lineNumber = lineNumber;
+        node.columnNumber = columnNumber;
+        node.parent = parent;
+        node.enhancedKey = kind + "|" + usr + "|" + path + "|";
+        return node;
+    }
+
     // helper method to check database calls:
     void checkDatabaseCalls(const char* firstAst, const char* secondAst, int addNodeCalls, int addRelationshipCalls) {
         Tree firstTree(firstAst);
@@ -162,16 +178,15 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInFirstASTWithStmtChildr
 }
 
 TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeOnlyInSecondASTSingle) {
-    std::ofstream testFile2("test_ast_2_more_complex.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
-    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++configother.h\t310\t3\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
-    testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
-    testFile2.close();
+    createASTFile("test_ast_2_more_complex.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++configother.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",
+        "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"
+    });
 
     Tree firstAstTree("test_ast_1.txt");
     Tree secondAstTree("test_ast_2_more_complex.txt");
@@ -214,17 +229,16 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_NodeIsProcessed) {
     comparer.processNodesInSingleAST(functionNode, firstAstTree, FIRST_AST, true);
 }
 
-TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
-    std::ofstream testFile2("test_ast_2_more_complex.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "   Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
-    testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
-    testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
-    testFile2.close();
+TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessedAndExistsInOtherAST) {
+    createASTFile("test_ast_2_more_complex.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n",
+        "   Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n",
+        "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n",
+        "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"
+    });
 
     Tree firstAstTree("test_ast_1.txt");
     Tree secondAstTree("test_ast_2_more_complex.txt");
@@ -256,7 +270,7 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
 
     comparer.processNodesInSingleAST(functionNode, secondAstTree, SECOND_AST, true);
 
-    // Verify that nodes are marked as processed
+    // verify that nodes are marked as processed
     ASSERT_TRUE(functionNode->isProcessed);
     ASSERT_TRUE(firstChildNode->isProcessed);
     ASSERT_TRUE(secondChildNode->isProcessed);
@@ -264,24 +278,135 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
 }
 
 // **********************************************
+// compareStmtNodes tests
+// **********************************************
+TEST_F(IntegrationTest, CompareStmtNodes_MatchingNodesInBothASTs) {
+    createASTFile("test_ast_1_stmt_match.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
+    });
+
+    createASTFile("test_ast_2_stmt_match.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
+    });
+
+    Tree firstAstTree("test_ast_1_stmt_match.txt");
+    Tree secondAstTree("test_ast_2_stmt_match.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2); // comparing the two similar nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0); // no calls are expected here
+
+    // invoke method
+    mockComparer.compareStmtNodes(firstNode, secondNode);
+}
+
+TEST_F(IntegrationTest, CompareStmtNodes_NodesOnlyInOneAST) {
+    createASTFile("test_ast_1_stmt_partial.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6"  // Only in first AST
+    });
+
+    createASTFile("test_ast_2_stmt_partial.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"  // Only in second AST
+    });
+
+    Tree firstAstTree("test_ast_1_stmt_partial.txt");
+    Tree secondAstTree("test_ast_2_stmt_partial.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(0); // no similar nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
+
+    // invoke method
+    mockComparer.compareStmtNodes(firstNode, secondNode);
+}
+
+TEST_F(IntegrationTest, CompareStmtNodes_PartiallyMatchingNodes) {
+    createASTFile("test_ast_1_stmt_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
+        "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t355\t7"       // Only in first AST
+    });
+
+    createASTFile("test_ast_2_stmt_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t357\t8"     // Only in second AST
+    });
+
+    Tree firstAstTree("test_ast_1_stmt_mixed.txt");
+    Tree secondAstTree("test_ast_2_stmt_mixed.txt");
+
+    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
+
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(1); // once for the matching nodes
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
+    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
+
+    // invoke method
+    mockComparer.compareStmtNodes(firstNode, secondNode);
+}
+
+// **********************************************
+// compareSimilarDeclNodes tests
+// **********************************************
+TEST_F(IntegrationTest, CompareSimilarDeclNodes_SameNodesNoDifference) {
+    Tree dummyTree1("test_ast_1.txt");
+    Tree dummyTree2("test_ast_2.txt");
+
+    PartialMockTreeComparerForDeclNodes comparer(dummyTree1, dummyTree2, dbWrapper);
+
+    Node firstNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
+    Node secondNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
+
+    EXPECT_CALL(comparer, compareParents(_, _)).Times(Exactly(1));
+    EXPECT_CALL(comparer, compareSourceLocations(_, _)).Times(Exactly(1));
+    EXPECT_CALL(comparer, compareStmtNodes(_, _)).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+
+    comparer.compareSimilarDeclNodes(&firstNode, &secondNode);
+
+    EXPECT_TRUE(firstNode.isProcessed);
+    EXPECT_TRUE(secondNode.isProcessed);
+}
+
+// **********************************************
 // processMultiDeclNodes tests
 // **********************************************
 TEST_F(IntegrationTest, ProcessMultiDeclNodes_AllNodesAlreadyProcessed) {
-    std::ofstream testFile1("test_ast_1_processed.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n";
-    testFile1.close();
+    createASTFile("test_ast_1_processed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6"
+    });
 
-    std::ofstream testFile2("test_ast_2_processed.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n";
-    testFile2.close();
+    createASTFile("test_ast_2_processed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6"
+    });
 
     Tree firstAstTree("test_ast_1_processed.txt");
     Tree secondAstTree("test_ast_2_processed.txt");
@@ -308,22 +433,20 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_AllNodesAlreadyProcessed) {
 }
 
 TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
-    std::ofstream testFile1("test_ast_1_multi_decl.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; // two duplicate keys
-    testFile1.close();
+    createASTFile("test_ast_1_multi_decl.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6"
+    });
 
-    std::ofstream testFile2("test_ast_2_multi_decl.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"; // 
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t365\t8\n"; // three duplicate keys
-    testFile2.close();
+    createASTFile("test_ast_2_multi_decl.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t6\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t365\t8\n" // three duplicate keys
+    });
 
     Tree firstAstTree("test_ast_1_multi_decl.txt");
     Tree secondAstTree("test_ast_2_multi_decl.txt");
@@ -350,23 +473,21 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesInBothASTsNoStmts) {
 }
 
 TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesWithChildrenInBothASTs) {
-        std::ofstream testFile1("test_ast_1_with_children.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "   Declaration\tVariable\tc:@V@var1\tC:\\include\\bits\\c++config.h\t351\t6\n";  // child of the first Function node
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t7\n";
-    testFile1.close();
+    createASTFile("test_ast_1_with_children.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "   Declaration\tVariable\tc:@V@var1\tC:\\include\\bits\\c++config.h\t351\t6\n"  // child of the first Function node
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t7\n"
+    });
 
-    std::ofstream testFile2("test_ast_2_with_children.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "   Declaration\tVariable\tc:@V@var1\tC:\\include\\bits\\c++config.h\t352\t6\n";  // child of the first Function node
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n"; // difference in source location
-    testFile2.close();
+    createASTFile("test_ast_2_with_children.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "   Declaration\tVariable\tc:@V@var1\tC:\\include\\bits\\c++config.h\t352\t6\n"  // child of the first Function node
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t7\n" // difference in source location
+    });
 
     Tree firstAstTree("test_ast_1_with_children.txt");
     Tree secondAstTree("test_ast_2_with_children.txt");
@@ -387,25 +508,23 @@ TEST_F(IntegrationTest, ProcessMultiDeclNodes_MultipleNodesWithChildrenInBothAST
 }
 
 TEST_F(IntegrationTest, ProcessMultiDeclNodes_SingleNodeInFirstAST_ThreeNodesInSecondAST_WithChildren) {
-        std::ofstream testFile1("test_ast_1_single_node.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile1 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "   Declaration\tVariable\tc:@V@varInFirst\tC:\\include\\bits\\c++config.h\t351\t6\n"; 
-    testFile1.close();
+    createASTFile("test_ast_1_single_node.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "   Declaration\tVariable\tc:@V@varInFirst\tC:\\include\\bits\\c++config.h\t351\t6\n"
+    });
 
-    std::ofstream testFile2("test_ast_2_three_nodes.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "   Declaration\tVariable\tc:@V@varInSecond1\tC:\\include\\bits\\c++config.h\t352\t7\n";  
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t8\n";
-    testFile2 << "   Declaration\tVariable\tc:@V@varInSecond2\tC:\\include\\bits\\c++config.h\t356\t9\n"; 
-    testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t10\n";
-    testFile2 << "   Declaration\tVariable\tc:@V@varInSecond3\tC:\\include\\bits\\c++config.h\t361\t11\n";
-    testFile2.close();
+    createASTFile("test_ast_2_three_nodes.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n"
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n"
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n"
+        "   Declaration\tVariable\tc:@V@varInSecond1\tC:\\include\\bits\\c++config.h\t352\t7\n"  
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t355\t8\n"
+        "   Declaration\tVariable\tc:@V@varInSecond2\tC:\\include\\bits\\c++config.h\t356\t9\n" 
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t360\t10\n"
+        "   Declaration\tVariable\tc:@V@varInSecond3\tC:\\include\\bits\\c++config.h\t361\t11\n"
+    });
 
     Tree firstAstTree("test_ast_1_single_node.txt");
     Tree secondAstTree("test_ast_2_three_nodes.txt");
@@ -535,93 +654,4 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
 
     // invoke method to be tested
     mockComparer.processDeclNodesInBothASTs(nodeKey);
-}
-
-// **********************************************
-// compareStmtNodes tests
-// **********************************************
-TEST_F(IntegrationTest, CompareStmtNodes_MatchingNodesInBothASTs) {
-    createASTFile("test_ast_1_stmt_match.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
-        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
-    });
-
-    createASTFile("test_ast_2_stmt_match.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
-        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
-    });
-
-    Tree firstAstTree("test_ast_1_stmt_match.txt");
-    Tree secondAstTree("test_ast_2_stmt_match.txt");
-
-    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
-    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
-
-    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2); // comparing the two similar nodes
-    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0); // no calls are expected here
-
-    // invoke method
-    mockComparer.compareStmtNodes(firstNode, secondNode);
-}
-
-TEST_F(IntegrationTest, CompareStmtNodes_NodesOnlyInOneAST) {
-    createASTFile("test_ast_1_stmt_partial.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6"  // Only in first AST
-    });
-
-    createASTFile("test_ast_2_stmt_partial.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"  // Only in second AST
-    });
-
-    Tree firstAstTree("test_ast_1_stmt_partial.txt");
-    Tree secondAstTree("test_ast_2_stmt_partial.txt");
-
-    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
-
-    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
-
-    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(0); // no similar nodes
-    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
-    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
-
-    // invoke method
-    mockComparer.compareStmtNodes(firstNode, secondNode);
-}
-
-TEST_F(IntegrationTest, CompareStmtNodes_PartiallyMatchingNodes) {
-    createASTFile("test_ast_1_stmt_mixed.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
-        "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t355\t7"       // Only in first AST
-    });
-
-    createASTFile("test_ast_2_stmt_mixed.txt", {
-        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
-        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
-        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
-        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t357\t8"     // Only in second AST
-    });
-
-    Tree firstAstTree("test_ast_1_stmt_mixed.txt");
-    Tree secondAstTree("test_ast_2_stmt_mixed.txt");
-
-    PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
-
-    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
-
-    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(1); // once for the matching nodes
-    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
-    EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
-
-    // invoke method
-    mockComparer.compareStmtNodes(firstNode, secondNode);
 }
