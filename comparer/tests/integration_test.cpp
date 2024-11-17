@@ -1038,3 +1038,69 @@ TEST_F(IntegrationTest, PrintDifferences_CyclicRelationships) {
     TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
     comparer.printDifferences();
 }
+
+TEST_F(IntegrationTest, PrintDifferences_SharedChildrenWithDifferentStructures) {
+    createASTFile("test_ast_1_shared_children.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tClass\tc:@C@SharedClass\tC:\\project\\shared_class.cpp\t100\t1",                     // Shared class node in both ASTs
+        "  Declaration\tFunction\tc:@C@SharedClass@F@sharedFunc\tC:\\project\\shared_class.cpp\t110\t2",    // Shared function node
+        "   Statement\tExprStmt\tN/A\tC:\\project\\shared_class.cpp\t111\t3",                               // Shared statement
+        "  Declaration\tVariable\tc:@N@varUniqueFirst\tC:\\project\\shared_class.cpp\t120\t4",              // Variable only in the first AST
+    });
+
+    createASTFile("test_ast_2_shared_children.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tClass\tc:@C@SharedClass\tC:\\project\\shared_class.cpp\t100\t1",                     // Shared class node in both ASTs
+        "  Declaration\tFunction\tc:@C@SharedClass@F@sharedFunc\tC:\\project\\shared_class.cpp\t110\t2",    // Shared function node
+        "   Statement\tExprStmt\tN/A\tC:\\project\\shared_class.cpp\t111\t3",                               // Shared statement
+        "  Declaration\tTypedef\tc:@N@typedefUniqueSecond\tC:\\project\\shared_class.cpp\t130\t5"           // Typedef only in the second AST
+    });
+
+    Tree firstAstTree("test_ast_1_shared_children.txt");
+    Tree secondAstTree("test_ast_2_shared_children.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // differences in unique children
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(1);  // Variable node only in first AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(1); // Typedef node only in second AST
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0)); // no additional relationships beyond the shared structure
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
+
+TEST_F(IntegrationTest, PrintDifferences_HeaderVsImplementation) {
+    createASTFile("test_ast_header.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tClass\tc:@C@MyClass\tC:\\project\\my_class.h\t50\t1",                // Class declared in header
+        "  Declaration\tFunction\tc:@C@MyClass@F@doWork\tC:\\project\\my_class.h\t60\t2",   // Function declared in header
+    });
+
+    createASTFile("test_ast_implementation.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tClass\tc:@C@MyClass\tC:\\project\\my_class.cpp\t50\t1",              // Class defined in implementation
+        "  Declaration\tFunction\tc:@C@MyClass@F@doWork\tC:\\project\\my_class.cpp\t60\t2", // Function defined in implementation
+        "   Statement\tReturnStmt\tN/A\tC:\\project\\my_class.cpp\t70\t3"                   // Implementation detail only in cpp file
+    });
+
+    Tree firstAstTree("test_ast_header.txt");
+    Tree secondAstTree("test_ast_implementation.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // differences in details present only in cpp
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(1); // ReturnStmt only in second AST
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
