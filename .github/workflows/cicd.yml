@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        compiler: [gcc, clang, msvc]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v1.10
+
+      - name: Setup compiler on Linux/macOS
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [ "${{ matrix.compiler }}" == "gcc" ]; then
+            sudo apt-get update
+            sudo apt-get install -y g++ curl libcurl4-openssl-dev
+          elif [ "${{ matrix.compiler }}" == "clang" ]; then
+            sudo apt-get update
+            sudo apt-get install -y clang curl libcurl4-openssl-dev
+          fi
+
+      - name: Setup compiler on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --yes
+          choco install ninja --yes
+          choco install curl --yes
+
+      - name: Configure (CMake)
+        run: |
+          cmake -S comparer -B comparer/build -G Ninja
+
+      - name: Build (CMake)
+        run: |
+          cmake --build comparer/build
+
+      - name: Configure Tests (CMake)
+        run: |
+          cmake -S comparer/tests -B comparer/tests/build -G Ninja
+
+      - name: Build Tests (CMake)
+        run: |
+          cmake --build comparer/tests/build
+
+      - name: Run Unit Tests
+        run: |
+          ctest --test-dir comparer/tests/build
