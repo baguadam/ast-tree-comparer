@@ -1,8 +1,8 @@
 #include <iostream>
 #include <stack>
 #include <algorithm>
-#include "./headers/tree_comparer.h"
-#include "./headers/utils.h"
+#include "../include/tree_comparer.h"
+#include "../include/utils.h"
 
 TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, IDatabaseWrapper& db) 
     : firstASTTree(firstTree), 

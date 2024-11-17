@@ -21,7 +21,7 @@ add_executable(test_all ${TEST_SOURCES})
 
 target_link_libraries(test_all PRIVATE gtest gmock gtest_main)
 
-target_include_directories(test_all PRIVATE ../headers
+target_include_directories(test_all PRIVATE ../include
   ${gtest_SOURCE_DIR}/include
   ${gmock_SOURCE_DIR}/include)
 

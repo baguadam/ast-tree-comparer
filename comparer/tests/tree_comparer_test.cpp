@@ -1,11 +1,10 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "../headers/tree.h"
-#include "../headers/tree_comparer.h"
-#include "../headers/node_utilities.h"
+#include "../include/tree.h"
+#include "../include/tree_comparer.h"
+#include "../include/node_utilities.h"
 #include "mock_database_wrapper.h"
 #include "partial_tree_comparer.h"
-#include "tree_comparer_test_wrapper.h"
 #include <fstream>
 #include <filesystem>
 

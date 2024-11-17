@@ -1,7 +1,7 @@
-#include "./headers/neo4j_database_wrapper.h"
+#include "../include/neo4j_database_wrapper.h"
 #include <iostream>
 #include <sstream>
-#include "./headers/utils.h"
+#include "../include/utils.h"
 #include <curl/curl.h>
 #include <iomanip>
 

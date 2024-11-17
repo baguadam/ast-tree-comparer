@@ -4,18 +4,18 @@ project(comparer-tool)
 find_package(CURL REQUIRED)
 
 include_directories(${CURL_INCLUDE_DIRS})
-include_directories(headers)
+include_directories(include)
 
 # create a library from tree.cpp and tree_comparer.cpp for testing 
-add_library(tree STATIC tree.cpp)
-add_library(tree_comparer STATIC tree_comparer.cpp)
-add_library(utils STATIC utils.cpp)
+add_library(tree STATIC ./src/tree.cpp)
+add_library(tree_comparer STATIC ./src/tree_comparer.cpp)
+add_library(utils STATIC ./src/utils.cpp)
 
-target_include_directories(tree PUBLIC headers)
-target_include_directories(tree_comparer PUBLIC headers)
-target_include_directories(utils PUBLIC headers)
+target_include_directories(tree PUBLIC include)
+target_include_directories(tree_comparer PUBLIC include)
+target_include_directories(utils PUBLIC include)
 
-set(SOURCES neo4j_database_wrapper.cpp ./loggers/console_logger.cpp main.cpp)
+set(SOURCES ./src/neo4j_database_wrapper.cpp ./loggers/console_logger.cpp ./src/main.cpp)
 
 add_executable(ast-tree-comparer ${SOURCES})
 target_link_libraries(ast-tree-comparer PRIVATE tree tree_comparer utils ${CURL_LIBRARIES})
