@@ -1,5 +1,5 @@
-#include "./headers/tree_comparer.h"
-#include "./headers/tree.h"
+#include "../include/tree_comparer.h"
+#include "../include/tree.h"
 // #include "./headers/loggers/tree_comparer_logger.h"
 // #include "./headers/loggers/console_logger.h"
 // #include "./headers/factories/console_logger_creator.h"

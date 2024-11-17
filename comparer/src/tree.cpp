@@ -4,8 +4,8 @@
 #include <sstream>
 #include <queue>
 #include <stack>
-#include "./headers/tree.h"
-#include "./headers/utils.h"
+#include "../include/tree.h"
+#include "../include/utils.h"
 
 /*
 Description:
