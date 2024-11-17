@@ -1,20 +1,17 @@
-name: CI/CD Pipeline
+name: Build and Test
 
 on:
   push:
     branches:
-      - "**" # Triggers for every branch
+      - main
+      - "*"
   pull_request:
     branches:
-      - main # Only triggers for pull requests targeting 'main'
+      - main
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        compiler: [clang]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -26,30 +23,11 @@ jobs:
       - name: Set up Ninja
         uses: ashutoshvarma/setup-ninja@v1
 
-      - name: Install LLVM on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install LLVM
         run: sudo apt-get install -y llvm clang curl
 
-      - name: Install Chocolatey on Windows
-        if: matrix.os == 'windows-latest'
-        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-
-      - name: Install CMake on Windows
-        if: matrix.os == 'windows-latest'
-        run: choco install cmake --installargs '"ADD_CMAKE_TO_PATH=System"' --version 3.21.0
-
-      - name: Install vcpkg on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-
-      - name: Install CURL using vcpkg on Windows
-        if: matrix.os == 'windows-latest'
-        run: .\vcpkg\vcpkg.exe install curl
-
       - name: Configure CMake
-        run: cmake -S comparer -B comparer/build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake
+        run: cmake -S comparer -B comparer/build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 
       - name: Build with Ninja
         run: cmake --build comparer/build
