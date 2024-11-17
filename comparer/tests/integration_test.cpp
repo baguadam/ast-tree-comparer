@@ -97,6 +97,43 @@ protected:
         comparer.printDifferences(); 
     }
 
+    // helper method for processDeclNodes
+    void checkDeclNodeCalls(
+        const std::string& firstAstFile,
+        const std::string& secondAstFile,
+        const std::string& nodeKey,
+        int processBothASTsCalls,
+        int processSingleASTCalls,
+        bool existsInBothASTs) {
+
+        Tree firstAstTree(firstAstFile);
+        Tree secondAstTree(secondAstFile);
+
+        PartialMockTreeComparerForDeclNodes mockComparer(firstAstTree, secondAstTree, dbWrapper);
+
+        auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+        Node* functionNode = nullptr;
+
+        if (firstASTRange.first != firstASTRange.second) {
+            functionNode = firstASTRange.first->second;
+        } else {
+            auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+            ASSERT_NE(secondASTRange.first, secondASTRange.second);
+            functionNode = secondASTRange.first->second;
+        }
+
+        // expected calls
+        EXPECT_CALL(mockComparer, processDeclNodesInBothASTs(nodeKey)).Times(processBothASTsCalls);
+        if (existsInBothASTs) {
+            EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0);
+        } else {
+            EXPECT_CALL(mockComparer, processNodesInSingleAST(functionNode, _, _, true)).Times(processSingleASTCalls);
+        }
+
+        // invoke the method
+        mockComparer.processDeclNodes(functionNode);
+    }
+
     // utility function to create an AST file.
     void createASTFile(const std::string& filename, const std::vector<std::string>& lines) {
         std::ofstream testFile(filename);
@@ -648,4 +685,77 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
 
     // invoke method to be tested
     mockComparer.processDeclNodesInBothASTs(nodeKey);
+}
+
+// **********************************************
+// processDeclNodes tests
+// **********************************************
+TEST_F(IntegrationTest, ProcessDeclNodes_NodeExistsInBothASTs) {
+    createASTFile("test_ast_1_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5"
+    });
+
+    createASTFile("test_ast_2_both.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5"
+    });
+
+    checkDeclNodeCalls(
+        "test_ast_1_both.txt",
+        "test_ast_2_both.txt",
+        "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|",
+        1,   // times processDeclNodesInBothASTs is expected
+        0,   // times processNodesInSingleAST is expected
+        true // exists in both ASTs
+    );
+}
+
+TEST_F(IntegrationTest, ProcessDeclNodes_NodeExistsOnlyInFirstAST) {
+    createASTFile("test_ast_1_first.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5"
+    });
+
+    createASTFile("test_ast_2_empty.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0"
+    });
+
+    checkDeclNodeCalls(
+        "test_ast_1_first.txt",
+        "test_ast_2_empty.txt",
+        "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|",
+        0,    // times processDeclNodesInBothASTs is expected
+        1,    // times processNodesInSingleAST is expected
+        false // exists only in first AST
+    );
+}
+
+TEST_F(IntegrationTest, ProcessDeclNodes_NodeExistsOnlyInSecondASTMultipleTimes) {
+    createASTFile("test_ast_1_empty.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0"
+    });
+
+    createASTFile("test_ast_2_second.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1",
+        "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t351\t6"  // Appears again
+    });
+
+    checkDeclNodeCalls(
+        "test_ast_1_empty.txt",
+        "test_ast_2_second.txt",
+        "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|",
+        0,    // times processDeclNodesInBothASTs is expected
+        1,    // times processNodesInSingleAST is expected
+        false // exists only in second AST
+    );
 }

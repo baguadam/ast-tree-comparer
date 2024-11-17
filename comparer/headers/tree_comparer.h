@@ -35,7 +35,7 @@ protected:
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&,
                                const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&);
-    void processDeclNodesInBothASTs(const std::string&);
+    virtual void processDeclNodesInBothASTs(const std::string&);
     void processDeclNodes(Node*);
     void processRemainingNodes(std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator, Tree&, const ASTId);
     void enqueueChildren(Node*, std::queue<Node*>&);
