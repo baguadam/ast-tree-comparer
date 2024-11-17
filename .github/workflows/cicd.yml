@@ -36,4 +36,4 @@ jobs:
         run: cmake --build comparer/tests/build
 
       - name: Run Tests
-        run: ctest --test-dir comparer/tests/build --output-on-failure
+        run: ctest --test-dir comparer/tests/build --output-on-failure -V
