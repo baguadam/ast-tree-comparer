@@ -79,6 +79,8 @@ TEST_F(TreeComparerTest, PrintDifferencesFinalizesDatabase) {
     Tree tree2("test_ast_2.txt");
 
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(testing::AnyNumber());
     TreeComparer comparer(tree1, tree2, dbWrapper);
 
     comparer.printDifferences();

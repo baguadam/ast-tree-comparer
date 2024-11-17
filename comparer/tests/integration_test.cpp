@@ -326,7 +326,8 @@ TEST_F(IntegrationTest, CompareStmtNodes_MatchingNodesInBothASTs) {
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
     auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
 
-    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2); // comparing the two similar nodes
+    EXPECT_CALL(mockComparer, compareSourceLocations(_, _)).Times(2);
+    EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2);
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0); // no calls are expected here
 
     // invoke method
@@ -384,6 +385,7 @@ TEST_F(IntegrationTest, CompareStmtNodes_PartiallyMatchingNodes) {
     auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
 
     EXPECT_CALL(mockComparer, compareParents(_, _)).Times(1); // once for the matching nodes
+    EXPECT_CALL(mockComparer, compareSourceLocations(_, _)).Times(1); // once for the matching nodes
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, SECOND_AST, false)).Times(1); // only in second AST
 
