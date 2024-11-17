@@ -26,10 +26,10 @@ protected:
     // std::unique_ptr<TreeComparerLogger> logger;  
     std::function<bool(const Node*, const Node*)> topologicalComparer;
 
-    void compareSourceLocations(const Node*, const Node*);
+    virtual void compareSourceLocations(const Node*, const Node*);
     virtual void compareParents(const Node*, const Node*);
     virtual void compareSimilarDeclNodes(Node*, Node*);
-    void compareStmtNodes(const Node*, const Node*);
+    virtual void compareStmtNodes(const Node*, const Node*);
     void processDeclNodes(Node*);
     void processDeclNodesInBothASTs(const std::string&);
     void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,

@@ -63,7 +63,7 @@ protected:
         }
     }
 
-    // helper function to check database calls:
+    // helper method to check database calls:
     void checkDatabaseCalls(const char* firstAst, const char* secondAst, int addNodeCalls, int addRelationshipCalls) {
         Tree firstTree(firstAst);
         Tree secondTree(secondAst);
@@ -79,6 +79,30 @@ protected:
 
         // run comparison
         comparer.printDifferences(); 
+    }
+
+    // utility function to create an AST file.
+    void createASTFile(const std::string& filename, const std::vector<std::string>& lines) {
+        std::ofstream testFile(filename);
+        ASSERT_TRUE(testFile.is_open());
+        for (const auto& line : lines) {
+            testFile << line << "\n";
+        }
+        testFile.close();
+    }
+
+    // utility function to retrieve nodes with a given key.
+    std::pair<Node*, Node*> getMatchingNodes(Tree& firstAstTree, Tree& secondAstTree, const std::string& nodeKey) {
+        auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
+        auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
+
+        EXPECT_NE(firstASTRange.first, firstASTRange.second);
+        EXPECT_NE(secondASTRange.first, secondASTRange.second);
+
+        Node* firstNode = firstASTRange.first->second;
+        Node* secondNode = secondASTRange.first->second;
+
+        return {firstNode, secondNode};
     }
 
     // accessible for all tests
@@ -215,11 +239,6 @@ TEST_F(IntegrationTest, ProcessNodesInSingleAST_ChildNodeIsProcessed) {
     Node* firstChildNode = functionNode->children[1];               // CompoundStmt
     Node* secondChildNode = functionNode->children[0];              // Typedef
     Node* firstChildNodeChildNode = firstChildNode->children[0];    // ExprStmt
-
-    std::cout << "Function node: " << functionNode->kind << std::endl;
-    std::cout << "First child node: " << firstChildNode->kind << std::endl;
-    std::cout << "Second child node: " << secondChildNode->kind << std::endl;
-    std::cout << "First child node child node: " << firstChildNodeChildNode->kind << std::endl;
 
     ASSERT_NE(firstChildNode, nullptr);
     ASSERT_NE(secondChildNode, nullptr);
@@ -522,73 +541,52 @@ TEST_F(IntegrationTest, ProcessDeclNodesInBothASTs_MultipleNodesInBothASTs) {
 // compareStmtNodes tests
 // **********************************************
 TEST_F(IntegrationTest, CompareStmtNodes_MatchingNodesInBothASTs) {
-    std::ofstream testFile1("test_ast_1_stmt_match.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Statement to be matched
-    testFile1 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // Statement to be matched
-    testFile1.close();
+    createASTFile("test_ast_1_stmt_match.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
+    });
 
-    std::ofstream testFile2("test_ast_2_stmt_match.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Statement to be matched
-    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // Statement to be matched
-    testFile2.close();
+    createASTFile("test_ast_2_stmt_match.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Statement to be matched
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"    // Statement to be matched
+    });
 
     Tree firstAstTree("test_ast_1_stmt_match.txt");
     Tree secondAstTree("test_ast_2_stmt_match.txt");
 
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
-
-    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
-    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
-    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
-
-    ASSERT_NE(firstASTRange.first, firstASTRange.second);
-    ASSERT_NE(secondASTRange.first, secondASTRange.second);
-
-    Node* firstNode = firstASTRange.first->second;
-    Node* secondNode = secondASTRange.first->second;
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
 
     EXPECT_CALL(mockComparer, compareParents(_, _)).Times(2); // comparing the two similar nodes
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, _, _)).Times(0); // no calls are expected here
 
-    // Call the function to test
+    // invoke method
     mockComparer.compareStmtNodes(firstNode, secondNode);
 }
 
 TEST_F(IntegrationTest, CompareStmtNodes_NodesOnlyInOneAST) {
-    std::ofstream testFile1("test_ast_1_stmt_partial.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // only in first AST
-    testFile1.close();
+    createASTFile("test_ast_1_stmt_partial.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6"  // Only in first AST
+    });
 
-    std::ofstream testFile2("test_ast_2_stmt_partial.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n"; // only in second AST
-    testFile2.close();
+    createASTFile("test_ast_2_stmt_partial.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7"  // Only in second AST
+    });
 
     Tree firstAstTree("test_ast_1_stmt_partial.txt");
     Tree secondAstTree("test_ast_2_stmt_partial.txt");
 
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
 
-    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
-    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
-    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
-
-    ASSERT_NE(firstASTRange.first, firstASTRange.second);
-    ASSERT_NE(secondASTRange.first, secondASTRange.second);
-
-    Node* firstNode = firstASTRange.first->second;
-    Node* secondNode = secondASTRange.first->second;
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
 
     EXPECT_CALL(mockComparer, compareParents(_, _)).Times(0); // no similar nodes
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST
@@ -599,36 +597,26 @@ TEST_F(IntegrationTest, CompareStmtNodes_NodesOnlyInOneAST) {
 }
 
 TEST_F(IntegrationTest, CompareStmtNodes_PartiallyMatchingNodes) {
-    std::ofstream testFile1("test_ast_1_stmt_mixed.txt");
-    ASSERT_TRUE(testFile1.is_open());
-    testFile1 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile1 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile1 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Matches
-    testFile1 << "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t355\t7\n";   // Only in first AST
-    testFile1.close();
+    createASTFile("test_ast_1_stmt_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
+        "  Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t355\t7"       // Only in first AST
+    });
 
-    std::ofstream testFile2("test_ast_2_stmt_mixed.txt");
-    ASSERT_TRUE(testFile2.is_open());
-    testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
-    testFile2 << " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
-    testFile2 << "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n"; // Matches
-    testFile2 << "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t357\t8\n";  // Only in second AST
-    testFile2.close();
+    createASTFile("test_ast_2_stmt_mixed.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5",
+        "  Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6",  // Matches
+        "  Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t357\t8"     // Only in second AST
+    });
 
     Tree firstAstTree("test_ast_1_stmt_mixed.txt");
     Tree secondAstTree("test_ast_2_stmt_mixed.txt");
 
     PartialMockTreeComparer mockComparer(firstAstTree, secondAstTree, dbWrapper);
 
-    std::string nodeKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
-    auto firstASTRange = firstAstTree.getDeclNodes(nodeKey);
-    auto secondASTRange = secondAstTree.getDeclNodes(nodeKey);
-
-    ASSERT_NE(firstASTRange.first, firstASTRange.second);
-    ASSERT_NE(secondASTRange.first, secondASTRange.second);
-
-    Node* firstNode = firstASTRange.first->second;
-    Node* secondNode = secondASTRange.first->second;
+    auto [firstNode, secondNode] = getMatchingNodes(firstAstTree, secondAstTree, "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|");
 
     EXPECT_CALL(mockComparer, compareParents(_, _)).Times(1); // once for the matching nodes
     EXPECT_CALL(mockComparer, processNodesInSingleAST(_, _, FIRST_AST, false)).Times(1); // only in first AST

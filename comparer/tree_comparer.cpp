@@ -11,10 +11,7 @@ TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, IDatabaseWrapper& 
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
-    }
-
-    // clear the database before starting the comparison
-    dbWrapper.clearDatabase();
+    }   
 } 
 
 /*
@@ -23,6 +20,8 @@ Description:
     prints the necessary information about the differences to the console. 
 */
 void TreeComparer::printDifferences() {
+    dbWrapper.clearDatabase(); // clear the database before starting the comparison
+
     std::queue<Node*> queue;
 
     // start with the root nodes of both ASTs

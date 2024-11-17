@@ -4,6 +4,7 @@
 #include "../headers/tree_comparer.h"
 #include "../headers/node_utilities.h"
 #include "mock_database_wrapper.h"
+#include "partial_tree_comparer.h"
 #include "tree_comparer_test_wrapper.h"
 #include <fstream>
 #include <filesystem>
@@ -71,17 +72,6 @@ Node createNode(NodeType type, const std::string& kind, const std::string& usr,
 }
 
 // **********************************************
-// TreeComparer unit tests - constructor
-// **********************************************
-TEST_F(TreeComparerTest, ConstructorClearsDatabase) {
-    Tree tree1("test_ast_1.txt");
-    Tree tree2("test_ast_2.txt");
-
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
-    TreeComparer comparer(tree1, tree2, dbWrapper);
-}
-
-// **********************************************
 // TreeComparer unit tests - printDifferences
 // **********************************************
 TEST_F(TreeComparerTest, PrintDifferencesFinalizesDatabase) {
@@ -98,7 +88,7 @@ TEST_F(TreeComparerTest, PrintDifferencesFinalizesDatabase) {
 // TreeComparer unit tests - compareSourceLocations
 // **********************************************
 // Test for comparing source locations when nodes have differing paths
-TEST_F(TreeComparerTest, CompareDeclSourceLocationSame) {
+TEST_F(TreeComparerTest, CompareDeclSourceLocations_Same) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -113,7 +103,7 @@ TEST_F(TreeComparerTest, CompareDeclSourceLocationSame) {
     comparer.compareSourceLocations(&firstNode, &secondNode);
 }
 
-TEST_F(TreeComparerTest, CompareSourceLocationDifferingPaths) {
+TEST_F(TreeComparerTest, CompareSourceLocations_DifferingPaths) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -130,7 +120,7 @@ TEST_F(TreeComparerTest, CompareSourceLocationDifferingPaths) {
 }
 
 // Test for comparing source locations when nodes have differing paths
-TEST_F(TreeComparerTest, CompareSourceLocationDifferingLineNumbers) {
+TEST_F(TreeComparerTest, CompareSourceLocations_DifferingLineNumbers) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -147,7 +137,7 @@ TEST_F(TreeComparerTest, CompareSourceLocationDifferingLineNumbers) {
 }
 
 // Test for comparing source locations when nodes have differing paths
-TEST_F(TreeComparerTest, CompareSourceLocationDifferingColumnNumbers) {
+TEST_F(TreeComparerTest, CompareSourceLocations_DifferingColumnNumbers) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -164,7 +154,7 @@ TEST_F(TreeComparerTest, CompareSourceLocationDifferingColumnNumbers) {
 }
 
 // Test for comparing source locations when nodes have differing paths
-TEST_F(TreeComparerTest, CompareSourceLocationDifferingEverything) {
+TEST_F(TreeComparerTest, CompareSourceLocations_DifferingEverything) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -184,7 +174,7 @@ TEST_F(TreeComparerTest, CompareSourceLocationDifferingEverything) {
 // TreeComparer unit tests - compareParents 
 // **********************************************
 // Test for comparing parent nodes when both nodes have the same parent (using Declaration nodes)
-TEST_F(TreeComparerTest, CompareParentsSameParentDeclaration) {
+TEST_F(TreeComparerTest, CompareParents_SameParentDeclaration) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -201,7 +191,7 @@ TEST_F(TreeComparerTest, CompareParentsSameParentDeclaration) {
 }
 
 // Test for comparing parent nodes when one node has no parent (using Statement nodes)
-TEST_F(TreeComparerTest, CompareParentsOneNodeHasNoParentStatement) {
+TEST_F(TreeComparerTest, CompareParents_OneNodeHasNoParentStatement) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -219,7 +209,7 @@ TEST_F(TreeComparerTest, CompareParentsOneNodeHasNoParentStatement) {
 }
 
 // Test for comparing parent nodes when both nodes have different parents (using Declaration and Statement nodes)
-TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixed) {
+TEST_F(TreeComparerTest, CompareParents_DifferentParentsMixed) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -238,7 +228,7 @@ TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixed) {
 }
 
 // Test for comparing parent nodes when both nodes have no parents (using Statement nodes)
-TEST_F(TreeComparerTest, CompareParentsNoParentsStatement) {
+TEST_F(TreeComparerTest, CompareParents_NoParentsStatement) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -253,7 +243,7 @@ TEST_F(TreeComparerTest, CompareParentsNoParentsStatement) {
 }
 
 // Test for comparing parent nodes when both nodes have different parents (using mixed Statement and Declaration nodes)
-TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixedStatementDeclaration) {
+TEST_F(TreeComparerTest, CompareParents_DifferentParentsMixedStatementDeclaration) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
@@ -274,14 +264,20 @@ TEST_F(TreeComparerTest, CompareParentsDifferentParentsMixedStatementDeclaration
 // **********************************************
 // TreeComparer unit tests - compareSimilarDeclNodes 
 // **********************************************
-TEST_F(TreeComparerTest, CompareSimilarDeclNodes) {
+TEST_F(TreeComparerTest, CompareSimilarDeclNodes_SameNodesNoDifference) {
     Tree dummyTree1("test_ast_1.txt");
     Tree dummyTree2("test_ast_2.txt");
 
-    TreeComparerTestWrapper comparer(dummyTree1, dummyTree2, dbWrapper);
+    PartialMockTreeComparerForDeclNodes comparer(dummyTree1, dummyTree2, dbWrapper);
 
     Node firstNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
     Node secondNode = createNode(DECLARATION, "FunctionDecl", "c:@N@func1", "C:\\project\\file1.cpp", 100, 10);
+
+    EXPECT_CALL(comparer, compareParents(_, _)).Times(Exactly(1));
+    EXPECT_CALL(comparer, compareSourceLocations(_, _)).Times(Exactly(1));
+    EXPECT_CALL(comparer, compareStmtNodes(_, _)).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(0));
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0));
 
     comparer.compareSimilarDeclNodes(&firstNode, &secondNode);
 
