@@ -12,35 +12,32 @@
 #include "tree.h"
 #include "neo4j_database_wrapper.h"
 #include "./loggers/tree_comparer_logger.h"
+#include "idatabase_wrapper.h"
 
 class TreeComparer {
 public:
-    TreeComparer(Tree&, Tree&, std::unique_ptr<TreeComparerLogger>);
+    TreeComparer(Tree&, Tree&, IDatabaseWrapper&);
     void printDifferences();
 
-private:
+protected:
     Tree& firstASTTree;
     Tree& secondASTTree;
-    std::unique_ptr<Neo4jDatabaseWrapper> dbWrapper;
-    std::unique_ptr<TreeComparerLogger> logger;  
+    IDatabaseWrapper& dbWrapper;
+    // std::unique_ptr<TreeComparerLogger> logger;  
     std::function<bool(const Node*, const Node*)> topologicalComparer;
 
-    void compareSourceLocations(const Node*, const Node*);
-    void compareParents(const Node*, const Node*);
-    void compareSimilarDeclNodes(Node*, Node*, const std::string&);
-    void compareStmtNodes(const std::string&);
-    void compareSimilarStmtNodes(Node*, Node*);
-    void processDeclNodes(Node*);
-    void processDeclNodesInBothASTs(const std::string&);
+    virtual void compareSourceLocations(const Node*, const Node*);
+    virtual void compareParents(const Node*, const Node*);
+    virtual void compareSimilarDeclNodes(Node*, Node*);
+    virtual void compareStmtNodes(const Node*, const Node*);
+    virtual void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
     void processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                std::unordered_multimap<std::string, Node*>::const_iterator>&,
                                const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
-                                               std::unordered_multimap<std::string, Node*>::const_iterator>&,
-                               const std::string&);
-    void processNodesInSingleAST(Node*, Tree&, const ASTId, bool);
+                                               std::unordered_multimap<std::string, Node*>::const_iterator>&);
+    virtual void processDeclNodesInBothASTs(const std::string&);
+    void processDeclNodes(Node*);
     void processRemainingNodes(std::vector<Node*>::const_iterator, std::vector<Node*>::const_iterator, Tree&, const ASTId);
-    void checkNodeFingerprints(Node*, Node*, const std::string&);
-    
     void enqueueChildren(Node*, std::queue<Node*>&);
 };
 

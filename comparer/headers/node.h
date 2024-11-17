@@ -23,5 +23,7 @@ struct Node {
     std::string enhancedKey;         // Identifier (path from the root)
     size_t fingerprint = 0;          // Hashed fingerprint value of the node (only for declaration nodes)
     bool isProcessed = false;        // Flag for processed nodes
+
 };
+
 #endif

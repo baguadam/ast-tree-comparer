@@ -193,12 +193,6 @@ Description:
 void Neo4jDatabaseWrapper::clearDatabase() {
     std::string query = "{\"statements\": [{\"statement\": \"MATCH (n) DETACH DELETE n\"}]}";
     sendRequest(query);
-
-    std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
-    sendRequest(indexDifferenceType);
-
-    std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
-    sendRequest(indexAstOrigin);
 }
 
 /*
@@ -208,6 +202,12 @@ Description:
 void Neo4jDatabaseWrapper::createIndices() {
     std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}";
     sendRequest(query);
+    
+    std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
+    sendRequest(indexDifferenceType);
+
+    std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
+    sendRequest(indexAstOrigin);
 }
 
 /*

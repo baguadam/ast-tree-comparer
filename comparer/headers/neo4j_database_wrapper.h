@@ -5,17 +5,18 @@
 #include <curl/curl.h>
 #include <memory>
 #include <vector>
-#include "node.h"  // Assuming Node struct is declared here
+#include "node.h"
+#include "idatabase_wrapper.h"
 
-class Neo4jDatabaseWrapper {
+class Neo4jDatabaseWrapper : public IDatabaseWrapper {
 public:
-    Neo4jDatabaseWrapper(const std::string& uri, const std::string& username, const std::string& password);
-    ~Neo4jDatabaseWrapper();
+    Neo4jDatabaseWrapper(const std::string&, const std::string&, const std::string&);
+    ~Neo4jDatabaseWrapper() override;
 
-    void addNodeToBatch(const Node& node, bool isHighLevel, const std::string&, const std::string&);
-    void addRelationshipToBatch(const Node& parent, const Node& child);
-    void clearDatabase();
-    void finalize();
+    void addNodeToBatch(const Node&, bool, const std::string&, const std::string&) override;
+    void addRelationshipToBatch(const Node&, const Node&) override;
+    void clearDatabase() override;
+    void finalize() override;
 
 private:
     std::string dbUri;
@@ -28,7 +29,7 @@ private:
 
     void createIndices();
     void executeBatch();
-    void sendRequest(const std::string& queryJson);
+    void sendRequest(const std::string&);
 };
 
 #endif

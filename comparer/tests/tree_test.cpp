@@ -1,206 +1,489 @@
-#include <iostream>
-#include <cassert>
+#include <gtest/gtest.h>
 #include "../headers/tree.h"
+#include <fstream>
+#include <filesystem>
 
-void testBuildTree() {
-    Tree tree("../tests/test_ast.txt");
-    Node* root = tree.getRoot();
+class TreeTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // small valid AST file
+        std::ofstream testFile("test_ast_1.txt");
+        ASSERT_TRUE(testFile.is_open());
+        testFile << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        testFile << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+        testFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";     
+        testFile.close();
 
-    assert(root != nullptr);
-    assert(root->type == "Declaration");
-    assert(root->kind == "TranslationUnit");
-    assert(root->usr == "c:");
-    assert(root->path == "N/A");
-    assert(root->lineNumber == 0);
-    assert(root->columnNumber == 0);
+        // large valid AST file with statements and multiple nodes
+        std::ofstream testFile2("test_ast_2.txt");
+        ASSERT_TRUE(testFile2.is_open());
+        testFile2 << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        testFile2 << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t308\t1\n";
+        testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        testFile2 << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        testFile2 << "  Declaration\tFunction\tc:@F@doSomething\tC:\\include\\bits\\c++config.h\t350\t5\n";
+        testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t351\t6\n";
+        testFile2 << "    Declaration\tVar\tc:@F@doSomething@x\tC:\\include\\bits\\c++config.h\t352\t7\n";
+        testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t353\t7\n";
+        testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t354\t7\n";
+        testFile2 << "  Declaration\tFunction\tc:@F@doSomethingElse\tC:\\include\\bits\\c++config.h\t400\t5\n";
+        testFile2 << "   Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t401\t6\n";
+        testFile2 << "    Declaration\tVar\tc:@F@doSomething@x\tC:\\include\\bits\\c++config.h\t402\t7\n";
+        testFile2 << "    Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t403\t7\n";
+        testFile2 << "    Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config.h\t404\t7\n";
+        testFile2.close();
 
-    assert(root->children.size() == 16);
+        // nestes AST file
+        std::ofstream nestedAstFile("test_ast_nested.txt");
+        ASSERT_TRUE(nestedAstFile.is_open());
+        nestedAstFile << "Declaration\tTranslationUnit\tc:\tN/A\t0\t0\n";
+        nestedAstFile << " Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\t10\t1\n";
+        nestedAstFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        nestedAstFile << "  Declaration\tTypedef\tc:@N@std@T@size_t\tC:\\include\\bits\\c++config.h\t310\t3\n";
+        nestedAstFile << "  Declaration\tClass\tc:@N@std@C@Vector\tC:\\include\\bits\\c++config.h\t15\t3\n";
+        nestedAstFile << "   Declaration\tFunction\tc:@N@std@C@Vector@F@push_back\tC:\\include\\bits\\c++config.h\t20\t5\n";
+        nestedAstFile << "    Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t21\t6\n";
+        nestedAstFile << "     Statement\tExprStmt\tN/A\tC:\\include\\bits\\c++config.h\t22\t7\n";
+        nestedAstFile << "      Declaration\tVar\tc:@N@std@C@Vector@F@push_back@x\tC:\\include\\bits\\c++config.h\t23\t8\n";
+        nestedAstFile << " Declaration\tNamespace\tc:@N@other\tC:\\include\\bits\\c++config_other.h\t30\t1\n";
+        nestedAstFile << "  Declaration\tClass\tc:@N@other@C@List\tC:\\include\\bits\\c++config_other.h\t35\t3\n";
+        nestedAstFile << "   Declaration\tFunction\tc:@N@other@C@List@F@add\tC:\\include\\bits\\c++config_other.h\t40\t5\n";
+        nestedAstFile << "    Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config_other.h\t41\t6\n";
+        nestedAstFile << "     Statement\tReturnStmt\tN/A\tC:\\include\\bits\\c++config_other.h\t42\t7\n";
+        nestedAstFile.close();
 
-    Node* child1 = root->children[0];
-    assert(child1->type == "Declaration");
-    assert(child1->kind == "Typedef");
-    assert(child1->usr == "c:@T@_Float32");
-    assert(child1->path == "/usr/include/x86_64-linux-gnu/bits/floatn-common.h");
-    assert(child1->lineNumber == 214);
-    assert(child1->columnNumber == 1);
+        // small invalid AST file
+        std::ofstream invalidFile("invalid_ast.txt");
+        ASSERT_TRUE(invalidFile.is_open());
+        invalidFile << "InvalidLineWithoutEnoughTokens\n";
+        invalidFile.close();
 
-    Node* child2 = root->children[1];
-    assert(child2->type == "Declaration");
-    assert(child2->kind == "Typedef");
-    assert(child2->usr == "c:@T@_Float64");
-    assert(child2->path == "/usr/include/x86_64-linux-gnu/bits/floatn-common.h");
-    assert(child2->lineNumber == 251);
-    assert(child2->columnNumber == 1);
+        // empty AST file
+        std::ofstream emptyFile("empty_ast.txt");
+        ASSERT_TRUE(emptyFile.is_open());
+        emptyFile.close();
 
-    Node* child3 = root->children[2];
-    assert(child3->type == "Declaration");
-    assert(child3->kind == "Typedef");
-    assert(child3->usr == "c:@T@_Float32x");
-    assert(child3->path == "/usr/include/x86_64-linux-gnu/bits/floatn-common.h");
-    assert(child3->lineNumber == 268);
-    assert(child3->columnNumber == 1);
+        // check proper test writing
+        ASSERT_TRUE(std::filesystem::exists("test_ast_1.txt"));
+        ASSERT_TRUE(std::filesystem::exists("test_ast_2.txt"));
+        ASSERT_TRUE(std::filesystem::exists("test_ast_nested.txt"));
+        ASSERT_TRUE(std::filesystem::exists("invalid_ast.txt"));
+        ASSERT_TRUE(std::filesystem::exists("empty_ast.txt"));
+    }
 
-    Node* child4 = root->children[3];
-    assert(child4->type == "Declaration");
-    assert(child4->kind == "Typedef");
-    assert(child4->usr == "c:@T@_Float64x");
-    assert(child4->path == "/usr/include/x86_64-linux-gnu/bits/floatn-common.h");
-    assert(child4->lineNumber == 285);
-    assert(child4->columnNumber == 1);
+    void TearDown() override {
+        if (std::filesystem::exists("test_ast_1.txt")) {
+            std::filesystem::remove("test_ast_1.txt");
+        }
+        if (std::filesystem::exists("invalid_ast.txt")) {
+            std::filesystem::remove("invalid_ast.txt");
+        }
+        if (std::filesystem::exists("empty_ast.txt")) {
+            std::filesystem::remove("empty_ast.txt");
+        }
+        if (std::filesystem::exists("test_ast_2.txt")) {
+            std::filesystem::remove("test_ast_2.txt");
+        }
+    }
+};
 
-    Node* child5 = root->children[4];
-    assert(child5->type == "Declaration");
-    assert(child5->kind == "Typedef");
-    assert(child5->usr == "c:@T@size_t");
-    assert(child5->path == "/usr/lib/clang/14/include/stddef.h");
-    assert(child5->lineNumber == 46);
-    assert(child5->columnNumber == 1);
-
-    Node* child6 = root->children[5];
-    assert(child6->type == "Declaration");
-    assert(child6->kind == "Typedef");
-    assert(child6->usr == "c:@T@va_list");
-    assert(child6->path == "/usr/lib/clang/14/include/stdarg.h");
-    assert(child6->lineNumber == 14);
-    assert(child6->columnNumber == 1);
-
-    Node* child7 = root->children[6];
-    assert(child7->type == "Declaration");
-    assert(child7->kind == "Typedef");
-    assert(child7->usr == "c:@T@__gnuc_va_list");
-    assert(child7->path == "/usr/lib/clang/14/include/stdarg.h");
-    assert(child7->lineNumber == 32);
-    assert(child7->columnNumber == 1);
-
-    Node* child8 = root->children[7];
-    assert(child8->type == "Declaration");
-    assert(child8->kind == "Typedef");
-    assert(child8->usr == "c:@T@wint_t");
-    assert(child8->path == "/usr/include/x86_64-linux-gnu/bits/types/wint_t.h");
-    assert(child8->lineNumber == 20);
-    assert(child8->columnNumber == 1);
-
-    Node* child9 = root->children[8];
-    assert(child9->type == "Declaration");
-    assert(child9->kind == "CXXRecord");
-    assert(child9->usr == "c:@SA@__mbstate_t");
-    assert(child9->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9->lineNumber == 13);
-    assert(child9->columnNumber == 9);
-
-    assert(child9->children.size() == 3);
-
-    Node* child9_1 = child9->children[0];
-    assert(child9_1->type == "Declaration");
-    assert(child9_1->kind == "Field");
-    assert(child9_1->usr == "c:@SA@__mbstate_t@FI@__count");
-    assert(child9_1->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9_1->lineNumber == 15);
-    assert(child9_1->columnNumber == 3);
-
-    Node* child9_2 = child9->children[1];
-    assert(child9_2->type == "Declaration");
-    assert(child9_2->kind == "CXXRecord");
-    assert(child9_2->usr == "c:@SA@__mbstate_t@U@__mbstate_t.h@451");
-    assert(child9_2->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9_2->lineNumber == 16);
-    assert(child9_2->columnNumber == 3);
-
-    assert(child9_2->children.size() == 2);
-
-    Node* child9_2_1 = child9_2->children[0];
-    assert(child9_2_1->type == "Declaration");
-    assert(child9_2_1->kind == "Field");
-    assert(child9_2_1->usr == "c:@SA@__mbstate_t@U@__mbstate_t.h@451@FI@__wch");
-    assert(child9_2_1->path == "N/A");
-    assert(child9_2_1->lineNumber == 110);
-    assert(child9_2_1->columnNumber == 23);
-
-    Node* child9_2_2 = child9_2->children[1];
-    assert(child9_2_2->type == "Declaration");
-    assert(child9_2_2->kind == "Field");
-    assert(child9_2_2->usr == "c:@SA@__mbstate_t@U@__mbstate_t.h@451@FI@__wchb");
-    assert(child9_2_2->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9_2_2->lineNumber == 19);
-    assert(child9_2_2->columnNumber == 5);
-
-    assert(child9_2_2->children.size() == 1);
-    Node* child9_2_2_1 = child9_2_2->children[0];
-    assert(child9_2_2_1->type == "Statement");
-    assert(child9_2_2_1->kind == "IntegerLiteral");
-    assert(child9_2_2_1->usr == "N/A");
-    assert(child9_2_2_1->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9_2_2_1->lineNumber == 19);
-    assert(child9_2_2_1->columnNumber == 17);
-
-    Node* child9_3 = child9->children[2];
-    assert(child9_3->type == "Declaration");
-    assert(child9_3->kind == "Field");
-    assert(child9_3->usr == "c:@SA@__mbstate_t@FI@__value");
-    assert(child9_3->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child9_3->lineNumber == 16);
-    assert(child9_3->columnNumber == 3);
-
-    Node* child10 = root->children[9];
-    assert(child10->type == "Declaration");
-    assert(child10->kind == "Typedef");
-    assert(child10->usr == "c:@T@__mbstate_t");
-    assert(child10->path == "/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h");
-    assert(child10->lineNumber == 13);
-    assert(child10->columnNumber == 1);
-
-    Node* child11 = root->children[10];
-    assert(child11->type == "Declaration");
-    assert(child11->kind == "Typedef");
-    assert(child11->usr == "c:@T@mbstate_t");
-    assert(child11->path == "/usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h");
-    assert(child11->lineNumber == 6);
-    assert(child11->columnNumber == 1);
-
-    Node* child12 = root->children[11];
-    assert(child12->type == "Declaration");
-    assert(child12->kind == "CXXRecord");
-    assert(child12->usr == "c:@S@_IO_FILE");
-    assert(child12->path == "/usr/include/x86_64-linux-gnu/bits/types/__FILE.h");
-    assert(child12->lineNumber == 4);
-    assert(child12->columnNumber == 1);
-
-    Node* child13 = root->children[12];
-    assert(child13->type == "Declaration");
-    assert(child13->kind == "Typedef");
-    assert(child13->usr == "c:@T@__FILE");
-    assert(child13->path == "/usr/include/x86_64-linux-gnu/bits/types/__FILE.h");
-    assert(child13->lineNumber == 5);
-    assert(child13->columnNumber == 1);
-
-    Node* child14 = root->children[13];
-    assert(child14->type == "Declaration");
-    assert(child14->kind == "CXXRecord");
-    assert(child14->usr == "c:@S@_IO_FILE");
-    assert(child14->path == "/usr/include/x86_64-linux-gnu/bits/types/FILE.h");
-    assert(child14->lineNumber == 4);
-    assert(child14->columnNumber == 1);
-
-    Node* child15 = root->children[14];
-    assert(child15->type == "Declaration");
-    assert(child15->kind == "Typedef");
-    assert(child15->usr == "c:@T@FILE");
-    assert(child15->path == "/usr/include/x86_64-linux-gnu/bits/types/FILE.h");
-    assert(child15->lineNumber == 7);
-    assert(child15->columnNumber == 1);
-
-    Node* child16 = root->children[15];
-    assert(child16->type == "Declaration");
-    assert(child16->kind == "CXXRecord");
-    assert(child16->usr == "c:@S@__locale_struct");
-    assert(child16->path == "/usr/include/x86_64-linux-gnu/bits/types/__locale_t.h");
-    assert(child16->lineNumber == 27);
-    assert(child16->columnNumber == 1);
-
-    std::cout << "All tests passed!" << std::endl;
+// **********************************************
+// Constructor tests
+// **********************************************
+// Test if constructing the tree with a nonexistent file throws an exception
+TEST_F(TreeTest, TreeThrowsExceptionOnFileNotFound) {
+    EXPECT_THROW({
+        Tree testTree("nonexistent_file.txt");
+    }, std::runtime_error);
 }
 
-int main() {
-    testBuildTree();
-    return 0;
+// Test if constructing the tree with an invalid file format throws an exception
+TEST_F(TreeTest, TreeThrowsExceptionOnInvalidFormat) {
+    EXPECT_THROW({
+        Tree testTree("invalid_ast.txt");
+    }, std::runtime_error);
+}
+
+// Test if constructing the tree with an empty file throws an exception
+TEST_F(TreeTest, TreeThrowsExceptionOnEmptyFile) {
+    EXPECT_THROW({
+        Tree testTree("empty_ast.txt");
+    }, std::runtime_error);
+}
+
+// SUCCESSFUL tree construction from file
+TEST_F(TreeTest, ConstructTreeFromFile) {
+    ASSERT_NO_THROW({
+        Tree testTree("test_ast_1.txt");
+    });
+}
+
+// **********************************************
+// buildTree tests for std::cerr outputs
+// **********************************************
+// Test to capture `std::cerr` output when reading an invalid file format
+// Test to capture `std::cerr` output when reading an invalid file format
+TEST_F(TreeTest, CaptureStderrForInvalidFormat) {
+    std::ifstream file("invalid_ast.txt");
+    std::stringstream buffer;
+    std::streambuf* oldCerrBuffer = std::cerr.rdbuf(buffer.rdbuf());
+
+    try {
+        Tree testTree("invalid_ast.txt");
+    } catch (const std::runtime_error&) {
+        // suppress the runtime error to continue checking the `std::cerr` output
+    }
+
+    std::cerr.rdbuf(oldCerrBuffer);
+    std::string capturedOutput = buffer.str();
+
+    // check that the captured output contains the expected warning
+    EXPECT_NE(capturedOutput.find("Warning: Invalid line in the file"), std::string::npos);
+}
+
+// Test to capture `std::cerr` output when declaration parent is not found
+TEST_F(TreeTest, CaptureStderrForMissingDeclarationParent) {
+    std::ofstream file("missing_decl_parent.txt");
+    ASSERT_TRUE(file.is_open());
+    file << "Statement\tCompoundStmt\tN/A\tC:\\include\\bits\\c++config.h\t320\t16\n"; // no declaration before this statement
+    file.close();
+
+    std::stringstream buffer;
+    std::streambuf* oldCerrBuffer = std::cerr.rdbuf(buffer.rdbuf());
+
+    try {
+        Tree testTree("missing_decl_parent.txt");
+    } catch (const std::runtime_error&) {
+        // suppress runtime error to check captured output
+    }
+
+    std::cerr.rdbuf(oldCerrBuffer);
+    std::string capturedOutput = buffer.str();
+
+    // check the expected output to ensure it matches the missing parent warning
+    EXPECT_NE(capturedOutput.find("Warning: Could not find declaration parent for statement node"), std::string::npos);
+
+    // cleanup
+    std::filesystem::remove("missing_decl_parent.txt");
+}
+
+// Test to capture `std::cerr` output when line or column number cannot be parsed
+TEST_F(TreeTest, CaptureStderrForInvalidLineOrColumn) {
+    std::ofstream invalidColumnFile("invalid_column.txt");
+    ASSERT_TRUE(invalidColumnFile.is_open());
+    invalidColumnFile << "Declaration\tNamespace\tc:@N@std\tC:\\include\\bits\\c++config.h\tABC\t123\n"; // invalid line number
+    invalidColumnFile.close();
+
+    std::stringstream buffer;
+    std::streambuf* oldCerrBuffer = std::cerr.rdbuf(buffer.rdbuf());
+
+    // expect an exception
+    EXPECT_THROW({
+        Tree testTree("invalid_column.txt");
+    }, std::runtime_error);
+
+    std::cerr.rdbuf(oldCerrBuffer);
+    std::string capturedOutput = buffer.str();
+
+    // expect std::cerr log
+    EXPECT_NE(capturedOutput.find("ERROR: Failed to parse line or column number"), std::string::npos);
+
+    // Cleanup
+    std::filesystem::remove("invalid_column.txt");
+}
+
+// **********************************************
+// Node creation, storing, retrieving from maps tests - WITH SMALL DATASET
+// **********************************************
+// Test root node existence and properties after successful construction
+TEST_F(TreeTest, CheckRootNodeAfterConstruction) {
+    Tree testTree("test_ast_1.txt");
+    Node* root = testTree.getRoot();
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(root->kind, "TranslationUnit");
+    EXPECT_EQ(root->path, "N/A");
+    EXPECT_EQ(root->lineNumber, 0);
+    EXPECT_EQ(root->columnNumber, 0);
+}
+
+// Test if declaration node return is empty when no declaration nodes are present
+TEST_F(TreeTest, AccessDeclarationNodeByNotExistingEnhancedKey) {
+    Tree testTree("test_ast_1.txt");
+
+    auto declRange = testTree.getDeclNodes("c:@N@std@T@size_t");
+    ASSERT_EQ(declRange.first, declRange.second); // no declaration node with the enhanced key
+}
+
+// Test accessing a declaration node by its enhanced key
+TEST_F(TreeTest, AccessDeclarationNodeByEnhancedKey) {
+    Tree testTree("test_ast_1.txt");
+
+    // generate the enhanced key for the declaration node we want to access
+    std::string kind = "Namespace";
+    std::string usr = "c:@N@std";
+    std::string path = "C:\\include\\bits\\c++config.h";
+    std::string enhancedKey = kind + "|" + usr + "|" + path + "|";
+
+    // retrieve declaration nodes using the generated enhanced key
+    auto declNodes = testTree.getDeclNodes(enhancedKey);
+
+    // ensure the iterator range is valid and points to the correct node
+    ASSERT_NE(declNodes.first, declNodes.second); // there should be at least one node with this key
+    const Node* node = declNodes.first->second;
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->kind, kind);
+    EXPECT_EQ(node->usr, usr);
+    EXPECT_EQ(node->path, path);
+}
+
+// Test if we can iterate over all declaration nodes and find specific keys
+TEST_F(TreeTest, IterateOverDeclarationNodes) {
+    Tree testTree("test_ast_1.txt");
+
+    // retrieve the entire declaration map
+    const auto& declMap = testTree.getDeclNodeMultiMap();
+
+    // ensure the map is not empty
+    ASSERT_FALSE(declMap.empty());
+    ASSERT_TRUE(declMap.size() == 3);
+
+    // check if we can find a specific node by iterating over the map
+    bool found = false;
+    std::string targetKey = "Typedef|c:@N@std@T@size_t|C:\\include\\bits\\c++config.h|";
+    for (const auto& pair : declMap) {
+        if (pair.first == targetKey) {
+            found = true;
+            EXPECT_EQ(pair.second->kind, "Typedef");
+            EXPECT_EQ(pair.second->usr, "c:@N@std@T@size_t");
+            EXPECT_EQ(pair.second->path, "C:\\include\\bits\\c++config.h");
+            break;
+        }
+    }
+
+    EXPECT_TRUE(found);
+}
+
+// Test if in case if no statement nodes are present, the map is empty
+TEST_F(TreeTest, NoStatementNodes) {
+    Tree testTree("test_ast_1.txt");
+
+    const auto& stmtMultiMap = testTree.getStmtNodeMultiMap();
+    EXPECT_TRUE(stmtMultiMap.empty());
+}
+
+// Test the `getStmtNodes` method when there are no statement nodes
+TEST_F(TreeTest, NoStatementNodesForGivenKey) {
+    Tree testTree("test_ast_1.txt");
+
+    std::string kind = "Typedef";
+    std::string usr = "c:@N@std@T@size_t";
+    std::string path = "C:\\include\\bits\\c++config.h";
+    std::string enhancedKey = kind + "|" + usr + "|" + path + "|";
+
+    auto declNode = testTree.getDeclNodes(enhancedKey);
+    ASSERT_NE(declNode.first, declNode.second);
+
+    std::string stmtKey = enhancedKey + "|" + std::to_string(declNode.first->second->topologicalOrder);
+    auto stmtNodes = testTree.getStmtNodes(stmtKey);
+
+    EXPECT_EQ(stmtNodes.first, stmtNodes.second);
+}
+
+// **********************************************
+// Node storing and retrieving from maps tests - WITH LARGE DATASET
+// **********************************************
+// Test if multiple declaration nodes with the same key are stored correctly
+TEST_F(TreeTest, CheckDeclarationNodesInAST) {
+    Tree testTree("test_ast_2.txt");
+    // ensure the number of unique declaration keys is correct., in `test_ast_2.txt`, the declarations are:
+    // - TranslationUnit
+    // - Namespace: std
+    // - Typedef: size_t (repeated twice, so only one unique key)
+    // - Function: doSomething
+    // - Function: doSomethingElse
+    // - Variable: x (inside both functions, treated as two separate declarations)
+    auto declMap = testTree.getDeclNodeMultiMap();
+    EXPECT_EQ(declMap.size(), 8); // all 8 nodes get added
+
+    std::string typedefKey = "Typedef|c:@N@std@T@size_t|C:\\include\\bits\\c++config.h|";
+    auto typedefRange = testTree.getDeclNodes(typedefKey);
+    size_t typedefCount = std::distance(typedefRange.first, typedefRange.second);
+    EXPECT_EQ(typedefCount, 2);  // expect two entries for typedef `size_t` with identical key
+
+    std::string functionKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    auto functionRange = declMap.equal_range(functionKey);
+    size_t functionCount = std::distance(functionRange.first, functionRange.second);
+    EXPECT_EQ(functionCount, 1);  // expect one entry for `doSomething`
+
+    std::string functionElseKey = "Function|c:@F@doSomethingElse|C:\\include\\bits\\c++config.h|";
+    auto functionElseRange = declMap.equal_range(functionElseKey);
+    size_t functionElseCount = std::distance(functionElseRange.first, functionElseRange.second);
+    EXPECT_EQ(functionElseCount, 1);  // expect one entry for `doSomethingElse`
+
+    std::string varKey = "Var|c:@F@doSomething@x|C:\\include\\bits\\c++config.h|";
+    auto varRange = declMap.equal_range(varKey);
+    size_t varCount = std::distance(varRange.first, varRange.second);
+    EXPECT_EQ(varCount, 2);  // expect two entries for `x` due to repeated declaration
+
+    std::string namespaceKey = "Namespace|c:@N@std|C:\\include\\bits\\c++config.h|";
+    auto namespaceRange = declMap.equal_range(namespaceKey);
+    size_t namespaceCount = std::distance(namespaceRange.first, namespaceRange.second);
+    EXPECT_EQ(namespaceCount, 1);  // expect one entry for namespace `std`
+
+    std::string translationUnitKey = "TranslationUnit|c:|N/A|";
+    auto translationUnitRange = declMap.equal_range(translationUnitKey);
+    size_t translationUnitCount = std::distance(translationUnitRange.first, translationUnitRange.second);
+    EXPECT_EQ(translationUnitCount, 1);  // expect one entry for `TranslationUnit`
+}
+
+// Test if the statement nodes are stored correctly 
+TEST_F(TreeTest, CheckStatementMultiMapSize) {
+    Tree testTree("test_ast_2.txt");
+
+    auto stmtMultiMap = testTree.getStmtNodeMultiMap();
+    EXPECT_EQ(stmtMultiMap.size(), 2); // only two functions have statements
+}
+
+// helper function
+void CheckStatementsForFunction(Tree& testTree, const std::string& functionKey, 
+                                const std::vector<std::string>& expectedStmtKinds, 
+                                const std::vector<std::pair<int, int>>& expectedLineCols) {
+    auto declNodeRange = testTree.getDeclNodes(functionKey);
+    ASSERT_NE(declNodeRange.first, declNodeRange.second) << "Function with key " << functionKey << " not found in AST";
+
+    Node* declNode = declNodeRange.first->second;
+
+    // key for stmt statements
+    std::string stmtKey = declNode->enhancedKey + "|" + std::to_string(declNode->topologicalOrder);
+    auto stmtNodes = testTree.getStmtNodes(stmtKey);
+
+    size_t stmtCount = std::distance(stmtNodes.first, stmtNodes.second);
+    EXPECT_EQ(stmtCount, expectedStmtKinds.size()) << "Statement count mismatch for function: " << functionKey;
+
+    auto stmtIt = stmtNodes.first;
+    for (size_t i = 0; i < expectedStmtKinds.size() && stmtIt != stmtNodes.second; ++i, ++stmtIt) {
+        Node* stmtNode = *stmtIt;
+
+        EXPECT_EQ(stmtNode->kind, expectedStmtKinds[i]) << "Statement kind mismatch at index " << i << " for function " << functionKey;
+
+        EXPECT_EQ(stmtNode->lineNumber, expectedLineCols[i].first) << "Line number mismatch for statement kind " << expectedStmtKinds[i] << " at index " << i;
+        EXPECT_EQ(stmtNode->columnNumber, expectedLineCols[i].second) << "Column number mismatch for statement kind " << expectedStmtKinds[i] << " at index " << i;
+    }
+}
+
+// Test if the statement nodes are stored correctly for each function
+TEST_F(TreeTest, CheckStatementsForFunctions) {
+    Tree testTree("test_ast_2.txt");
+
+    // test for `doSomething` function
+    std::string funcDoSomethingKey = "Function|c:@F@doSomething|C:\\include\\bits\\c++config.h|";
+    std::vector<std::string> expectedStmtKindsDoSomething = {"CompoundStmt", "ExprStmt", "ReturnStmt"};
+    std::vector<std::pair<int, int>> expectedLineColsDoSomething = {{351, 6}, {353, 7}, {354, 7}};
+    CheckStatementsForFunction(testTree, funcDoSomethingKey, expectedStmtKindsDoSomething, expectedLineColsDoSomething);
+
+    // test for `doSomethingElse` function
+    std::string funcDoSomethingElseKey = "Function|c:@F@doSomethingElse|C:\\include\\bits\\c++config.h|";
+    std::vector<std::string> expectedStmtKindsDoSomethingElse = {"CompoundStmt", "ExprStmt", "ReturnStmt"};
+    std::vector<std::pair<int, int>> expectedLineColsDoSomethingElse = {{401, 6}, {403, 7}, {404, 7}};
+    CheckStatementsForFunction(testTree, funcDoSomethingElseKey, expectedStmtKindsDoSomethingElse, expectedLineColsDoSomethingElse);
+}
+
+// Test for retrieving statements for a non-existent function
+TEST_F(TreeTest, RetrieveStatementsForNonexistentFunction) {
+    Tree testTree("test_ast_2.txt");
+
+    std::string nonExistentFunctionKey = "Function|c:@F@nonExistent|C:\\include\\bits\\c++config.h|";
+    auto stmtNodesRange = testTree.getStmtNodes(nonExistentFunctionKey);
+
+    EXPECT_EQ(stmtNodesRange.first, stmtNodesRange.second); // Should be empty
+}
+
+// **********************************************
+// Parent-child relationships tests
+// **********************************************
+// Test to verify parent-child relationships in the nested AST
+TEST_F(TreeTest, VerifyParentChildRelationships) {
+    Tree testTree("test_ast_nested.txt");
+
+    Node* root = testTree.getRoot();
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(root->kind, "TranslationUnit");
+
+    ASSERT_EQ(root->children.size(), 2);
+    Node* namespaceStd = root->children[0];
+    Node* namespaceOther = root->children[1];
+
+    ASSERT_NE(namespaceStd, nullptr);
+    EXPECT_EQ(namespaceStd->kind, "Namespace");
+    EXPECT_EQ(namespaceStd->usr, "c:@N@std");
+
+    ASSERT_NE(namespaceOther, nullptr);
+    EXPECT_EQ(namespaceOther->kind, "Namespace");
+    EXPECT_EQ(namespaceOther->usr, "c:@N@other");
+
+    ASSERT_EQ(namespaceStd->children.size(), 3);
+    Node* classVector = namespaceStd->children[2];
+    Node* typeDefFirst = namespaceStd->children[1];
+    Node* typeDefSecond = namespaceStd->children[0];
+    ASSERT_NE(classVector, nullptr);
+    EXPECT_EQ(classVector->kind, "Class");
+    EXPECT_EQ(classVector->usr, "c:@N@std@C@Vector");
+
+    ASSERT_NE(typeDefFirst, nullptr);
+    EXPECT_EQ(typeDefFirst->kind, "Typedef");
+    EXPECT_EQ(typeDefFirst->usr, "c:@N@std@T@size_t");
+    ASSERT_EQ(typeDefFirst->children.size(), 0);
+
+    ASSERT_NE(typeDefSecond, nullptr);
+    EXPECT_EQ(typeDefSecond->kind, "Typedef");
+    EXPECT_EQ(typeDefSecond->usr, "c:@N@std@T@size_t");
+    ASSERT_EQ(typeDefSecond->children.size(), 0);
+
+    ASSERT_EQ(classVector->children.size(), 1);
+    Node* funcPushBack = classVector->children[0];
+    ASSERT_NE(funcPushBack, nullptr);
+    EXPECT_EQ(funcPushBack->kind, "Function");
+    EXPECT_EQ(funcPushBack->usr, "c:@N@std@C@Vector@F@push_back");
+
+    ASSERT_EQ(funcPushBack->children.size(), 1);
+    Node* compoundStmtPushBack = funcPushBack->children[0];
+    ASSERT_NE(compoundStmtPushBack, nullptr);
+    EXPECT_EQ(compoundStmtPushBack->kind, "CompoundStmt");
+
+    ASSERT_EQ(compoundStmtPushBack->children.size(), 1);
+    Node* exprStmt = compoundStmtPushBack->children[0];
+
+    ASSERT_NE(exprStmt, nullptr);
+    EXPECT_EQ(exprStmt->kind, "ExprStmt");
+
+    ASSERT_EQ(exprStmt->children.size(), 1);
+    Node* varX = exprStmt->children[0];
+
+    ASSERT_NE(varX, nullptr);
+    EXPECT_EQ(varX->kind, "Var");
+    EXPECT_EQ(varX->usr, "c:@N@std@C@Vector@F@push_back@x");
+    ASSERT_EQ(varX->children.size(), 0);
+
+    ASSERT_EQ(namespaceOther->children.size(), 1);
+    Node* classList = namespaceOther->children[0];
+    ASSERT_NE(classList, nullptr);
+    EXPECT_EQ(classList->kind, "Class");
+    EXPECT_EQ(classList->usr, "c:@N@other@C@List");
+
+    ASSERT_EQ(classList->children.size(), 1);
+    Node* funcAdd = classList->children[0];
+    ASSERT_NE(funcAdd, nullptr);
+    EXPECT_EQ(funcAdd->kind, "Function");
+    EXPECT_EQ(funcAdd->usr, "c:@N@other@C@List@F@add");
+
+    ASSERT_EQ(funcAdd->children.size(), 1);
+    Node* compoundStmtAdd = funcAdd->children[0];
+    ASSERT_NE(compoundStmtAdd, nullptr);
+    EXPECT_EQ(compoundStmtAdd->kind, "CompoundStmt");
+
+    ASSERT_EQ(compoundStmtAdd->children.size(), 1);
+    Node* returnStmt = compoundStmtAdd->children[0];
+    ASSERT_NE(returnStmt, nullptr);
+    EXPECT_EQ(returnStmt->kind, "ReturnStmt");
+    ASSERT_EQ(returnStmt->children.size(), 0);
 }

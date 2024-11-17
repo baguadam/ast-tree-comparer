@@ -4,18 +4,14 @@
 #include "./headers/tree_comparer.h"
 #include "./headers/utils.h"
 
-TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, std::unique_ptr<TreeComparerLogger> logger) 
+TreeComparer::TreeComparer(Tree& firstTree, Tree& secondTree, IDatabaseWrapper& db) 
     : firstASTTree(firstTree), 
       secondASTTree(secondTree), 
-      dbWrapper(std::make_unique<Neo4jDatabaseWrapper>("http://localhost:7474", "neo4j", "eszter2005")),
-      logger(std::move(logger)),
+      dbWrapper(db),
       topologicalComparer([](const Node* a, const Node* b) { return a->topologicalOrder < b->topologicalOrder; }) {
     if (!firstTree.getRoot() || !secondTree.getRoot()) {
         throw std::invalid_argument("Invalid Tree object passed to TreeComparer: Root node is null.");
-    }
-
-    // clear the database before starting the comparison
-    dbWrapper->clearDatabase();
+    }   
 } 
 
 /*
@@ -24,6 +20,8 @@ Description:
     prints the necessary information about the differences to the console. 
 */
 void TreeComparer::printDifferences() {
+    dbWrapper.clearDatabase(); // clear the database before starting the comparison
+
     std::queue<Node*> queue;
 
     // start with the root nodes of both ASTs
@@ -47,7 +45,7 @@ void TreeComparer::printDifferences() {
     }
 
     // send the remaining nodes from the batch
-    dbWrapper->finalize();
+    dbWrapper.finalize();
 }
 
 /*
@@ -88,8 +86,8 @@ void TreeComparer::compareSourceLocations(const Node* firstNode, const Node* sec
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_SOURCE_LOCATIONS);
 
-        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
-        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
+        dbWrapper.addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper.addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -105,8 +103,8 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
 
         std::string differenceTypeStr = Utils::differenceTypeToString(DIFFERENT_PARENT);
 
-        dbWrapper->addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
-        dbWrapper->addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
+        dbWrapper.addNodeToBatch(*firstNode, true, differenceTypeStr, Utils::astIdToString(FIRST_AST));
+        dbWrapper.addNodeToBatch(*secondNode, true, differenceTypeStr, Utils::astIdToString(SECOND_AST));
     }
 }
 
@@ -114,7 +112,7 @@ void TreeComparer::compareParents(const Node* firstNode, const Node* secondNode)
 Description:
     Main comparison method for comparing two nodes, that exist in both ASTs, taking into account many aspects and printing the differences
 */
-void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
+void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode) {
     // checking for parents
     compareParents(firstNode, secondNode);
 
@@ -122,7 +120,7 @@ void TreeComparer::compareSimilarDeclNodes(Node* firstNode, Node* secondNode, co
     compareSourceLocations(firstNode, secondNode);
 
     // compare their statement nodes
-    compareStmtNodes(nodeKey);
+    compareStmtNodes(firstNode, secondNode);
 
     // mark nodes as processed
     firstNode->isProcessed = true;
@@ -134,9 +132,11 @@ Description:
     Compares the statement nodes of two declaration nodes, creates a set of nodes for each AST using unique hash and equal functions,
     then compares the nodes in the first AST with the nodes in the second AST, printing the differences.
 */
-void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
-    auto firstASTStmtRange = firstASTTree.getStmtNodes(nodeKey);
-    auto secondASTStmtRange = secondASTTree.getStmtNodes(nodeKey);
+void TreeComparer::compareStmtNodes(const Node* firstNode, const Node* secondNode) {
+    std::string firstNodeStmtKey = firstNode->enhancedKey + "|" + std::to_string(firstNode->topologicalOrder);
+    std::string secondNodeStmtKey = secondNode->enhancedKey + "|" + std::to_string(secondNode->topologicalOrder);
+    auto firstASTStmtRange = firstASTTree.getStmtNodes(firstNodeStmtKey);
+    auto secondASTStmtRange = secondASTTree.getStmtNodes(secondNodeStmtKey);
 
     // map of second AST statement nodes for lookup
     std::unordered_map<std::string, Node*> secondASTMap;
@@ -159,30 +159,23 @@ void TreeComparer::compareStmtNodes(const std::string& nodeKey) {
         } else {
             Node* secondNode = secondNodeIt->second;
 
-            if (!secondNode->isProcessed) { 
-                compareSimilarStmtNodes(stmtNode, secondNode);
+            if (!secondNode->isProcessed) {
+                compareParents(stmtNode, secondNode);
+                compareSourceLocations(stmtNode, secondNode);
+
+                stmtNode->isProcessed = true;
+                secondNode->isProcessed = true;
             }
         }
     }
 
-    // second pass: process unmatched nodes in secont AST
+    // second pass: process unmatched nodes in second AST
     for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
         Node* stmtNode = *it;
         if (!stmtNode->isProcessed) {
             processNodesInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
         }
     } 
-}
-
-/*
-Description:
-    Comparison logic of two similar statement nodes, checking for parents and source locations
-*/
-void TreeComparer::compareSimilarStmtNodes(Node* firstNode, Node* secondNode) {
-    // checking for parents
-    compareParents(firstNode, secondNode);
-    firstNode->isProcessed = true;
-    secondNode->isProcessed = true;
 }
 
 /*
@@ -210,11 +203,11 @@ void TreeComparer::processDeclNodesInBothASTs(const std::string& nodeKey) {
         Node* firstNode = firstASTRange.first->second;
         Node* secondNode = secondASTRange.first->second;
 
-        checkNodeFingerprints(firstNode, secondNode, nodeKey);
+        compareSimilarDeclNodes(firstNode, secondNode);      
         return; // no need for further processing
     } else {
         // RARE CASE: multiple nodes with the same key
-        processMultiDeclNodes(firstASTRange, secondASTRange, nodeKey);
+        processMultiDeclNodes(firstASTRange, secondASTRange);
     }
 }
 
@@ -226,8 +219,7 @@ Description:
 void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
                                                 std::unordered_multimap<std::string, Node*>::const_iterator>& firstASTRange,
                                          const std::pair<std::unordered_multimap<std::string, Node*>::const_iterator,
-                                                std::unordered_multimap<std::string, Node*>::const_iterator>& secondASTRange,
-                                         const std::string& nodeKey) {
+                                                std::unordered_multimap<std::string, Node*>::const_iterator>& secondASTRange) {
     std::vector<Node*> firstASTDeclNodes;
     std::vector<Node*> secondASTDeclNodes;
 
@@ -253,9 +245,8 @@ void TreeComparer::processMultiDeclNodes(const std::pair<std::unordered_multimap
             continue;  // Skip already processed nodes
         }
 
-        checkNodeFingerprints(firstNode, secondNode, nodeKey);
+        compareSimilarDeclNodes(firstNode, secondNode);
     }
-
 
     // process any remaining nodes in both ASTs
     processRemainingNodes(firstASTDeclNodes.begin() + minSize, firstASTDeclNodes.end(), firstASTTree, FIRST_AST);
@@ -289,33 +280,16 @@ void TreeComparer::processNodesInSingleAST(Node* current, Tree& tree, const ASTI
         const DifferenceType diffType = (ast == FIRST_AST) ? ONLY_IN_FIRST_AST : ONLY_IN_SECOND_AST;
 
         // logger->logNode(currentNode, diffType, ast, depth); // log the node
-        this->dbWrapper->addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
+        this->dbWrapper.addNodeToBatch(*currentNode, depth == 0, Utils::differenceTypeToString(diffType), Utils::astIdToString(ast)); // set it as part of the subtree (at this point cannot be hightest level node)
 
-        // parent-child relationships for the subtree
-        if (currentNode->parent) {
-            dbWrapper->addRelationshipToBatch(*currentNode->parent, *currentNode);
+        // parent-child relationships for the subtree, skipping the "root" node
+        if (currentNode->parent && depth != 0) {
+            dbWrapper.addRelationshipToBatch(*currentNode->parent, *currentNode);
         }
     };
 
     // traverse the subtree and process nodes accordingly
     tree.processSubTree(current, processNode);
-}
-
-/*
-Description:
-    Processes the remaining nodes in the vector, starting from the given index, in the given AST, handles both DECLARATIONS and STATEMENTS
-*/
-void TreeComparer::checkNodeFingerprints(Node* firstNode, Node* secondNode, const std::string& nodeKey) {
-    if (firstNode->fingerprint == secondNode->fingerprint) {
-        // additional checks in case of fingerprint collision
-        if (firstNode->kind == secondNode->kind && firstNode->children.size() == secondNode->children.size()) {
-            firstNode->isProcessed = true;
-            secondNode->isProcessed = true;
-            return;  // nodes considered identical, no further processing needed
-        }
-    }
-    // fallback to detailed node comparison
-    compareSimilarDeclNodes(firstNode, secondNode, nodeKey);
 }
 
 /*

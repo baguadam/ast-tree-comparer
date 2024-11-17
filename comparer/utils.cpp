@@ -9,7 +9,7 @@ Description:
     Generates a unique key for a statement node based on its parent
 */
 std::string Utils::getStmtKey(const Node* node, const std::string& declarationParentKey) {
-    std::string statementKey = node->kind + "|" + node->usr + "|" + node->path + "|" + std::to_string(node->lineNumber) + ":" + std::to_string(node->columnNumber);
+    std::string statementKey = node->kind + "|" + node->usr + "|" + node->path + "|";
     return declarationParentKey + "|" + statementKey;  // concatenate parent and current node's key
 }
 
@@ -77,9 +77,9 @@ Description:
 */
 std::string Utils::astIdToString(const ASTId ast) {
     switch (ast) {
-        case FIRST_AST: return "FIRST AST";
-        case SECOND_AST: return "SECOND AST";
-        default: return "UNKNOWN AST";
+        case FIRST_AST: return "FIRST_AST";
+        case SECOND_AST: return "SECOND_AST";
+        default: return "UNKNOWN_AST";
     }
 }
 
@@ -116,11 +116,11 @@ Description:
 */
 std::string Utils::differenceTypeToString(const DifferenceType type) {
     switch (type) {
-        case ONLY_IN_FIRST_AST: return "NODE EXISTS ONLY IN FIRST AST";
-        case ONLY_IN_SECOND_AST: return "NODE EXISTS ONLY IN SECOND AST";
-        case DIFFERENT_PARENT: return "NODES HAVE DIFFERENT PARENTS";
-        case DIFFERENT_SOURCE_LOCATIONS: return "NODES HAVE DIFFERENT SOURCE LOCATIONS";
-        default: return "UNKNOWN DIFFERENCE";
+        case ONLY_IN_FIRST_AST: return "ONLY_IN_FIRST_AST";
+        case ONLY_IN_SECOND_AST: return "ONLY_IN_SECOND_AST";
+        case DIFFERENT_PARENT: return "DIFFERENT_PARENTS";
+        case DIFFERENT_SOURCE_LOCATIONS: return "DIFFERENT_SOURCE_LOCATIONS";
+        default: return "UNKNOWN_DIFFERENCE";
     }
 }
 
