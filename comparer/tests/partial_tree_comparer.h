@@ -2,8 +2,8 @@
 
 #define _PARTIAL_TREE_COMPARER_H_
 #include <gmock/gmock.h>
-#include "../headers/tree_comparer.h"
-#include "../headers/node.h"
+#include "../include/tree_comparer.h"
+#include "../include/node.h"
 
 class BaseMockTreeComparer : public TreeComparer {
 public:

@@ -3,8 +3,8 @@
 #define _MOCK_DATABASE_WRAPPER_H_
 
 #include <gmock/gmock.h>
-#include "../headers/idatabase_wrapper.h"
-#include "../headers/node.h"
+#include "../include/idatabase_wrapper.h"
+#include "../include/node.h"
 
 class MockDatabaseWrapper : public IDatabaseWrapper {
 public:

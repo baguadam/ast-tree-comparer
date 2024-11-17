@@ -1,7 +1,7 @@
 #ifndef _TREE_COMPARER_TEST_WRAPPER_H_
 
 #define _TREE_COMPARER_TEST_WRAPPER_H
-#include "../headers/tree_comparer.h"
+#include "../include/tree_comparer.h"
 
 class TreeComparerTestWrapper : public TreeComparer {
 public:

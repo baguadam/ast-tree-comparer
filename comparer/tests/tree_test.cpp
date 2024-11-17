@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../headers/tree.h"
+#include "../include/tree.h"
 #include <fstream>
 #include <filesystem>
 
