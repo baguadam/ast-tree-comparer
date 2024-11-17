@@ -20,8 +20,8 @@ jobs:
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v1
 
-      - name: Install Dependencies (LLVM, Ninja, CURL)
-        run: sudo apt-get install -y llvm clang curl ninja-build
+      - name: Install Dependencies (LLVM, Ninja, CURL, libcurl-dev)
+        run: sudo apt-get install -y llvm clang curl ninja-build libcurl4-openssl-dev
 
       - name: Configure CMake
         run: cmake -S comparer -B comparer/build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
@@ -36,4 +36,4 @@ jobs:
         run: cmake --build comparer/tests/build
 
       - name: Run Tests
-        run: ctest --test-dir comparer/tests/build --output-on-failure -V
+        run: ctest --test-dir comparer/tests/build --output-on-failure
