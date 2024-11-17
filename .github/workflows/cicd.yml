@@ -1,3 +1,13 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - "**" # Triggers for every branch
+  pull_request:
+    branches:
+      - main # Only triggers for pull requests targeting 'main'
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
