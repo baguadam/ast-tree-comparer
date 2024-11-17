@@ -879,3 +879,162 @@ TEST_F(IntegrationTest, PrintDifferences_MultipleAppearances_DifferentParents_Di
     TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
     comparer.printDifferences();
 }
+
+TEST_F(IntegrationTest, PrintDifferences_NamespaceWithExtraStatementsAndFunctions) {
+    createASTFile("test_ast_1_namespace.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@myNamespace\tC:\\project\\namespace.cpp\t100\t1",                           // Namespace node exists in both
+        "  Declaration\tFunction\tc:@N@myNamespace@F@doSomething\tC:\\project\\namespace.cpp\t110\t2",             // Function exists in both
+        "   Statement\tExprStmt\tN/A\tC:\\project\\namespace.cpp\t111\t3",                                         // Shared statement
+        "   Statement\tReturnStmt\tN/A\tC:\\project\\namespace.cpp\t112\t4",                                       // Statement only in the first AST
+        "  Declaration\tFunction\tc:@N@myNamespace@F@onlyInFirst\tC:\\project\\namespace.cpp\t120\t5",             // Function only in the first AST
+        "   Statement\tExprStmt\tN/A\tC:\\project\\namespace.cpp\t121\t6",                                         
+        "  Declaration\tVariable\tc:@N@myNamespace@globalVar1\tC:\\project\\namespace.cpp\t130\t7"                 // Variable only in the first AST
+    });
+
+    createASTFile("test_ast_2_namespace.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@myNamespace\tC:\\project\\namespace.cpp\t100\t1",                           // Namespace node exists in both
+        "  Statement\tExprStmt\tN/A\tC:\\project\\namespace.cpp\t105\t2",                                          // Statement only in the second AST
+        "  Declaration\tFunction\tc:@N@myNamespace@F@doSomething\tC:\\project\\namespace.cpp\t110\t2",             // Function exists in both
+        "   Statement\tExprStmt\tN/A\tC:\\project\\namespace.cpp\t111\t3",                                         // Shared statement
+        "   Statement\tExprStmt\tN/A\tC:\\project\\namespace.cpp\t115\t5",                                         // Statement only in the second AST
+        "  Declaration\tFunction\tc:@N@myNamespace@F@onlyInSecond\tC:\\project\\namespace.cpp\t140\t6",            // Function only in the second AST
+        "   Statement\tReturnStmt\tN/A\tC:\\project\\namespace.cpp\t141\t7",                                       
+        "  Declaration\tVariable\tc:@N@myNamespace@globalVar2\tC:\\project\\namespace.cpp\t150\t8"                 // Variable only in the second AST
+    });
+
+    Tree firstAstTree("test_ast_1_namespace.txt");
+    Tree secondAstTree("test_ast_2_namespace.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // namespace differences
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(4);   // 1 Function + ExprStmt, 1 Variabla, 1 ReturnStmt
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(5);  // 1 Function + 1 ReturnStmt, 1 Variable, 2ExprStmts
+
+    // no calls:
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", _)).Times(0);
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_PARENTS", _)).Times(0);
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(2)); // Function -> ExprStmt, Function -> ReturnStmt
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
+
+TEST_F(IntegrationTest, PrintDifferences_SameKeysDifferentStructures) {
+    createASTFile("test_ast_1_same_key.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@commonFunc\tC:\\project\\different_structure.cpp\t100\t1",
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\different_structure.cpp\t101\t2",
+        "  Declaration\tVariable\tc:@N@varUniqueFirst\tC:\\project\\different_structure.cpp\t102\t3"       // Variable only in first AST
+    });
+
+    createASTFile("test_ast_2_same_key.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@commonFunc\tC:\\project\\different_structure.cpp\t100\t1",
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\different_structure.cpp\t101\t2",
+        "  Declaration\tTypedef\tc:@N@typedefUniqueSecond\tC:\\project\\different_structure.cpp\t105\t4"   // Typedef only in second AST
+    });
+
+    Tree firstAstTree("test_ast_1_same_key.txt");
+    Tree secondAstTree("test_ast_2_same_key.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // differences in children structure
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(1);  // Variable node only in first AST
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(1); // Typedef node only in second AST
+
+    // relationships for different children
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0)); // no relationships, no children
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
+
+TEST_F(IntegrationTest, PrintDifferences_CrossNamespaceReferencesAndRecursiveDeclarations) {
+    createASTFile("test_ast_1_cross_namespace.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@namespaceA\tC:\\project\\cross_namespace.cpp\t100\t1",
+        "  Declaration\tFunction\tc:@N@namespaceA@F@functionA\tC:\\project\\cross_namespace.cpp\t110\t2",  // Function exists in both, references namespaceB
+        "   Statement\tExprStmt\tN/A\tC:\\project\\cross_namespace.cpp\t111\t3",
+        " Declaration\tNamespace\tc:@N@namespaceB\tC:\\project\\cross_namespace.cpp\t120\t4",              // NamespaceB exists only in the first AST
+        "  Declaration\tFunction\tc:@N@namespaceB@F@functionB\tC:\\project\\cross_namespace.cpp\t130\t5",  // Function only in the first AST
+        "   Statement\tReturnStmt\tN/A\tC:\\project\\cross_namespace.cpp\t131\t6"
+    });
+
+    createASTFile("test_ast_2_cross_namespace.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tNamespace\tc:@N@namespaceA\tC:\\project\\cross_namespace.cpp\t100\t1",
+        "  Declaration\tFunction\tc:@N@namespaceA@F@functionA\tC:\\project\\cross_namespace.cpp\t110\t2",            // Function exists in both, references namespaceB differently
+        "   Statement\tExprStmt\tN/A\tC:\\project\\cross_namespace.cpp\t111\t3",
+        "  Declaration\tFunction\tc:@N@namespaceA@F@functionOnlyInSecond\tC:\\project\\cross_namespace.cpp\t150\t7", // Function only in the second AST
+        "   Statement\tExprStmt\tN/A\tC:\\project\\cross_namespace.cpp\t151\t8",
+        " Declaration\tNamespace\tc:@N@namespaceC\tC:\\project\\cross_namespace.cpp\t160\t9",                        // NamespaceC exists only in the second AST
+        "  Declaration\tFunction\tc:@N@namespaceC@F@functionC\tC:\\project\\cross_namespace.cpp\t170\t10",           // Function only in second AST, references namespaceA
+        "   Statement\tExprStmt\tN/A\tC:\\project\\cross_namespace.cpp\t171\t11"
+    });
+
+    Tree firstAstTree("test_ast_1_cross_namespace.txt");
+    Tree secondAstTree("test_ast_2_cross_namespace.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // namespace differences
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_FIRST_AST", _)).Times(3);  // NamespaceB, FunctionB, ReturnStmt
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "ONLY_IN_SECOND_AST", _)).Times(5); // NamespaceC, FunctionC, ExprStmt, FunctionOnlyInSecond, ExprStmt
+
+    // function call differences
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(5)); // NamespaceB -> FunctionB -> ReturnStmt, NamespaceC -> FunctionC -> ExprStmt, FunctionOnlyInSecond -> ExprStmt
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
+
+TEST_F(IntegrationTest, PrintDifferences_CyclicRelationships) {
+    createASTFile("test_ast_1_cyclic.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@funcA\tC:\\project\\cyclic.cpp\t100\t1",                  // funcA calls funcB
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\cyclic.cpp\t101\t2",
+        "   Statement\tCallExpr\tfuncB\tC:\\project\\cyclic.cpp\t102\t3",                       // Calls funcB
+        " Declaration\tFunction\tc:@F@funcB\tC:\\project\\cyclic.cpp\t200\t4",                  // funcB calls funcA (cycle)
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\cyclic.cpp\t201\t5",
+        "   Statement\tCallExpr\tfuncA\tC:\\project\\cyclic.cpp\t202\t6"                        // Calls funcA
+    });
+
+    createASTFile("test_ast_2_cyclic.txt", {
+        "Declaration\tTranslationUnit\tc:\tN/A\t0\t0",
+        " Declaration\tFunction\tc:@F@funcA\tC:\\project\\cyclic.cpp\t100\t1",                  // funcA calls funcB with slight change
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\cyclic.cpp\t101\t2",
+        "   Statement\tCallExpr\tfuncB\tC:\\project\\cyclic.cpp\t105\t3",                       // Calls funcB at different location
+        " Declaration\tFunction\tc:@F@funcB\tC:\\project\\cyclic.cpp\t200\t4",                  // funcB also calls funcA
+        "  Statement\tCompoundStmt\tN/A\tC:\\project\\cyclic.cpp\t201\t5",
+        "   Statement\tCallExpr\tfuncA\tC:\\project\\cyclic.cpp\t202\t6"                        // Calls funcA
+    });
+
+    Tree firstAstTree("test_ast_1_cyclic.txt");
+    Tree secondAstTree("test_ast_2_cyclic.txt");
+
+    // usual database calls
+    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
+    // source location differences in calls
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "FIRST_AST")).Times(Exactly(1));  // funcA's call to funcB
+    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, "DIFFERENT_SOURCE_LOCATIONS", "SECOND_AST")).Times(Exactly(1)); // funcA's call to funcB
+
+    // relationships
+    EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(0)); // no relationships, parents are not displayed
+
+    TreeComparer comparer(firstAstTree, secondAstTree, dbWrapper);
+    comparer.printDifferences();
+}
