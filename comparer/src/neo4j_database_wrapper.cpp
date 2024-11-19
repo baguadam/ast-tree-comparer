@@ -230,10 +230,8 @@ Description:
     Creates the necessary indices for the database, in our case so far it's enough to create an index for the enhancedKey property of the Node
 */
 void Neo4jDatabaseWrapper::createIndices() {
-    std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}";
-    
+    std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}"; 
     std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
-
     std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
     
     if (sendRequest(query) && sendRequest(indexDifferenceType) && sendRequest(indexAstOrigin)) {
