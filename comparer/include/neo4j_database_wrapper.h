@@ -21,8 +21,8 @@ public:
 
 private:
     bool isCircuitBreakerActive = false; // prevents execution if set
-    int consecutiveFailures = 0;       // counts consecutive failures
-    const int failureThreshold = 3;    // maximum allowed failures
+    int consecutiveFailures = 0;         // counts consecutive failures
+    const int failureThreshold = 3;      // maximum allowed failures
 
     std::string dbUri;
     std::string authHeader;
