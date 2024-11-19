@@ -10,6 +10,7 @@ class MockDatabaseWrapper : public IDatabaseWrapper {
 public:
     MOCK_METHOD(void, addNodeToBatch, (const Node&, bool, const std::string&, const std::string&), (override));
     MOCK_METHOD(void, addRelationshipToBatch, (const Node&, const Node&), (override));
+    MOCK_METHOD(void, createIndices, (), (override));
     MOCK_METHOD(void, finalize, (), (override));
     MOCK_METHOD(void, clearDatabase, (), (override));
 };

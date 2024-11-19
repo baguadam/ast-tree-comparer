@@ -20,7 +20,8 @@ Description:
     prints the necessary information about the differences to the console. 
 */
 void TreeComparer::printDifferences() {
-    dbWrapper.clearDatabase(); // clear the database before starting the comparison
+    dbWrapper.clearDatabase();
+    dbWrapper.createIndices();
 
     std::queue<Node*> queue;
 

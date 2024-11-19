@@ -9,6 +9,7 @@ public:
     virtual void addNodeToBatch(const Node&, bool, const std::string&, const std::string&) = 0;
     virtual void addRelationshipToBatch(const Node&, const Node&) = 0;
     virtual void finalize() = 0;
+    virtual void createIndices() = 0;
     virtual void clearDatabase() = 0;
 };
 

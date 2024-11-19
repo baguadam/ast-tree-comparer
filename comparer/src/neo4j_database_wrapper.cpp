@@ -15,9 +15,6 @@ Neo4jDatabaseWrapper::Neo4jDatabaseWrapper(const std::string& uri, const std::st
     std::string credentials = username + ":" + password;
     std::string encoded_credentials = Utils::base64Encode(credentials);
     authHeader = "Authorization: Basic " + encoded_credentials;
-
-    // create indices for enhancedKey for faster lookup
-    createIndices();
 }
 
 Neo4jDatabaseWrapper::~Neo4jDatabaseWrapper() {
@@ -54,8 +51,8 @@ void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel, co
     nodeBatch.push_back(nodeStream.str());
 
     // if the batch size exceeds 5000, execute the batch
-    if (nodeBatch.size() >= 5000) {
-        executeBatch();
+    if (nodeBatch.size() >= 5000 && !executeBatch()) {
+        std::cerr << "Execution failed for node batch." << std::endl;
     }
 }
 
@@ -79,8 +76,8 @@ void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node
     relationshipBatch.push_back(relStream.str());
 
     // if the batch size exceeds 5000, execute the batch
-    if (relationshipBatch.size() >= 5000) {
-        executeBatch();
+    if (relationshipBatch.size() >= 5000 && !executeBatch()) {
+        std::cerr << "Execution failed for node batch." << std::endl;
     }
 }
 
@@ -88,9 +85,13 @@ void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node
 Description:
     Executes the batch of nodes and relationships in the database
 */
-void Neo4jDatabaseWrapper::executeBatch() {
+bool Neo4jDatabaseWrapper::executeBatch() {
+    if (isCircuitBreakerActive) {
+        return false;
+    }
+
     if (nodeBatch.empty() && relationshipBatch.empty()) {
-        return;  // nothing to execute
+        return true; // nothing to execute
     }
 
     std::ostringstream queryStream;
@@ -140,24 +141,44 @@ void Neo4jDatabaseWrapper::executeBatch() {
 
     queryStream << "]}";
 
-    sendRequest(queryStream.str());
+    // send request
+    if (!sendRequest(queryStream.str())) {
+        consecutiveFailures++;
+        std::cerr << "Failed to execute batch. Consecutive failures: " << consecutiveFailures << std::endl;
 
-    // clear the buffers
+        if (consecutiveFailures >= failureThreshold) {
+            isCircuitBreakerActive = true;
+            std::cerr << "Circuit breaker activated after " << failureThreshold << " failures." << std::endl;
+        }
+        
+        nodeBatch.clear();
+        relationshipBatch.clear();
+        return false;
+    }
+
+    // reset state on success
+    consecutiveFailures = 0;
     nodeBatch.clear();
     relationshipBatch.clear();
+    return true;
 }
 
 /*
 Description:
     Sends a request to the Neo4j database with the given query JSON
 */
-void Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
-    if (!curl) {
-        std::cerr << "CURL initialization failed" << std::endl;
-        return;
+bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
+    if (isCircuitBreakerActive) {
+        std::cerr << "Circuit breaker active. Skipping request." << std::endl;
+        return false;
     }
 
-    struct curl_slist* headers = nullptr;
+    if (!curl) {
+        std::cerr << "CURL initialization failed" << std::endl;
+        return false;
+    }
+
+    curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, authHeader.c_str());
 
@@ -165,25 +186,30 @@ void Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, queryJson.c_str());
 
-    // RETRY MECHANISM for temporary network failures
+    // retry mechanism
     int retryCount = 0;
     const int maxRetries = 3;
     CURLcode res;
     do {
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
-            std::cerr << "CURL request failed: " << curl_easy_strerror(res) << " - Retrying (" << retryCount + 1 << "/" << maxRetries << ")" << std::endl;
+            std::cerr << "CURL request failed: " << curl_easy_strerror(res)
+                      << " - Retrying (" << retryCount + 1 << "/" << maxRetries << ")" << std::endl;
             retryCount++;
         } else {
             break; // request succeeded
         }
     } while (retryCount < maxRetries);
 
+    // cleanup
+    curl_slist_free_all(headers);
+
     if (res != CURLE_OK) {
         std::cerr << "CURL request ultimately failed after retries: " << curl_easy_strerror(res) << std::endl;
+        return false;
     }
 
-    curl_slist_free_all(headers);
+    return true;
 }
 
 /*
@@ -192,7 +218,11 @@ Description:
 */
 void Neo4jDatabaseWrapper::clearDatabase() {
     std::string query = "{\"statements\": [{\"statement\": \"MATCH (n) DETACH DELETE n\"}]}";
-    sendRequest(query);
+    if (sendRequest(query)) {
+        std::cout << "Database cleared successfully." << std::endl;
+    } else {
+        throw std::runtime_error("Failed to clear the Neo4j database.");
+    }
 }
 
 /*
@@ -201,13 +231,16 @@ Description:
 */
 void Neo4jDatabaseWrapper::createIndices() {
     std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}";
-    sendRequest(query);
     
     std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
-    sendRequest(indexDifferenceType);
 
     std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
-    sendRequest(indexAstOrigin);
+    
+    if (sendRequest(query) && sendRequest(indexDifferenceType) && sendRequest(indexAstOrigin)) {
+        std::cout << "Indices created successfully." << std::endl;
+    } else {
+        throw std::runtime_error("Failed to create indices in the Neo4j database.");
+    }
 }
 
 /*
@@ -215,8 +248,10 @@ Description:
     Finalizes the batch by executing any remaining nodes and relationships
 */
 void Neo4jDatabaseWrapper::finalize() {
-    // execute any remaining bathec
-    if (!nodeBatch.empty() || !relationshipBatch.empty()) {
-        executeBatch();
+    // execute any remaining bathes
+    if ((!nodeBatch.empty() || !relationshipBatch.empty()) && !executeBatch()) {
+        std::cerr << "Failed to execute remaining batch." << std::endl;
+        nodeBatch.clear();
+        relationshipBatch.clear();
     }
 }
