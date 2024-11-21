@@ -5,6 +5,17 @@
 // #include "./headers/factories/console_logger_creator.h"
 #include <iostream>
 
+bool testDatabaseConnection(Neo4jDatabaseWrapper& dbWrapper) {
+    try {
+        dbWrapper.clearDatabase();
+        dbWrapper.createIndices();
+        return true; // connection successful
+    } catch (const std::exception& e) {
+        std::cerr << "Database connection test failed: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <first_ast_file> <second_ast_file>" << std::endl;
@@ -20,6 +31,10 @@ int main(int argc, char* argv[]) {
 
         // db wrapper
         Neo4jDatabaseWrapper dbWrapper("http://localhost:7474", "neo4j", "eszter2005");
+        if (!testDatabaseConnection(dbWrapper)) {
+            std::cerr << "Failed to connect to Neo4j database. Terminating program." << std::endl; 
+            return EXIT_FAILURE;
+        }
 
         TreeComparer comparer(firstStandardAST, secondStandardAST, dbWrapper);
         comparer.printDifferences();

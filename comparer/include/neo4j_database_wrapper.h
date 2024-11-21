@@ -16,20 +16,23 @@ public:
     void addNodeToBatch(const Node&, bool, const std::string&, const std::string&) override;
     void addRelationshipToBatch(const Node&, const Node&) override;
     void clearDatabase() override;
+    void createIndices();
     void finalize() override;
 
 private:
+    bool isCircuitBreakerActive = false; // prevents execution if set
+    int consecutiveFailures = 0;         // counts consecutive failures
+    const int failureThreshold = 3;      // maximum allowed failures
+
     std::string dbUri;
     std::string authHeader;
-
     CURL* curl;
 
     std::vector<std::string> nodeBatch;
     std::vector<std::string> relationshipBatch;
 
-    void createIndices();
-    void executeBatch();
-    void sendRequest(const std::string&);
+    bool executeBatch();
+    bool sendRequest(const std::string&);
 };
 
 #endif
