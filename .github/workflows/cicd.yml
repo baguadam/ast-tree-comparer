@@ -17,11 +17,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up CMake
-        uses: jwlawson/actions-setup-cmake@v1
+      - name: Update apt package list
+        run: sudo apt-get update
+
+      - name: Reset apt sources to defaults (if needed)
+        run: |
+          sudo mv /etc/apt/sources.list /etc/apt/sources.list.bak || true
+          sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu jammy main universe restricted multiverse" > /etc/apt/sources.list'
+          sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu jammy-updates main universe restricted multiverse" >> /etc/apt/sources.list'
+          sudo bash -c 'echo "deb http://security.ubuntu.com/ubuntu jammy-security main universe restricted multiverse" >> /etc/apt/sources.list'
+          sudo apt-get update
 
       - name: Install Dependencies (LLVM, Ninja, CURL, libcurl-dev)
-        run: sudo apt-get install -y llvm clang curl ninja-build libcurl4-openssl-dev
+        run: sudo apt-get install -y --fix-missing llvm clang curl ninja-build libcurl4-openssl-dev
 
       - name: Configure CMake
         run: cmake -S comparer -B comparer/build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
