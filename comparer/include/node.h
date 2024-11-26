@@ -20,10 +20,9 @@ struct Node {
     std::vector<Node*> children;     // Children of this node
 
     // Unique properties and flags
-    std::string enhancedKey;         // Identifier (path from the root)
-    size_t fingerprint = 0;          // Hashed fingerprint value of the node (only for declaration nodes)
+    std::string enhancedKey;         // Identifier (combination of kind, usr and path)
+    size_t fingerprint = 0;          // Hashed fingerprint value of the node
     bool isProcessed = false;        // Flag for processed nodes
-
 };
 
 #endif

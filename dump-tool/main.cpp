@@ -76,6 +76,10 @@ public:
   }
 
 private:
+  clang::ASTContext* Context;
+  int depth;
+  std::ofstream& outFile;
+
   void indent() const {
     for (int i = 0; i < depth; ++i)
       outFile << ' ';
@@ -86,15 +90,11 @@ private:
     clang::index::generateUSRForDecl(decl, Usr);
     return std::string(Usr.begin(), Usr.end());
   }
-
-  clang::ASTContext* Context;
-  int depth;
-  std::ofstream& outFile;
 };
 
-class MyASTConsumer : public clang::ASTConsumer {
+class CustomASTComsumer : public clang::ASTConsumer {
 public:
-  explicit MyASTConsumer(clang::ASTContext* Context, std::ofstream& outFile) 
+  explicit CustomASTComsumer(clang::ASTContext* Context, std::ofstream& outFile) 
     : Visitor(Context, outFile) { }
 
   virtual void HandleTranslationUnit(clang::ASTContext &Context) {
@@ -105,25 +105,24 @@ private:
   TreeBuilder Visitor;
 };
 
-class MyFrontendAction : public clang::ASTFrontendAction {
+class CustomFrontendAction : public clang::ASTFrontendAction {
 public:
-  MyFrontendAction(std::ofstream& outFile) : outFile(outFile) {}
+  CustomFrontendAction(std::ofstream& outFile) : outFile(outFile) {}
 
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile) override {
-    return std::make_unique<MyASTConsumer>(&Compiler.getASTContext(), outFile);
+    return std::make_unique<CustomASTComsumer>(&Compiler.getASTContext(), outFile);
   }
 
 private:
   std::ofstream& outFile;
 };
 
-// Custom FrontendActionFactory to allow passing parameters
-class MyFrontendActionFactory : public clang::tooling::FrontendActionFactory {
+class CustomFrontendActionFactory : public clang::tooling::FrontendActionFactory {
 public:
-  MyFrontendActionFactory(std::ofstream& outFile) : outFile(outFile) {}
+  CustomFrontendActionFactory(std::ofstream& outFile) : outFile(outFile) {}
 
   std::unique_ptr<clang::FrontendAction> create() override {
-    return std::make_unique<MyFrontendAction>(outFile);
+    return std::make_unique<CustomFrontendAction>(outFile);
   }
 
 private:
@@ -166,7 +165,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // Use the custom factory to create actions
-  MyFrontendActionFactory factory(outFile);
+  CustomFrontendActionFactory factory(outFile);
   int result = Tool.run(&factory);
 
   outFile.close();
