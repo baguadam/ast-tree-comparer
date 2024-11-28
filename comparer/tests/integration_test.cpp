@@ -85,8 +85,9 @@ protected:
 
         MockDatabaseWrapper dbWrapper; // mock database wrapper
 
-        EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+        // usual finalize call
         EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
+
         EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(Exactly(addNodeCalls));
         EXPECT_CALL(dbWrapper, addRelationshipToBatch(_, _)).Times(Exactly(addRelationshipCalls)); 
 
@@ -804,8 +805,7 @@ TEST_F(IntegrationTest, PrintDifferences_DiffSource_ChildOnlyInFirst_TwoSubtrees
     Tree firstAstTree("test_ast_1_mixed.txt");
     Tree secondAstTree("test_ast_2_mixed.txt");
 
-    // usual database calls 
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // source location
@@ -856,8 +856,7 @@ TEST_F(IntegrationTest, PrintDifferences_MultipleAppearances_DifferentParents_Di
     Tree firstAstTree("test_ast_1_complex.txt");
     Tree secondAstTree("test_ast_2_complex.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // source location differences
@@ -908,8 +907,7 @@ TEST_F(IntegrationTest, PrintDifferences_NamespaceWithExtraStatementsAndFunction
     Tree firstAstTree("test_ast_1_namespace.txt");
     Tree secondAstTree("test_ast_2_namespace.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // namespace differences
@@ -945,8 +943,7 @@ TEST_F(IntegrationTest, PrintDifferences_SameKeysDifferentStructures) {
     Tree firstAstTree("test_ast_1_same_key.txt");
     Tree secondAstTree("test_ast_2_same_key.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // differences in children structure
@@ -986,8 +983,7 @@ TEST_F(IntegrationTest, PrintDifferences_CrossNamespaceReferencesAndRecursiveDec
     Tree firstAstTree("test_ast_1_cross_namespace.txt");
     Tree secondAstTree("test_ast_2_cross_namespace.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // namespace differences
@@ -1025,8 +1021,7 @@ TEST_F(IntegrationTest, PrintDifferences_CyclicRelationships) {
     Tree firstAstTree("test_ast_1_cyclic.txt");
     Tree secondAstTree("test_ast_2_cyclic.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // source location differences in calls
@@ -1060,8 +1055,7 @@ TEST_F(IntegrationTest, PrintDifferences_SharedChildrenWithDifferentStructures) 
     Tree firstAstTree("test_ast_1_shared_children.txt");
     Tree secondAstTree("test_ast_2_shared_children.txt");
 
-    // usual database calls
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
+    // usual finalize call
     EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
 
     // differences in unique children
