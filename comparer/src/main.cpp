@@ -1,8 +1,5 @@
 #include "../include/tree_comparer.h"
 #include "../include/tree.h"
-// #include "./headers/loggers/tree_comparer_logger.h"
-// #include "./headers/loggers/console_logger.h"
-// #include "./headers/factories/console_logger_creator.h"
 #include <iostream>
 
 bool testDatabaseConnection(Neo4jDatabaseWrapper& dbWrapper) {
@@ -22,15 +19,20 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    std::string firstFilePath = argv[1];
-    std::string secondFilePath = argv[2];
+    const std::string firstFilePath = argv[1];
+    const std::string secondFilePath = argv[2];
+    const char* neo4jPassword = std::getenv("NEO4J_PASSWORD");
+    if (!neo4jPassword) {
+        std::cerr << "NEO4J_PASSWORD environment variable not set, using default value" << std::endl;
+        neo4jPassword = "default_password";
+    }
 
     try {
         Tree firstStandardAST(firstFilePath);
         Tree secondStandardAST(secondFilePath);
 
         // db wrapper
-        Neo4jDatabaseWrapper dbWrapper("http://localhost:7474", "neo4j", "eszter2005");
+        Neo4jDatabaseWrapper dbWrapper("http://localhost:7474", "neo4j", neo4jPassword);
         if (!testDatabaseConnection(dbWrapper)) {
             std::cerr << "Failed to connect to Neo4j database. Terminating program." << std::endl; 
             return EXIT_FAILURE;
