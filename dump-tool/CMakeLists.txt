@@ -8,6 +8,8 @@ find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${CLANG_INCLUDE_DIRS})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Add executable
 add_executable(clang_ast_tool main.cpp)
 
@@ -17,6 +19,3 @@ target_link_libraries(clang_ast_tool
   clang-cpp
   LLVM
 )
-
-# Enable generation of compile_commands.json
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
