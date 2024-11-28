@@ -18,7 +18,7 @@ target_include_directories(tree PUBLIC include)
 target_include_directories(tree_comparer PUBLIC include)
 target_include_directories(utils PUBLIC include)
 
-set(SOURCES ./src/neo4j_database_wrapper.cpp ./loggers/console_logger.cpp ./src/main.cpp)
+set(SOURCES ./src/neo4j_database_wrapper.cpp ./src/main.cpp)
 
 add_executable(ast-tree-comparer ${SOURCES})
 target_link_libraries(ast-tree-comparer PRIVATE tree tree_comparer utils ${CURL_LIBRARIES})
