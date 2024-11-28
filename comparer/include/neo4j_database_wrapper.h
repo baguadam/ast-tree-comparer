@@ -1,10 +1,12 @@
-#ifndef NEO4J_DATABASE_WRAPPER_H
-#define NEO4J_DATABASE_WRAPPER_H
+#ifndef _NEO4J_DATABASE_WRAPPER_H_
+
+#define _NEO4J_DATABASE_WRAPPER_H_
 
 #include <string>
 #include <curl/curl.h>
 #include <memory>
 #include <vector>
+#include <nlohmann/json.hpp>
 #include "node.h"
 #include "idatabase_wrapper.h"
 
@@ -28,8 +30,8 @@ private:
     std::string authHeader;
     CURL* curl;
 
-    std::vector<std::string> nodeBatch;
-    std::vector<std::string> relationshipBatch;
+    std::vector<nlohmann::json> nodeBatch;
+    std::vector<nlohmann::json> relationshipBatch;
 
     bool executeBatch();
     bool sendRequest(const std::string&);
