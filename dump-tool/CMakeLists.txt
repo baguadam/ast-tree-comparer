@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(ClangASTTool)
 
-# Find LLVM and Clang libraries and components
+# find LLVM and Clang libraries and components
 find_package(Clang REQUIRED CONFIG)
 find_package(LLVM REQUIRED CONFIG)
 
@@ -10,10 +10,10 @@ include_directories(${CLANG_INCLUDE_DIRS})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Add executable
+# add executable
 add_executable(clang_ast_tool main.cpp)
 
-# Link LLVM and Clang libraries
+# link LLVM and Clang libraries
 target_link_libraries(clang_ast_tool
   PRIVATE
   clang-cpp

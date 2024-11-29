@@ -17,16 +17,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-# include directories
 include_directories(include)
 
-# create libraries for testing
+# libraries for testing
 add_library(tree STATIC ./src/tree.cpp)
 add_library(tree_comparer STATIC ./src/tree_comparer.cpp)
 add_library(utils STATIC ./src/utils.cpp)
 add_library(neo4j_wrapper STATIC ./src/neo4j_database_wrapper.cpp)
 
-# Link the nlohmann/json library to the targets that need it
 target_link_libraries(tree_comparer PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(neo4j_wrapper PUBLIC nlohmann_json::nlohmann_json)
 
