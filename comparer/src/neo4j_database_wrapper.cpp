@@ -151,6 +151,9 @@ bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, queryJson.c_str());
 
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+
     // retry mechanism
     int retryCount = 0;
     const int maxRetries = 3;
@@ -183,7 +186,9 @@ void Neo4jDatabaseWrapper::clearDatabase() {
             {"statement", "MATCH (n) DETACH DELETE n"}
         }}}
     };
+
     if (sendRequest(query.dump())) {
+        std::cout << "=== INSIDE IF\n";
         std::cout << "Database cleared successfully." << std::endl;
     } else {
         throw std::runtime_error("Failed to clear the Neo4j database.");
