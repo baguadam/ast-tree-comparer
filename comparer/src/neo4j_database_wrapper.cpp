@@ -1,4 +1,3 @@
-/* Updated neo4j_database_wrapper.cpp */
 #include "../include/neo4j_database_wrapper.h"
 #include <iostream>
 #include <sstream>
