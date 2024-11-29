@@ -28,6 +28,10 @@ Neo4jDatabaseWrapper::~Neo4jDatabaseWrapper() {
     curl_global_cleanup();
 }
 
+/*
+Description:
+    Adds a node to the batch for later execution in the Neo4j database, with the specified difference type and AST origin.
+*/
 void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel, const std::string& differenceType, const std::string& astOrigin) {
     // create a JSON object for the node
     json nodeJson = {
@@ -53,6 +57,10 @@ void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel, co
     }
 }
 
+/*
+Description:
+    Adds a relationship to the batch for later execution in the Neo4j database.
+*/
 void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node& child) {
     // create a JSON object for the relationship
     json relationshipJson = {
@@ -71,6 +79,10 @@ void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node
     }
 }
 
+/*
+Description:
+    Executes the current batch of nodes and relationships in the Neo4j database.
+*/
 bool Neo4jDatabaseWrapper::executeBatch() {
     if (isCircuitBreakerActive) {
         return false;
@@ -132,6 +144,10 @@ bool Neo4jDatabaseWrapper::executeBatch() {
     return true;
 }
 
+/*
+Description:
+    Sends a request to the Neo4j database with the specified query JSON.
+*/
 bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     if (isCircuitBreakerActive) {
         std::cerr << "Circuit breaker active. Skipping request." << std::endl;
@@ -180,6 +196,10 @@ bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     return true;
 }
 
+/*
+Description:
+    Clears the Neo4j database by deleting all nodes and relationships.
+*/
 void Neo4jDatabaseWrapper::clearDatabase() {
     json query = {
         {"statements", {{
@@ -195,6 +215,10 @@ void Neo4jDatabaseWrapper::clearDatabase() {
     }
 }
 
+/*
+Description:
+    Creates the required indices in the Neo4j database.
+*/
 void Neo4jDatabaseWrapper::createIndices() {
     std::vector<std::string> indexStatements = {
         "CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)",
@@ -216,6 +240,10 @@ void Neo4jDatabaseWrapper::createIndices() {
     std::cout << "Indices created successfully." << std::endl;
 }
 
+/*
+Description:
+    Finalizes the database wrapper by executing any remaining batches.
+*/
 void Neo4jDatabaseWrapper::finalize() {
     // execute any remaining batches
     if ((!nodeBatch.empty() || !relationshipBatch.empty()) && !executeBatch()) {
