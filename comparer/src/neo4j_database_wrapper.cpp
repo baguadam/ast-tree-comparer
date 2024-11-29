@@ -130,9 +130,6 @@ bool Neo4jDatabaseWrapper::executeBatch() {
     nodeBatch.clear();
     relationshipBatch.clear();
     return true;
-
-
-    
 }
 
 bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
