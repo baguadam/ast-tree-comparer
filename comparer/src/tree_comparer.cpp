@@ -20,9 +20,6 @@ Description:
     prints the necessary information about the differences to the console. 
 */
 void TreeComparer::printDifferences() {
-    dbWrapper.clearDatabase();
-    dbWrapper.createIndices();
-
     std::queue<Node*> queue;
 
     // start with the root nodes of both ASTs

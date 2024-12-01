@@ -191,17 +191,3 @@ std::string Utils::base64Encode(const std::string& in) {
     while (out.size() % 4) out.push_back('=');
     return out;
 }
-
-/*
-Description:
-    Escapes the backslashes in a string for valid JSON syntax
-*/
-std::string Utils::escapeString(const std::string& str) {
-    std::string escaped = str;
-    std::string::size_type pos = 0;
-    while ((pos = escaped.find("\\", pos)) != std::string::npos) {
-        escaped.replace(pos, 1, "\\\\");
-        pos += 2;
-    }
-    return escaped;
-}

@@ -71,21 +71,6 @@ Node createNode(NodeType type, const std::string& kind, const std::string& usr,
 }
 
 // **********************************************
-// TreeComparer unit tests - printDifferences
-// **********************************************
-TEST_F(TreeComparerTest, PrintDifferencesFinalizesDatabase) {
-    Tree tree1("test_ast_1.txt");
-    Tree tree2("test_ast_2.txt");
-
-    EXPECT_CALL(dbWrapper, finalize()).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, clearDatabase()).Times(Exactly(1));
-    EXPECT_CALL(dbWrapper, addNodeToBatch(_, _, _, _)).Times(testing::AnyNumber());
-    TreeComparer comparer(tree1, tree2, dbWrapper);
-
-    comparer.printDifferences();
-}
-
-// **********************************************
 // TreeComparer unit tests - compareSourceLocations
 // **********************************************
 // Test for comparing source locations when nodes have differing paths

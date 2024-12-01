@@ -2,7 +2,7 @@
 #include "../include/tree.h"
 #include <iostream>
 
-bool testDatabaseConnection(Neo4jDatabaseWrapper& dbWrapper) {
+bool initializeDb(Neo4jDatabaseWrapper& dbWrapper) {
     try {
         dbWrapper.clearDatabase();
         dbWrapper.createIndices();
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
         // db wrapper
         Neo4jDatabaseWrapper dbWrapper("http://localhost:7474", "neo4j", neo4jPassword);
-        if (!testDatabaseConnection(dbWrapper)) {
+        if (!initializeDb(dbWrapper)) {
             std::cerr << "Failed to connect to Neo4j database. Terminating program." << std::endl; 
             return EXIT_FAILURE;
         }

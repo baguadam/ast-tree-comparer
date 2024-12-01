@@ -1,9 +1,12 @@
 #include "../include/neo4j_database_wrapper.h"
 #include <iostream>
 #include <sstream>
+#include <nlohmann/json.hpp>
 #include "../include/utils.h"
 #include <curl/curl.h>
 #include <iomanip>
+
+using json = nlohmann::json;
 
 Neo4jDatabaseWrapper::Neo4jDatabaseWrapper(const std::string& uri, const std::string& username, const std::string& password)
     : dbUri(uri + "/db/neo4j/tx/commit") {
@@ -26,64 +29,58 @@ Neo4jDatabaseWrapper::~Neo4jDatabaseWrapper() {
 
 /*
 Description:
-    Adds a node to the batch for creation in the database, if the batch size exceeds 5000, the batch is executed, also \ characters are properly escaped
-    for valid JSON syntax
+    Adds a node to the batch for later execution in the Neo4j database, with the specified difference type and AST origin.
 */
 void Neo4jDatabaseWrapper::addNodeToBatch(const Node& node, bool isHighLevel, const std::string& differenceType, const std::string& astOrigin) {
-    // properly escape backslashes in the path and enhancedKey
-    std::string escapedPath = Utils::escapeString(node.path);
-    std::string escapedEnhancedKey = Utils::escapeString(node.enhancedKey);
+    // create a JSON object for the node
+    json nodeJson = {
+        {"enhancedKey", node.enhancedKey},
+        {"topologicalOrder", node.topologicalOrder},
+        {"type", node.type},
+        {"kind", node.kind},
+        {"usr", node.usr},
+        {"path", node.path},
+        {"lineNumber", node.lineNumber},
+        {"columnNumber", node.columnNumber},
+        {"isHighLevel", isHighLevel},
+        {"differenceType", differenceType},
+        {"astOrigin", astOrigin}
+    };
 
-    std::ostringstream nodeStream;
-    nodeStream << "{\"enhancedKey\": \"" << escapedEnhancedKey
-               << "\", \"topologicalOrder\": " << node.topologicalOrder
-               << ", \"type\": \"" << node.type
-               << "\", \"kind\": \"" << node.kind
-               << "\", \"usr\": \"" << node.usr
-               << "\", \"path\": \"" << escapedPath
-               << "\", \"lineNumber\": " << node.lineNumber
-               << ", \"columnNumber\": " << node.columnNumber
-               << ", \"isHighLevel\": " << (isHighLevel ? "true" : "false")
-               << ", \"differenceType\": \"" << differenceType
-               << "\", \"astOrigin\": \"" << astOrigin << "\""
-               << "}";
+    // add node JSON to the batch
+    nodeBatch.push_back(nodeJson);
 
-    nodeBatch.push_back(nodeStream.str());
-
-    // if the batch size exceeds 5000, execute the batch
-    if (nodeBatch.size() >= 5000 && !executeBatch()) {
+    // if the batch size exceeds 1000, execute the batch
+    if (nodeBatch.size() >= 3000 && !executeBatch()) {
         std::cerr << "Execution failed for node batch." << std::endl;
     }
 }
 
 /*
 Description:
-    Adds a relationship to the batch for creation in the database, if the batch size exceeds 5000, the batch is executed, also \ characters are properly escaped
-    for valid JSON syntax
+    Adds a relationship to the batch for later execution in the Neo4j database.
 */
 void Neo4jDatabaseWrapper::addRelationshipToBatch(const Node& parent, const Node& child) {
-    // Properly escape backslashes in the parent and child keys
-    std::string escapedParentKey = Utils::escapeString(parent.enhancedKey);
-    std::string escapedChildKey = Utils::escapeString(child.enhancedKey);
+    // create a JSON object for the relationship
+    json relationshipJson = {
+        {"parentKey", parent.enhancedKey},
+        {"parentOrder", parent.topologicalOrder},
+        {"childKey", child.enhancedKey},
+        {"childOrder", child.topologicalOrder}
+    };
 
-    std::ostringstream relStream;
-    relStream << "{\"parentKey\": \"" << escapedParentKey
-              << "\", \"parentOrder\": " << parent.topologicalOrder
-              << ", \"childKey\": \"" << escapedChildKey
-              << "\", \"childOrder\": " << child.topologicalOrder
-              << "}";
+    // add relationship JSON to the batch
+    relationshipBatch.push_back(relationshipJson);
 
-    relationshipBatch.push_back(relStream.str());
-
-    // if the batch size exceeds 5000, execute the batch
-    if (relationshipBatch.size() >= 5000 && !executeBatch()) {
-        std::cerr << "Execution failed for node batch." << std::endl;
+    // if the batch size exceeds 1000, execute the batch
+    if (relationshipBatch.size() >= 3000 && !executeBatch()) {
+        std::cerr << "Execution failed for relationship batch." << std::endl;
     }
 }
 
 /*
 Description:
-    Executes the batch of nodes and relationships in the database
+    Executes the current batch of nodes and relationships in the Neo4j database.
 */
 bool Neo4jDatabaseWrapper::executeBatch() {
     if (isCircuitBreakerActive) {
@@ -94,55 +91,38 @@ bool Neo4jDatabaseWrapper::executeBatch() {
         return true; // nothing to execute
     }
 
-    std::ostringstream queryStream;
-    queryStream << "{\"statements\": [";
+    json requestBody = {
+        {"statements", json::array()}
+    };
 
-    bool hasNodes = !nodeBatch.empty();
-    bool hasRelationships = !relationshipBatch.empty();
-
-    // if there are nodes to be created, add the node creation query.
-    if (hasNodes) {
-        queryStream << "{\"statement\": \"UNWIND $nodes AS node "
-                    << "CREATE (n:Node {enhancedKey: node.enhancedKey, type: node.type, kind: node.kind, usr: node.usr, "
-                    << "path: node.path, lineNumber: node.lineNumber, columnNumber: node.columnNumber, "
-                    << "topologicalOrder: node.topologicalOrder, isHighLevel: node.isHighLevel, diffType: node.differenceType, ast: node.astOrigin})\", "
-                    << "\"parameters\": {\"nodes\": [";
-
-        // JSON format for nodes
-        for (size_t i = 0; i < nodeBatch.size(); ++i) {
-            if (i > 0) queryStream << ",";
-            queryStream << nodeBatch[i];
-        }
-
-        queryStream << "]}}";
+    if (!nodeBatch.empty()) {
+        json nodeStatement = {
+            {"statement", "UNWIND $nodes AS node "
+                          "CREATE (n:Node {enhancedKey: node.enhancedKey, type: node.type, kind: node.kind, usr: node.usr, "
+                          "path: node.path, lineNumber: node.lineNumber, columnNumber: node.columnNumber, "
+                          "topologicalOrder: node.topologicalOrder, isHighLevel: node.isHighLevel, diffType: node.differenceType, ast: node.astOrigin})"},
+            {"parameters", {{"nodes", nodeBatch}}}
+        };
+        requestBody["statements"].push_back(nodeStatement);
     }
 
-    // if there are relationships to be created, add the relationship creation query.
-    if (hasRelationships) {
-        if (hasNodes) {
-            queryStream << ",";  // add a comma to separate the two queries
-        }
-
-        queryStream << "{\"statement\": \"UNWIND $relationships AS rel "
-                    << "MATCH (a:Node {enhancedKey: rel.parentKey, topologicalOrder: rel.parentOrder}) "
-                    << "WITH a, rel "
-                    << "MATCH (b:Node {enhancedKey: rel.childKey, topologicalOrder: rel.childOrder}) "
-                    << "CREATE (a)-[:HAS_CHILD]->(b)\", "
-                    << "\"parameters\": {\"relationships\": [";
-
-        // JSON format for relationships
-        for (size_t i = 0; i < relationshipBatch.size(); ++i) {
-            if (i > 0) queryStream << ",";
-            queryStream << relationshipBatch[i];
-        }
-
-        queryStream << "]}}";
+    if (!relationshipBatch.empty()) {
+        json relationshipStatement = {
+            {"statement", "UNWIND $relationships AS rel "
+                          "MATCH (a:Node {enhancedKey: rel.parentKey, topologicalOrder: rel.parentOrder}) "
+                          "WITH a, rel "
+                          "MATCH (b:Node {enhancedKey: rel.childKey, topologicalOrder: rel.childOrder}) "
+                          "CREATE (a)-[:HAS_CHILD]->(b)"},
+            {"parameters", {{"relationships", relationshipBatch}}}
+        };
+        requestBody["statements"].push_back(relationshipStatement);
     }
 
-    queryStream << "]}";
+    // serialize requestBody to a string
+    std::string queryJson = requestBody.dump();
 
     // send request
-    if (!sendRequest(queryStream.str())) {
+    if (!sendRequest(queryJson)) {
         consecutiveFailures++;
         std::cerr << "Failed to execute batch. Consecutive failures: " << consecutiveFailures << std::endl;
 
@@ -150,7 +130,7 @@ bool Neo4jDatabaseWrapper::executeBatch() {
             isCircuitBreakerActive = true;
             std::cerr << "Circuit breaker activated after " << failureThreshold << " failures." << std::endl;
         }
-        
+
         nodeBatch.clear();
         relationshipBatch.clear();
         return false;
@@ -165,7 +145,7 @@ bool Neo4jDatabaseWrapper::executeBatch() {
 
 /*
 Description:
-    Sends a request to the Neo4j database with the given query JSON
+    Sends a request to the Neo4j database with the specified query JSON.
 */
 bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     if (isCircuitBreakerActive) {
@@ -185,6 +165,9 @@ bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
     curl_easy_setopt(curl, CURLOPT_URL, dbUri.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, queryJson.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
 
     // retry mechanism
     int retryCount = 0;
@@ -214,11 +197,17 @@ bool Neo4jDatabaseWrapper::sendRequest(const std::string& queryJson) {
 
 /*
 Description:
-    Clears the database by deleting all nodes and relationships
+    Clears the Neo4j database by deleting all nodes and relationships.
 */
 void Neo4jDatabaseWrapper::clearDatabase() {
-    std::string query = "{\"statements\": [{\"statement\": \"MATCH (n) DETACH DELETE n\"}]}";
-    if (sendRequest(query)) {
+    json query = {
+        {"statements", {{
+            {"statement", "MATCH (n) DETACH DELETE n"}
+        }}}
+    };
+
+    if (sendRequest(query.dump())) {
+        std::cout << "=== INSIDE IF\n";
         std::cout << "Database cleared successfully." << std::endl;
     } else {
         throw std::runtime_error("Failed to clear the Neo4j database.");
@@ -227,26 +216,35 @@ void Neo4jDatabaseWrapper::clearDatabase() {
 
 /*
 Description:
-    Creates the necessary indices for the database, in our case so far it's enough to create an index for the enhancedKey property of the Node
+    Creates the required indices in the Neo4j database.
 */
 void Neo4jDatabaseWrapper::createIndices() {
-    std::string query = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)\"}]}"; 
-    std::string indexDifferenceType = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)\"}]}";
-    std::string indexAstOrigin = "{\"statements\": [{\"statement\": \"CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)\"}]}";
-    
-    if (sendRequest(query) && sendRequest(indexDifferenceType) && sendRequest(indexAstOrigin)) {
-        std::cout << "Indices created successfully." << std::endl;
-    } else {
-        throw std::runtime_error("Failed to create indices in the Neo4j database.");
+    std::vector<std::string> indexStatements = {
+        "CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.enhancedKey)",
+        "CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.differenceType)",
+        "CREATE INDEX IF NOT EXISTS FOR (n:Node) ON (n.astOrigin)"
+    };
+
+    for (const auto& statement : indexStatements) {
+        json query = {
+            {"statements", {{
+                {"statement", statement}
+            }}}
+        };
+        if (!sendRequest(query.dump())) {
+            throw std::runtime_error("Failed to create indices in the Neo4j database.");
+        }
     }
+
+    std::cout << "Indices created successfully." << std::endl;
 }
 
 /*
 Description:
-    Finalizes the batch by executing any remaining nodes and relationships
+    Finalizes the database wrapper by executing any remaining batches.
 */
 void Neo4jDatabaseWrapper::finalize() {
-    // execute any remaining bathes
+    // execute any remaining batches
     if ((!nodeBatch.empty() || !relationshipBatch.empty()) && !executeBatch()) {
         std::cerr << "Failed to execute remaining batch." << std::endl;
         nodeBatch.clear();
