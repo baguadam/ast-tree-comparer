@@ -136,44 +136,45 @@ void TreeComparer::compareStmtNodes(const Node* firstNode, const Node* secondNod
     auto firstASTStmtRange = firstASTTree.getStmtNodes(firstNodeStmtKey);
     auto secondASTStmtRange = secondASTTree.getStmtNodes(secondNodeStmtKey);
 
-    // map of second AST statement nodes for lookup
-    std::unordered_map<std::string, Node*> secondASTMap;
-    for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
-        Node* node = *it;
-        secondASTMap.emplace(node->enhancedKey, node);
-    }
+    // first pass: identifying matches and marking them 
+    for (auto it1 = firstASTStmtRange.first; it1 != firstASTStmtRange.second; ++it1) {
+        Node* stmtNodeFirst = *it1;
 
-    // first pass: Identify matches and mark them
-    for (auto it = firstASTStmtRange.first; it != firstASTStmtRange.second; ++it) {
-        Node* stmtNode = *it;
-
-        if (stmtNode->isProcessed) {
+        if (stmtNodeFirst->isProcessed) {
             continue; // skip if already processed
         }
 
-        auto secondNodeIt = secondASTMap.find(stmtNode->enhancedKey);
-        if (secondNodeIt == secondASTMap.end()) {
-            processNodesInSingleAST(stmtNode, firstASTTree, FIRST_AST, false);
-        } else {
-            Node* secondNode = secondNodeIt->second;
+        bool foundMatch = false;
+        for (auto it2 = secondASTStmtRange.first; it2 != secondASTStmtRange.second; ++it2) {
+            Node* stmtNodeSecond = *it2;
 
-            if (!secondNode->isProcessed) {
-                compareParents(stmtNode, secondNode);
-                compareSourceLocations(stmtNode, secondNode);
-
-                stmtNode->isProcessed = true;
-                secondNode->isProcessed = true;
+            if (stmtNodeSecond->isProcessed) {
+                continue; // skip from second if already processed
             }
+
+            if (stmtNodeFirst->enhancedKey == stmtNodeSecond->enhancedKey) {
+                compareParents(stmtNodeFirst, stmtNodeSecond);
+                compareSourceLocations(stmtNodeFirst, stmtNodeSecond);
+
+                stmtNodeFirst->isProcessed = true;
+                stmtNodeSecond->isProcessed = true;
+                foundMatch = true;
+                break; // exit inner loop if found
+            }
+        }
+
+        if (!foundMatch) {
+            processNodesInSingleAST(stmtNodeFirst, firstASTTree, FIRST_AST, false);
         }
     }
 
-    // second pass: process unmatched nodes in second AST
+    // second pass: unmatched nodes in second AST
     for (auto it = secondASTStmtRange.first; it != secondASTStmtRange.second; ++it) {
         Node* stmtNode = *it;
         if (!stmtNode->isProcessed) {
             processNodesInSingleAST(stmtNode, secondASTTree, SECOND_AST, false);
         }
-    } 
+    }
 }
 
 /*
